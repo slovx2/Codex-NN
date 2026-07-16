@@ -2,6 +2,7 @@ Codex-Dream-Skin/
 
 node_modules/
 dist/
+coverage/
 src-tauri/target/
 src-tauri/gen/
 

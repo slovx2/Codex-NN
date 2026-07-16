@@ -25,7 +25,7 @@ struct WatcherHandle {
 }
 
 pub struct ThemeRuntime {
-    app: AppHandle,
+    app: Option<AppHandle>,
     paths: AppPaths,
     themes: ThemeStore,
     operation: Mutex<()>,
@@ -37,6 +37,15 @@ pub struct ThemeRuntime {
 impl ThemeRuntime {
     pub fn new(app: AppHandle) -> Result<Arc<Self>, String> {
         let paths = AppPaths::resolve(&app)?;
+        Self::from_paths(Some(app), paths)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn new_for_test(paths: AppPaths) -> Result<Arc<Self>, String> {
+        Self::from_paths(None, paths)
+    }
+
+    fn from_paths(app: Option<AppHandle>, paths: AppPaths) -> Result<Arc<Self>, String> {
         let themes = ThemeStore::new(paths.clone())?;
         let mut state = read_state(&paths).unwrap_or_default();
         if state.schema_version != 1 {
@@ -431,13 +440,15 @@ impl ThemeRuntime {
 
     fn progress(&self, phase: &str, message: &str) {
         self.append_log("INFO", &format!("{phase}: {message}"));
-        let _ = self.app.emit(
-            "theme://progress",
-            ProgressEvent {
-                phase: phase.into(),
-                message: message.into(),
-            },
-        );
+        if let Some(app) = &self.app {
+            let _ = app.emit(
+                "theme://progress",
+                ProgressEvent {
+                    phase: phase.into(),
+                    message: message.into(),
+                },
+            );
+        }
     }
 
     fn append_log(&self, level: &str, message: &str) {
@@ -459,7 +470,9 @@ impl ThemeRuntime {
 
     async fn emit_snapshot(&self) -> Result<AppSnapshot, String> {
         let snapshot = self.snapshot().await?;
-        let _ = self.app.emit("theme://status-changed", &snapshot);
+        if let Some(app) = &self.app {
+            let _ = app.emit("theme://status-changed", &snapshot);
+        }
         Ok(snapshot)
     }
 
