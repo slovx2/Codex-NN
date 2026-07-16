@@ -999,3 +999,644 @@ html.codex-nn-theme[data-nn-theme-layout="dream-skin"] button[class~="bg-token-f
   .nn-dream-brand { left: 15px; }
   .nn-dream-brand b { font-size: 13px; }
 }
+
+/* 两个内置主题共享原生布局，只用受控预设改变视觉语言。 */
+html.codex-nn-theme:is(
+  [data-nn-theme-layout="strawberry-starlight"],
+  [data-nn-theme-layout="azure-neon"]
+) body {
+  font-family: "Microsoft YaHei UI", "PingFang SC", "Segoe UI", system-ui, sans-serif !important;
+}
+
+html.codex-nn-theme:is(
+  [data-nn-theme-layout="strawberry-starlight"],
+  [data-nn-theme-layout="azure-neon"]
+) main.main-surface [class~="bg-gradient-to-b"][class*="from-token-main-surface-primary"] {
+  background-image: linear-gradient(to bottom, var(--nn-theme-surface-fade) 0%, transparent 100%) !important;
+}
+
+html.codex-nn-theme:is(
+  [data-nn-theme-layout="strawberry-starlight"],
+  [data-nn-theme-layout="azure-neon"]
+) main.main-surface [class~="bg-gradient-to-t"][class*="from-token-main-surface-primary"] {
+  background-image: linear-gradient(
+    to top,
+    var(--nn-theme-surface-fade) 0%,
+    var(--nn-theme-surface-fade) 50%,
+    transparent 100%
+  ) !important;
+}
+
+html.codex-nn-theme .nn-theme-home .group\/home-suggestions
+  button > span:first-child > span:has(> svg) {
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+html.codex-nn-theme .nn-theme-home .group\/home-suggestions
+  button > span:first-child > span:has(> svg) > svg {
+  display: block !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+html.codex-nn-theme:is(
+  [data-nn-theme-layout="strawberry-starlight"],
+  [data-nn-theme-layout="azure-neon"]
+) main.nn-theme-home-shell > header.app-header-tint > div:nth-child(3) {
+  visibility: hidden !important;
+}
+
+html.codex-nn-theme:is(
+  [data-nn-theme-layout="strawberry-starlight"],
+  [data-nn-theme-layout="azure-neon"]
+) main.main-surface:not(.nn-theme-home-shell) article {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 星莓绮梦：珍珠玻璃、水晶心与四芒星。 */
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] {
+  color-scheme: light !important;
+  --nn-theme-surface-fade: #fff2f8;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] body {
+  background:
+    radial-gradient(circle at 82% 2%, rgba(255, 111, 174, .22), transparent 28%),
+    radial-gradient(circle at 20% 8%, rgba(201, 139, 255, .16), transparent 26%),
+    linear-gradient(145deg, #fff9fc 0%, #fff1f7 55%, #f8eaf5 100%) !important;
+  color: #3d1830 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] body::before {
+  opacity: .22 !important;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, .98) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(255, 111, 174, .62) 0 1px, transparent 2px) !important;
+  background-position: 0 0, 29px 37px !important;
+  background-size: 61px 61px, 79px 79px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] aside.app-shell-left-panel {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 155, 200, .20), transparent 28%),
+    linear-gradient(180deg, rgba(255, 252, 253, .98), rgba(255, 241, 248, .96)) !important;
+  border: 1px solid rgba(255, 111, 174, .28) !important;
+  border-left: 0 !important;
+  border-radius: 0 20px 20px 0 !important;
+  box-shadow: 10px 0 32px rgba(110, 24, 63, .10), inset -1px 0 rgba(255, 255, 255, .9) !important;
+  color: #4a1835 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] aside.app-shell-left-panel button,
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] aside.app-shell-left-panel a {
+  color: #4a1835 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] aside.app-shell-left-panel svg {
+  color: #c93678 !important;
+  opacity: 1 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] aside.app-shell-left-panel button:hover {
+  background: linear-gradient(90deg, rgba(255, 111, 174, .16), rgba(201, 139, 255, .13)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 111, 174, .20) !important;
+  transform: translateX(1px) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] aside.app-shell-left-panel [class~="bg-token-list-hover-background"],
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] aside.app-shell-left-panel [aria-current="page"] {
+  background: linear-gradient(90deg, rgba(255, 111, 174, .26), rgba(201, 139, 255, .22)) !important;
+  border: 1px solid rgba(201, 61, 120, .28) !important;
+  box-shadow: 0 5px 18px rgba(110, 24, 63, .10), inset 3px 0 #ff6fae !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] main.main-surface,
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] main.main-surface:not(.nn-theme-home-shell) {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(255, 111, 174, .12), transparent 30%),
+    radial-gradient(circle at 18% 0%, rgba(201, 139, 255, .09), transparent 28%),
+    linear-gradient(180deg, #fff9fc 0%, #fff2f8 100%) !important;
+  border: 1px solid rgba(255, 111, 174, .28) !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 20px 0 0 0 !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .95), -8px 0 30px rgba(110, 24, 63, .08) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] main.main-surface > header.app-header-tint {
+  background: linear-gradient(90deg, rgba(255, 249, 252, .96), rgba(255, 225, 240, .90), rgba(225, 205, 255, .84)) !important;
+  border-bottom: 1px solid rgba(255, 111, 174, .26) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home > div:first-child > div:first-child > div:first-child {
+  border: 2px solid rgba(255, 155, 200, .82) !important;
+  border-radius: 25px !important;
+  overflow: visible !important;
+  background-image:
+    linear-gradient(90deg, rgba(45, 7, 27, .10), transparent 54%),
+    var(--nn-theme-art) !important;
+  background-size: 100% 100%, cover !important;
+  background-position: center, center !important;
+  box-shadow: 0 15px 36px rgba(110, 24, 63, .20), inset 0 0 0 4px rgba(255, 255, 255, .15) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home > div:first-child > div:first-child > div:first-child::before {
+  content: "" !important;
+  width: 58% !important;
+  background: linear-gradient(90deg, rgba(55, 8, 31, .82) 0%, rgba(91, 18, 52, .62) 58%, transparent 100%) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home [data-feature="game-source"] {
+  color: #fff9fc !important;
+  font-size: clamp(20px, 2vw, 29px) !important;
+  font-weight: 760 !important;
+  text-shadow: 0 2px 14px rgba(45, 7, 27, .58) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home [data-feature="game-source"]::before {
+  color: #ffd5e9 !important;
+  letter-spacing: .13em !important;
+  text-shadow: 0 0 14px rgba(255, 111, 174, .36) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home [data-feature="game-source"]::after {
+  color: rgba(255, 245, 250, .90) !important;
+  font-size: 14px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home [data-feature="game-source"] button {
+  border-color: rgba(255, 213, 233, .62) !important;
+  background: rgba(255, 111, 174, .14) !important;
+  color: #ffd5e9 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home .group\/home-suggestions button {
+  border: 1px solid rgba(255, 111, 174, .42) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 255, 255, .98), transparent 35%),
+    linear-gradient(145deg, rgba(255, 253, 254, .98), rgba(255, 237, 246, .96)) !important;
+  color: #4a1835 !important;
+  box-shadow: 0 9px 22px rgba(110, 24, 63, .11), inset 0 0 0 3px rgba(255, 255, 255, .60) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home .group\/home-suggestions button:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(201, 61, 120, .58) !important;
+  box-shadow: 0 14px 28px rgba(110, 24, 63, .17), 0 0 0 2px rgba(201, 139, 255, .12) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home .group\/home-suggestions button > span:first-child > span:first-child {
+  color: white !important;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, .72), transparent 17%),
+    linear-gradient(145deg, #ff9bc8, #c93678 62%, #9c58d8) !important;
+  box-shadow: 0 0 0 7px rgba(255, 111, 174, .13), 0 5px 14px rgba(110, 24, 63, .22), inset 0 1px rgba(255, 255, 255, .72) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home .group\/home-suggestions button svg {
+  color: white !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .composer-surface-chrome {
+  border: 2px solid rgba(255, 111, 174, .38) !important;
+  border-radius: 25px !important;
+  background:
+    radial-gradient(circle at 88% 20%, rgba(255, 255, 255, .96), transparent 24%),
+    linear-gradient(145deg, rgba(255, 253, 254, .97), rgba(255, 237, 246, .94)) !important;
+  box-shadow: 0 11px 28px rgba(110, 24, 63, .14), inset 0 0 0 4px rgba(255, 255, 255, .52) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .composer-surface-chrome::before {
+  content: "♡" !important;
+  color: white !important;
+  border: 1px solid rgba(255, 213, 233, .78) !important;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, .72), transparent 18%),
+    linear-gradient(145deg, #ff9bc8, #c93678) !important;
+  box-shadow: 0 5px 14px rgba(110, 24, 63, .22), inset 0 1px rgba(255, 255, 255, .64) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home div:has(> .horizontal-scroll-fade-mask .group\/project-selector) {
+  border-color: rgba(255, 111, 174, .30) !important;
+  background: linear-gradient(180deg, rgba(255, 251, 253, .97), rgba(255, 239, 247, .93)) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home div:has(> .horizontal-scroll-fade-mask .group\/project-selector)::before {
+  color: #9c2c63 !important;
+  letter-spacing: .06em !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home .group\/project-selector > button {
+  border-color: rgba(201, 61, 120, .28) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .96), rgba(255, 229, 242, .90)) !important;
+  color: #4a1835 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .ProseMirror {
+  color: #4a1835 !important;
+  caret-color: #c93678 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] button[class~="bg-token-foreground"] {
+  background: linear-gradient(145deg, #ff9bc8, #c93678) !important;
+  color: white !important;
+  box-shadow: 0 5px 14px rgba(110, 24, 63, .22) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-brand {
+  color: #641f44 !important;
+  text-shadow: 0 1px white !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-portal-mark {
+  border: 1px solid rgba(255, 111, 174, .55) !important;
+  border-radius: 48% 48% 46% 46% !important;
+  color: #c93678 !important;
+  background: radial-gradient(circle at 35% 28%, white, #ffd5e9 44%, #ff9bc8 100%) !important;
+  box-shadow: 0 0 0 4px rgba(255, 111, 174, .10), 0 4px 12px rgba(110, 24, 63, .18) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-brand b { color: #641f44 !important; }
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-brand small { color: #a54774 !important; letter-spacing: .12em !important; }
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-status { color: #8f456b !important; }
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-status i { background: #ff6fae !important; box-shadow: 0 0 10px rgba(255, 111, 174, .62) !important; }
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-quote { color: rgba(110, 24, 63, .54) !important; }
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-particles {
+  opacity: .38 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-particles i {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: #fff7fb !important;
+  box-shadow: 0 0 10px 3px rgba(255, 111, 174, .42) !important;
+  transform: rotate(45deg);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-orbit {
+  right: 28px;
+  bottom: 92px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 155, 200, .74) !important;
+  border-radius: 8px 9px 12px 9px !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .86), rgba(255, 111, 174, .52)) !important;
+  box-shadow: 0 7px 18px rgba(110, 24, 63, .20), inset 0 0 12px rgba(255, 255, 255, .70) !important;
+  transform: rotate(45deg) !important;
+}
+
+/* 苍蓝矩阵：烟熏玻璃、传送门环与导航星。 */
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] {
+  color-scheme: dark !important;
+  --nn-theme-surface-fade: #030a18;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] body {
+  background:
+    radial-gradient(circle at 82% 3%, rgba(50, 214, 255, .15), transparent 27%),
+    radial-gradient(circle at 18% 10%, rgba(106, 141, 255, .08), transparent 30%),
+    linear-gradient(145deg, #020611 0%, #050d1d 52%, #071529 100%) !important;
+  color: #eaf8ff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] body::before {
+  opacity: .32 !important;
+  background-image:
+    linear-gradient(rgba(50, 214, 255, .055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(50, 214, 255, .055) 1px, transparent 1px),
+    radial-gradient(circle, rgba(105, 246, 229, .62) 0 1px, transparent 2px) !important;
+  background-position: 0 0, 0 0, 27px 31px !important;
+  background-size: 42px 42px, 42px 42px, 89px 89px !important;
+  mask-image: linear-gradient(90deg, transparent 4%, black 42%, black 100%);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(50, 214, 255, .10), transparent 28%),
+    linear-gradient(180deg, rgba(3, 11, 25, .99), rgba(5, 18, 35, .98)) !important;
+  border: 1px solid rgba(50, 214, 255, .24) !important;
+  border-left: 0 !important;
+  border-radius: 0 18px 18px 0 !important;
+  box-shadow: 12px 0 36px rgba(0, 0, 0, .38), inset -1px 0 rgba(50, 214, 255, .08) !important;
+  color: #dcefff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel button,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel a {
+  color: #dcefff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel svg {
+  color: #69f6e5 !important;
+  opacity: .92 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel button:hover {
+  background: linear-gradient(90deg, rgba(50, 214, 255, .14), rgba(106, 141, 255, .09)) !important;
+  box-shadow: inset 0 0 0 1px rgba(50, 214, 255, .18) !important;
+  transform: translateX(1px) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel [class~="bg-token-list-hover-background"],
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel [aria-current="page"] {
+  background: linear-gradient(90deg, rgba(50, 214, 255, .22), rgba(106, 141, 255, .14)) !important;
+  border: 1px solid rgba(50, 214, 255, .34) !important;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, .28), inset 3px 0 #32d6ff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface:not(.nn-theme-home-shell) {
+  background:
+    radial-gradient(circle at 86% 8%, rgba(50, 214, 255, .10), transparent 31%),
+    radial-gradient(circle at 16% 0%, rgba(106, 141, 255, .06), transparent 29%),
+    linear-gradient(180deg, #061224 0%, #030a18 100%) !important;
+  border: 1px solid rgba(50, 214, 255, .20) !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 18px 0 0 0 !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .04), -10px 0 36px rgba(0, 0, 0, .28) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface > header.app-header-tint {
+  background: linear-gradient(90deg, rgba(3, 11, 25, .98), rgba(5, 24, 45, .96), rgba(10, 28, 60, .94)) !important;
+  border-bottom: 1px solid rgba(50, 214, 255, .20) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface > header.app-header-tint * {
+  color: #dcefff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home > div:first-child > div:first-child > div:first-child {
+  border: 1px solid rgba(50, 214, 255, .52) !important;
+  border-radius: 23px !important;
+  overflow: visible !important;
+  background-image:
+    linear-gradient(90deg, rgba(0, 3, 10, .16), transparent 55%),
+    var(--nn-theme-art) !important;
+  background-size: 100% 100%, cover !important;
+  background-position: center, center !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .42), 0 0 24px rgba(50, 214, 255, .08), inset 0 0 0 2px rgba(105, 246, 229, .04) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home > div:first-child > div:first-child > div:first-child::before {
+  content: "" !important;
+  width: 60% !important;
+  background:
+    linear-gradient(90deg, rgba(1, 5, 16, .95) 0%, rgba(3, 11, 28, .78) 60%, transparent 100%),
+    repeating-linear-gradient(0deg, transparent 0 7px, rgba(50, 214, 255, .025) 8px) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home [data-feature="game-source"] {
+  color: #eaf8ff !important;
+  font-size: clamp(20px, 2vw, 29px) !important;
+  font-weight: 760 !important;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, .78), 0 0 16px rgba(50, 214, 255, .16) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home [data-feature="game-source"]::before {
+  color: #69f6e5 !important;
+  font: 750 11px/1.3 "Cascadia Code", Consolas, monospace !important;
+  letter-spacing: .16em !important;
+  text-shadow: 0 0 12px rgba(50, 214, 255, .38) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home [data-feature="game-source"]::after {
+  color: rgba(220, 239, 255, .78) !important;
+  font-size: 14px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home [data-feature="game-source"] button {
+  border-color: rgba(50, 214, 255, .34) !important;
+  background: rgba(50, 214, 255, .08) !important;
+  color: #69f6e5 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home .group\/home-suggestions button {
+  border: 1px solid rgba(50, 214, 255, .28) !important;
+  border-radius: 19px !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(50, 214, 255, .075), transparent 43%),
+    linear-gradient(145deg, rgba(8, 28, 49, .96), rgba(3, 13, 29, .98)) !important;
+  color: #eaf8ff !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .34), inset 0 0 0 2px rgba(105, 246, 229, .025) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home .group\/home-suggestions button:hover {
+  transform: translateY(-4px) !important;
+  border-color: rgba(50, 214, 255, .58) !important;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, .40), 0 0 0 2px rgba(50, 214, 255, .07), inset 0 0 24px rgba(50, 214, 255, .04) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home .group\/home-suggestions button > span:first-child > span:first-child {
+  color: #bdfcff !important;
+  border: 1px solid rgba(105, 246, 229, .42) !important;
+  background:
+    radial-gradient(circle, rgba(50, 214, 255, .20), rgba(4, 18, 38, .96) 66%),
+    #071529 !important;
+  box-shadow: 0 0 0 6px rgba(50, 214, 255, .06), 0 0 18px rgba(50, 214, 255, .24), inset 0 0 14px rgba(50, 214, 255, .12) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home .group\/home-suggestions button svg {
+  color: #bdfcff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .composer-surface-chrome {
+  border: 1px solid rgba(50, 214, 255, .34) !important;
+  border-radius: 21px !important;
+  background:
+    linear-gradient(90deg, rgba(50, 214, 255, .035), transparent 18% 82%, rgba(106, 141, 255, .035)),
+    linear-gradient(145deg, rgba(7, 26, 45, .97), rgba(3, 13, 29, .96)) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .40), 0 0 22px rgba(50, 214, 255, .05), inset 0 0 0 2px rgba(105, 246, 229, .025) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .composer-surface-chrome::before {
+  content: "✦" !important;
+  color: #bdfcff !important;
+  border: 1px solid rgba(105, 246, 229, .42) !important;
+  background: radial-gradient(circle, rgba(50, 214, 255, .22), #071529 68%) !important;
+  box-shadow: 0 0 0 5px rgba(50, 214, 255, .06), 0 0 18px rgba(50, 214, 255, .24) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home div:has(> .horizontal-scroll-fade-mask .group\/project-selector) {
+  border-color: rgba(50, 214, 255, .22) !important;
+  background: linear-gradient(180deg, rgba(7, 24, 42, .98), rgba(3, 13, 29, .96)) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home div:has(> .horizontal-scroll-fade-mask .group\/project-selector)::before {
+  color: #69f6e5 !important;
+  font-family: "Cascadia Code", Consolas, monospace !important;
+  letter-spacing: .10em !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home .group\/project-selector > button {
+  border-color: rgba(50, 214, 255, .26) !important;
+  background: linear-gradient(135deg, rgba(9, 34, 56, .96), rgba(7, 18, 43, .94)) !important;
+  color: #eaf8ff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .ProseMirror {
+  color: #eaf8ff !important;
+  caret-color: #32d6ff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .ProseMirror [data-placeholder]::before,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .ProseMirror [data-placeholder]::after,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .ProseMirror p.is-editor-empty::before,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .ProseMirror p.is-editor-empty::after {
+  color: #6f9bad !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface:not(.nn-theme-home-shell)
+  [class*="_markdownContent_"] :is(p, li, h1, h2, h3, h4, strong, em, blockquote),
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface:not(.nn-theme-home-shell)
+  :is(p, li, h1, h2, h3, h4, strong, em, blockquote)[class*="_markdownText_"] {
+  color: #dcefff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface:not(.nn-theme-home-shell)
+  [class*="_markdownContent_"] code {
+  color: #69f6e5 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface:not(.nn-theme-home-shell)
+  [class*="_markdownContent_"] [class~="text-token-description-foreground"],
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface:not(.nn-theme-home-shell)
+  [class*="_markdownContent_"] [class~="text-token-description-foreground"] * {
+  color: #8eb5ca !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface:not(.nn-theme-home-shell)
+  [class*="_markdownContent_"] a {
+  color: #32d6ff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] main.main-surface:not(.nn-theme-home-shell)
+  [class*="_markdownContent_"] :is(ul, ol) ::marker {
+  color: #32d6ff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] button[class~="bg-token-foreground"] {
+  background: linear-gradient(145deg, #32d6ff, #387bff) !important;
+  color: #020611 !important;
+  box-shadow: 0 0 18px rgba(50, 214, 255, .28) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-brand {
+  color: #eaf8ff !important;
+  text-shadow: 0 0 12px rgba(50, 214, 255, .16) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-portal-mark {
+  border: 1px solid rgba(105, 246, 229, .50) !important;
+  color: #69f6e5 !important;
+  background: radial-gradient(circle, rgba(50, 214, 255, .16), rgba(2, 9, 23, .96) 68%) !important;
+  box-shadow: 0 0 0 4px rgba(50, 214, 255, .05), 0 0 18px rgba(50, 214, 255, .24), inset 0 0 12px rgba(50, 214, 255, .12) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-brand b { color: #eaf8ff !important; }
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-brand small { color: #69f6e5 !important; font-family: "Cascadia Code", Consolas, monospace !important; }
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-status { color: #8eb5ca !important; }
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-status i { background: #69f6e5 !important; box-shadow: 0 0 10px rgba(105, 246, 229, .72) !important; }
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-quote { color: rgba(105, 246, 229, .58) !important; font-family: "Cascadia Code", Consolas, monospace !important; }
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-particles {
+  opacity: .42 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-particles i {
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: #69f6e5 !important;
+  box-shadow: 0 0 10px 2px rgba(50, 214, 255, .42) !important;
+  transform: rotate(45deg);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-orbit {
+  right: 28px;
+  bottom: 88px;
+  width: 88px;
+  height: 30px;
+  border: 1px solid rgba(50, 214, 255, .34) !important;
+  border-radius: 50% !important;
+  background: radial-gradient(ellipse, rgba(50, 214, 255, .18), transparent 68%) !important;
+  box-shadow: 0 0 18px rgba(50, 214, 255, .16), inset 0 0 15px rgba(50, 214, 255, .08) !important;
+  transform: rotate(-10deg) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-orbit::before {
+  content: "";
+  position: absolute;
+  left: 35px;
+  top: -15px;
+  width: 17px;
+  height: 17px;
+  border: 1px solid #69f6e5;
+  border-radius: 50%;
+  background: radial-gradient(circle, #eaf8ff, #32d6ff 40%, rgba(50, 214, 255, .12) 72%);
+  box-shadow: 0 0 16px rgba(50, 214, 255, .70);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel button *,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel a * {
+  color: #dcefff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel span,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel div {
+  color: #dcefff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel button svg,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] aside.app-shell-left-panel a svg {
+  color: #69f6e5 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home .group\/home-suggestions button span {
+  color: #eaf8ff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home .group\/home-suggestions button svg {
+  color: #bdfcff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .composer-surface-chrome,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .composer-surface-chrome button,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .composer-surface-chrome span,
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .composer-surface-chrome div {
+  color: #dcefff !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home div:has(> div > .composer-surface-chrome) > :first-child {
+  border: 1px solid rgba(50, 214, 255, .22) !important;
+  border-bottom: 0 !important;
+  background: linear-gradient(180deg, rgba(7, 24, 42, .98), rgba(3, 13, 29, .96)) !important;
+  color: #69f6e5 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home div:has(> div > .composer-surface-chrome) > :first-child * {
+  color: #69f6e5 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="azure-neon"] button[class~="bg-token-foreground"] {
+  color: #020611 !important;
+}

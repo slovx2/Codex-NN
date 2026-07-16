@@ -20,6 +20,7 @@ serde_json = "=1.0.150"
 tauri-build = { version = "=2.6.3", features = [] }
 
 [dependencies]
+axum = "=0.8.9"
 base64 = "=0.22.1"
 chrono = { version = "=0.4.45", features = ["clock", "serde"] }
 dirs = "=6.0.0"

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "strawberry-starlight",
   "name": "星莓绮梦",
-  "layoutPreset": "standard",
+  "layoutPreset": "strawberryStarlight",
   "brandSubtitle": "CODEX NN · PINK DREAM",
   "tagline": "把灵感藏进粉色星河。",
   "projectPrefix": "开启心动企划 · ",

@@ -99,6 +99,21 @@ impl ThemeRuntime {
         self.themes.list(active.as_deref())
     }
 
+    pub fn log_paths(&self) -> Vec<String> {
+        vec![
+            self.paths.logs.display().to_string(),
+            self.paths
+                .logs
+                .with_extension("log.1")
+                .display()
+                .to_string(),
+        ]
+    }
+
+    pub fn record_agent_event(&self, message: &str) {
+        self.append_log("AGENT", message);
+    }
+
     pub async fn install_theme(
         &self,
         request: ThemeInstallRequest,
@@ -356,16 +371,23 @@ impl ThemeRuntime {
         };
         checks.push(DiagnosticCheck {
             name: "实时 CDP".into(),
-            pass: state.session != SessionState::Active || endpoint,
-            detail: state
-                .port
-                .map(|port| {
-                    format!(
-                        "127.0.0.1:{port} · {}",
-                        if endpoint { "可用" } else { "未连接" }
-                    )
-                })
-                .unwrap_or_else(|| "尚未启动".into()),
+            pass: state.session == SessionState::Active && endpoint,
+            detail: match (state.session, state.port) {
+                (SessionState::Off, _) => "尚未启动".into(),
+                (SessionState::Starting, Some(port)) => {
+                    format!("127.0.0.1:{port} · 正在启动")
+                }
+                (SessionState::Starting, None) => "正在启动".into(),
+                (SessionState::Paused, Some(port)) => {
+                    format!("127.0.0.1:{port} · 会话已暂停")
+                }
+                (SessionState::Paused, None) => "会话已暂停".into(),
+                (_, Some(port)) => format!(
+                    "127.0.0.1:{port} · {}",
+                    if endpoint { "可用" } else { "未连接" }
+                ),
+                _ => "未连接".into(),
+            },
         });
         DiagnosticReport {
             pass: checks.iter().all(|item| item.pass),

@@ -105,7 +105,7 @@ root.innerHTML = `
               <div><span>Codex 插件</span><h3>主题设计插件</h3></div>
               <strong id="designer-plugin-state" class="plugin-state neutral">检测中</strong>
             </div>
-            <p>安装后，在 Codex 中新建任务并说“帮我设计一个 Codex NN 主题”。插件会指导 Codex 完成概念确认、素材制作和 schema v1 打包。</p>
+            <p>安装后，Codex 可完成概念确认和 schema v1 打包，并通过本地 MCP 直接安装、切换和诊断主题效果。</p>
             <ol class="designer-steps">
               <li><i>1</i><span><b>提供想法</b><small>文字描述或现有概念稿</small></span></li>
               <li><i>2</i><span><b>确认概念</b><small>先看整体界面与视觉语言</small></span></li>
@@ -314,7 +314,7 @@ function renderDesignerPlugin(): void {
   message.textContent = designerPlugin.message
     ?? (designerPlugin.installed
       ? `插件 v${designerPlugin.version} 已就绪，请在 Codex 中新建任务使用。`
-      : "插件只会添加主题设计指导，不会修改模型、账号或现有主题。");
+      : "插件通过本地 MCP 管理主题，不会修改模型或账号配置。");
   installButton.textContent = designerPlugin.installed || designerPlugin.managed
     ? "重新安装主题设计插件"
     : "安装主题设计插件";
