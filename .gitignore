@@ -1,0 +1,14 @@
+Codex-Dream-Skin/
+
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+
+.DS_Store
+.vscode/
+.idea/
+.local/
+.env
+.env.*
+*.log

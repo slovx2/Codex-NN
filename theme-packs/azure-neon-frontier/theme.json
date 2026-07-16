@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "azure-neon-frontier",
+  "name": "苍蓝矩阵",
+  "brandSubtitle": "CODEX NN · NEON CORE",
+  "tagline": "连接深空，点亮下一行代码。",
+  "projectPrefix": "接入任务矩阵 · ",
+  "projectLabel": "◈  选择任务节点",
+  "statusText": "NEURAL LINK ONLINE",
+  "quote": "BUILD BEYOND THE HORIZON",
+  "image": "background.webp",
+  "colors": {
+    "background": "#030817",
+    "panel": "#071529",
+    "panelAlt": "#0B2340",
+    "accent": "#32D6FF",
+    "accentAlt": "#6A8DFF",
+    "secondary": "#69F6E5",
+    "highlight": "#A77BFF",
+    "text": "#EAF8FF",
+    "muted": "#8EB5CA",
+    "line": "rgba(50, 214, 255, 0.32)"
+  }
+}

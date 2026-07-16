@@ -1,0 +1,34 @@
+{
+  "name": "codex-nn",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/slovx2/Codex-NN.git"
+  },
+  "homepage": "https://github.com/slovx2/Codex-NN",
+  "bugs": "https://github.com/slovx2/Codex-NN/issues",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "tauri": "tauri",
+    "check:rust": "cargo check --manifest-path src-tauri/Cargo.toml",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "desktop:build:mac": "bash scripts/build-desktop.sh --target macos",
+    "desktop:build:windows": "bash scripts/build-desktop.sh --target windows"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.11.1",
+    "@tauri-apps/plugin-dialog": "2.7.1",
+    "@tauri-apps/plugin-process": "2.3.1",
+    "@tauri-apps/plugin-updater": "2.10.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
+    "typescript": "6.0.3",
+    "vite": "8.1.0"
+  }
+}
