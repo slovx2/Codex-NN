@@ -87,6 +87,16 @@ fn package(path: &Path, manifest: &ThemeManifest) {
     writer.finish().unwrap();
 }
 
+fn theme_directory(path: &Path, manifest: &ThemeManifest) {
+    std::fs::create_dir_all(path).unwrap();
+    std::fs::write(
+        path.join("theme.json"),
+        serde_json::to_vec_pretty(manifest).unwrap(),
+    )
+    .unwrap();
+    std::fs::write(path.join(&manifest.image), png()).unwrap();
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn agent_api_enforces_auth_and_runs_theme_lifecycle() {
     let (root, paths, runtime) = test_runtime();
@@ -134,17 +144,39 @@ async fn agent_api_enforces_auth_and_runs_theme_lifecycle() {
     assert!(!diagnostics.contains("base64"));
     let diagnostics: serde_json::Value = serde_json::from_str(&diagnostics).unwrap();
     assert_eq!(diagnostics["data"]["snapshot"]["session"], "off");
-    assert!(diagnostics["data"]["recommendations"][0]
-        .as_str()
-        .unwrap()
-        .contains("从 Codex NN App 启动 Codex"));
+    let recommendation = diagnostics["data"]["recommendations"][0].as_str().unwrap();
+    if diagnostics["data"]["snapshot"]["codex"]["installed"] == true {
+        assert!(recommendation.contains("从 Codex NN App 启动 Codex"));
+    } else {
+        assert!(recommendation.contains("未找到官方 Codex Desktop"));
+    }
     assert_eq!(
         diagnostics["data"]["logPaths"][0],
         paths.logs.display().to_string()
     );
 
+    let source = root.path().join("agent-theme");
     let first = root.path().join("agent-theme.zip");
-    package(&first, &manifest("agent-theme", "Agent 主题"));
+    theme_directory(&source, &manifest("agent-theme", "Agent 主题"));
+    let packaged = agent_request(
+        &client,
+        &state,
+        Method::POST,
+        "/agent/v1/themes/package",
+        Some(json!({
+            "sourcePath": source.display().to_string(),
+            "outputPath": first.display().to_string(),
+        })),
+    )
+    .await
+    .json::<serde_json::Value>()
+    .await
+    .unwrap();
+    assert_eq!(packaged["data"]["themeId"], "agent-theme");
+    assert_eq!(
+        packaged["data"]["packagePath"],
+        std::fs::canonicalize(&first).unwrap().display().to_string()
+    );
     let installed = agent_request(
         &client,
         &state,
@@ -158,7 +190,19 @@ async fn agent_api_enforces_auth_and_runs_theme_lifecycle() {
     .unwrap();
     assert_eq!(installed["data"]["installed"], true);
 
-    package(&first, &manifest("agent-theme", "Agent 主题已更新"));
+    theme_directory(&source, &manifest("agent-theme", "Agent 主题已更新"));
+    let packaged = agent_request(
+        &client,
+        &state,
+        Method::POST,
+        "/agent/v1/themes/package",
+        Some(json!({
+            "sourcePath": source.display().to_string(),
+            "outputPath": first.display().to_string(),
+        })),
+    )
+    .await;
+    assert_eq!(packaged.status(), StatusCode::OK);
     let updated = agent_request(
         &client,
         &state,

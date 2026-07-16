@@ -15,6 +15,7 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "validate:release-assets": "node scripts/validate-release-assets.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "tauri": "tauri",
     "check:rust": "cargo check --manifest-path src-tauri/Cargo.toml",

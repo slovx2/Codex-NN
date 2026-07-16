@@ -13,10 +13,11 @@ use crate::{
     dream_skin::{self, DreamSkinImportRequest},
     models::{
         AppSnapshot, DiagnosticCheck, DiagnosticReport, PersistedState, ProgressEvent,
-        SessionState, ThemeInstallOutcome, ThemeInstallRequest, ThemeSummary, VerificationReport,
+        SessionState, ThemeInstallOutcome, ThemeInstallRequest, ThemePackageOutcome,
+        ThemePackageRequest, ThemeSummary, VerificationReport,
     },
     paths::{atomic_write, AppPaths},
-    theme::ThemeStore,
+    theme::{self, ThemeStore},
 };
 
 struct WatcherHandle {
@@ -154,6 +155,17 @@ impl ThemeRuntime {
         }
         let _ = self.emit_snapshot().await;
         Ok(outcome)
+    }
+
+    pub async fn package_theme(
+        &self,
+        request: ThemePackageRequest,
+    ) -> Result<ThemePackageOutcome, String> {
+        let source = PathBuf::from(request.source_path);
+        let output = PathBuf::from(request.output_path);
+        tokio::task::spawn_blocking(move || theme::package_directory(&source, &output))
+            .await
+            .map_err(|error| format!("主题打包任务异常结束：{error}"))?
     }
 
     pub async fn install_dream_skin_theme(

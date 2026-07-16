@@ -31,11 +31,6 @@ jobs:
           node-version: 24.4.1
           cache: npm
 
-      - name: 配置 Python
-        uses: actions/setup-python@v6.3.0
-        with:
-          python-version: 3.12.8
-
       - name: 配置 Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1.17.0
         with:
@@ -52,11 +47,8 @@ jobs:
       - name: 运行前端集成测试与覆盖率门禁
         run: npm run test:coverage
 
-      - name: 运行 Skill 打包器测试
-        run: python -m unittest discover -s tests/python -v
-
       - name: 校验发布资产
-        run: python scripts/validate-release-assets.py
+        run: npm run validate:release-assets
 
       - name: 校验主题引擎脚本语法
         run: node --check src-tauri/resources/theme-engine/renderer-inject.js
@@ -83,11 +75,6 @@ jobs:
           node-version: 24.4.1
           cache: npm
 
-      - name: 配置 Python
-        uses: actions/setup-python@v6.3.0
-        with:
-          python-version: 3.12.8
-
       - name: 配置 Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1.17.0
         with:
@@ -103,10 +90,8 @@ jobs:
           npm run build
           npm test
 
-      - name: 校验 Python 与发布资产
-        run: |
-          python -m unittest discover -s tests/python -v
-          python scripts/validate-release-assets.py
+      - name: 校验发布资产
+        run: npm run validate:release-assets
 
       - name: 运行 Windows Rust Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings

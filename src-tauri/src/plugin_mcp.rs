@@ -113,6 +113,20 @@ async fn call_tool_at(name: &str, input: Value, state_path: &Path) -> Result<Val
         "codex_nn_list_themes" => {
             request_json_at(state_path, Method::GET, "/agent/v1/themes", None).await
         }
+        "codex_nn_package_theme" => {
+            let source_path = required_absolute_directory(&input)?;
+            let output_path = required_absolute_zip_field(&input, "output_path")?;
+            request_json_at(
+                state_path,
+                Method::POST,
+                "/agent/v1/themes/package",
+                Some(json!({
+                    "sourcePath": source_path,
+                    "outputPath": output_path,
+                })),
+            )
+            .await
+        }
         "codex_nn_install_theme" => {
             let package_path = required_absolute_zip(&input)?;
             request_json_at(
@@ -235,10 +249,14 @@ fn read_agent_state(path: &Path) -> Result<AgentApiStateFile, String> {
 }
 
 fn required_absolute_zip(input: &Value) -> Result<String, String> {
+    required_absolute_zip_field(input, "package_path")
+}
+
+fn required_absolute_zip_field(input: &Value, field: &str) -> Result<String, String> {
     let value = input
-        .get("package_path")
+        .get(field)
         .and_then(Value::as_str)
-        .ok_or_else(|| "package_path 必填".to_string())?;
+        .ok_or_else(|| format!("{field} 必填"))?;
     let path = Path::new(value);
     if !path.is_absolute()
         || path
@@ -246,7 +264,18 @@ fn required_absolute_zip(input: &Value) -> Result<String, String> {
             .and_then(|extension| extension.to_str())
             .is_none_or(|extension| !extension.eq_ignore_ascii_case("zip"))
     {
-        return Err("package_path 必须是绝对 ZIP 路径".into());
+        return Err(format!("{field} 必须是绝对 ZIP 路径"));
+    }
+    Ok(value.to_string())
+}
+
+fn required_absolute_directory(input: &Value) -> Result<String, String> {
+    let value = input
+        .get("source_path")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "source_path 必填".to_string())?;
+    if !Path::new(value).is_absolute() {
+        return Err("source_path 必须是绝对目录路径".into());
     }
     Ok(value.to_string())
 }
@@ -299,6 +328,12 @@ fn tool_definitions() -> Value {
             "description": "列出 Codex NN 主题、当前主题和会话状态。",
             "inputSchema": empty_schema(),
             "annotations": { "readOnlyHint": true, "destructiveHint": false }
+        },
+        {
+            "name": "codex_nn_package_theme",
+            "description": "校验包含 theme.json 和一张图片的目录，并生成 Codex NN schema v1 主题 ZIP。",
+            "inputSchema": package_directory_schema(),
+            "annotations": { "readOnlyHint": false, "destructiveHint": true }
         },
         {
             "name": "codex_nn_install_theme",
@@ -363,6 +398,24 @@ fn package_schema() -> Value {
     })
 }
 
+fn package_directory_schema() -> Value {
+    json!({
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_path", "output_path"],
+        "properties": {
+            "source_path": {
+                "type": "string",
+                "description": "只含 theme.json 和一张主题图片的绝对目录路径。"
+            },
+            "output_path": {
+                "type": "string",
+                "description": "输出 Codex NN schema v1 ZIP 的绝对路径。"
+            }
+        }
+    })
+}
+
 fn id_schema() -> Value {
     json!({
         "type": "object",
@@ -376,10 +429,9 @@ fn id_schema() -> Value {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::File, io::Write, time::Duration};
+    use std::time::Duration;
 
     use image::ImageEncoder;
-    use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
 
     use crate::{
         agent_api::{AgentApiRuntime, AGENT_API_STATE_RELATIVE_PATH},
@@ -389,7 +441,7 @@ mod tests {
 
     use super::*;
 
-    fn theme_package(path: &Path, name: &str) {
+    fn theme_directory(path: &Path, name: &str) {
         let mut manifest: Value = serde_json::from_str(include_str!(
             "../../theme-packs/strawberry-starlight/theme.json"
         ))
@@ -405,15 +457,13 @@ mod tests {
             .write_image(&pixels, 64, 48, image::ExtendedColorType::Rgb8)
             .unwrap();
 
-        let mut archive = ZipWriter::new(File::create(path).unwrap());
-        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
-        archive.start_file("theme.json", options).unwrap();
-        archive
-            .write_all(&serde_json::to_vec_pretty(&manifest).unwrap())
-            .unwrap();
-        archive.start_file("background.png", options).unwrap();
-        archive.write_all(&image).unwrap();
-        archive.finish().unwrap();
+        std::fs::create_dir_all(path).unwrap();
+        std::fs::write(
+            path.join("theme.json"),
+            serde_json::to_vec_pretty(&manifest).unwrap(),
+        )
+        .unwrap();
+        std::fs::write(path.join("background.png"), image).unwrap();
     }
 
     async fn wait_for_bridge(state_path: &Path) {
@@ -436,8 +486,11 @@ mod tests {
                 .await
                 .unwrap();
         let tools = response["result"]["tools"].as_array().unwrap();
-        assert_eq!(tools.len(), 8);
+        assert_eq!(tools.len(), 9);
         assert!(tools.iter().any(|tool| tool["name"] == "codex_nn_diagnose"));
+        assert!(tools
+            .iter()
+            .any(|tool| tool["name"] == "codex_nn_package_theme"));
     }
 
     #[tokio::test]
@@ -454,6 +507,8 @@ mod tests {
     fn rejects_relative_package_paths() {
         let error = required_absolute_zip(&json!({ "package_path": "theme.zip" })).unwrap_err();
         assert!(error.contains("绝对 ZIP 路径"));
+        let error = required_absolute_directory(&json!({ "source_path": "theme" })).unwrap_err();
+        assert!(error.contains("绝对目录路径"));
     }
 
     #[test]
@@ -485,8 +540,28 @@ mod tests {
         assert!(!serialized.contains("previewDataUrl"));
         assert!(!serialized.contains("base64"));
 
+        let source = root.path().join("mcp-theme");
         let package = root.path().join("mcp-theme.zip");
-        theme_package(&package, "MCP 主题");
+        theme_directory(&source, "MCP 主题");
+        let packaged = call_tool_at(
+            "codex_nn_package_theme",
+            json!({
+                "source_path": source.display().to_string(),
+                "output_path": package.display().to_string(),
+            }),
+            &state_path,
+        )
+        .await
+        .unwrap();
+        assert_eq!(packaged["themeId"], "mcp-theme");
+        assert_eq!(
+            packaged["packagePath"],
+            std::fs::canonicalize(&package)
+                .unwrap()
+                .display()
+                .to_string()
+        );
+        assert!(package.is_file());
         let installed = call_tool_at(
             "codex_nn_install_theme",
             json!({ "package_path": package.display().to_string() }),
@@ -496,7 +571,17 @@ mod tests {
         .unwrap();
         assert_eq!(installed["installed"], true);
 
-        theme_package(&package, "MCP 主题已更新");
+        theme_directory(&source, "MCP 主题已更新");
+        call_tool_at(
+            "codex_nn_package_theme",
+            json!({
+                "source_path": source.display().to_string(),
+                "output_path": package.display().to_string(),
+            }),
+            &state_path,
+        )
+        .await
+        .unwrap();
         let updated = call_tool_at(
             "codex_nn_update_theme",
             json!({ "package_path": package.display().to_string() }),
@@ -519,8 +604,12 @@ mod tests {
         let apply_error = call_tool_at("codex_nn_apply_theme", json!({}), &state_path)
             .await
             .unwrap_err();
-        assert!(apply_error.contains("处理方法"));
-        assert!(apply_error.contains("重启 Codex"));
+        assert!(
+            apply_error.contains("处理方法")
+                || apply_error.contains("未找到官方 Codex")
+                || apply_error.contains("未安装官方"),
+            "未返回可执行的恢复信息：{apply_error}"
+        );
 
         let deleted = call_tool_at(
             "codex_nn_delete_theme",

@@ -16,7 +16,7 @@ use serde_json::{json, Value};
 use tokio::sync::oneshot;
 
 use crate::{
-    models::{AppSnapshot, DiagnosticReport, ThemeInstallRequest},
+    models::{AppSnapshot, DiagnosticReport, ThemeInstallRequest, ThemePackageRequest},
     paths::{atomic_write, AppPaths},
     runtime::ThemeRuntime,
 };
@@ -132,6 +132,7 @@ fn router(state: ApiState) -> Router {
     Router::new()
         .route("/agent/v1/status", get(status))
         .route("/agent/v1/themes", get(list_themes))
+        .route("/agent/v1/themes/package", post(package_theme))
         .route("/agent/v1/themes/install", post(install_theme))
         .route("/agent/v1/themes/update", post(update_theme))
         .route("/agent/v1/themes/activate", post(activate_theme))
@@ -157,6 +158,24 @@ async fn list_themes(State(state): State<ApiState>, headers: HeaderMap) -> ApiRe
     let themes = state.runtime.list_themes().await.map_err(operation_error)?;
     let snapshot = state.runtime.snapshot().await.map_err(operation_error)?;
     Ok(success(json!({ "themes": themes, "snapshot": snapshot })))
+}
+
+async fn package_theme(
+    State(state): State<ApiState>,
+    headers: HeaderMap,
+    Json(input): Json<ThemePackageRequest>,
+) -> ApiResult {
+    authorize(&state, &headers)?;
+    state.runtime.record_agent_event(&format!(
+        "打包主题目录 {}",
+        display_file_name(&input.source_path)
+    ));
+    let outcome = state
+        .runtime
+        .package_theme(input)
+        .await
+        .map_err(operation_error)?;
+    Ok(success(json!(outcome)))
 }
 
 async fn install_theme(

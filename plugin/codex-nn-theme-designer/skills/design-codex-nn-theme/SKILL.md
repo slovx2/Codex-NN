@@ -14,13 +14,8 @@ description: Design Codex NN schema v1 themes from a user-provided concept image
 3. 严格还原真实 Codex 的功能结构和层级，不新增不存在的功能。参考图只用于构图和细节密度；其中的冒险图标、文案、项目名、任务名和会话标题必须按用户主题全部重做。
 4. 展示概念稿和简短设计摘要。**用户明确确认前停止，不得生成最终背景或 ZIP。**
 5. 确认后生成一张纯背景图，并选择现有 `layoutPreset`，完成配色、文案和 `theme.json`。背景不得包含按钮、输入框、完整 UI、文字、Logo 或水印。
-6. 用可用的 Python 3 运行打包器；Windows 可改用 `py -3` 或 `python`：
-
-```bash
-python3 scripts/package_theme.py /absolute/path/to/theme-dir --output /absolute/path/to/theme-id.zip
-```
-
-7. 修复全部校验错误后，通过 Codex NN MCP 安装或更新主题并切换预览；用户确认效果后提供可点击 ZIP 路径。
+6. 调用 Codex NN MCP 的 `codex_nn_package_theme`，传入双文件主题目录和输出 ZIP 的绝对路径；根据 App 返回的 schema、字段或图片错误修正素材，直到打包成功。
+7. 继续通过 MCP 安装或更新生成的 ZIP 并切换预览；用户确认效果后提供可点击 ZIP 路径。
 
 MCP 连接失败时先确认 Codex NN 正在运行。诊断提示 CDP 未连接、端口失效或会话异常时，请用户从 Codex NN App 启动或重启 Codex，再重试操作。
 

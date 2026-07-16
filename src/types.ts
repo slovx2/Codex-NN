@@ -33,6 +33,13 @@ export type ThemeInstallOutcome = {
   theme: ThemeSummary;
 };
 
+export type ThemePackageOutcome = {
+  packagePath: string;
+  themeId: string;
+  themeName: string;
+  packageBytes: number;
+};
+
 export type ThemeDesignerPluginStatus = {
   installed: boolean;
   managed: boolean;

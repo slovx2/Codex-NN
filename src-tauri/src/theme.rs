@@ -1,7 +1,7 @@
 use std::{
     collections::HashSet,
     fs::File,
-    io::{Cursor, Read},
+    io::{Cursor, Read, Write},
     path::{Path, PathBuf},
 };
 
@@ -10,10 +10,10 @@ use image::{
     codecs::jpeg::JpegEncoder, imageops::FilterType, DynamicImage, ImageFormat, ImageReader,
 };
 use uuid::Uuid;
-use zip::{CompressionMethod, ZipArchive};
+use zip::{write::SimpleFileOptions, CompressionMethod, ZipArchive, ZipWriter};
 
 use crate::{
-    models::{ThemeInstallOutcome, ThemeManifest, ThemeSummary},
+    models::{ThemeInstallOutcome, ThemeManifest, ThemePackageOutcome, ThemeSummary},
     paths::{atomic_write, AppPaths},
 };
 
@@ -37,6 +37,151 @@ struct BuiltInTheme {
     id: &'static str,
     manifest: &'static str,
     image: &'static [u8],
+}
+
+pub fn package_directory(source: &Path, output: &Path) -> Result<ThemePackageOutcome, String> {
+    if !source.is_absolute() || !output.is_absolute() {
+        return Err("主题目录和输出 ZIP 必须使用绝对路径".into());
+    }
+    if output
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_none_or(|value| !value.eq_ignore_ascii_case("zip"))
+    {
+        return Err("输出文件必须使用 .zip 扩展名".into());
+    }
+
+    let source_metadata =
+        std::fs::symlink_metadata(source).map_err(|error| format!("无法读取主题目录：{error}"))?;
+    if source_metadata.file_type().is_symlink() || !source_metadata.is_dir() {
+        return Err("主题来源必须是普通目录，不能是符号链接".into());
+    }
+    let source =
+        std::fs::canonicalize(source).map_err(|error| format!("无法解析主题目录：{error}"))?;
+    let output_name = output
+        .file_name()
+        .and_then(|value| value.to_str())
+        .ok_or_else(|| "输出 ZIP 文件名必须是 UTF-8".to_string())?;
+    let output_parent = output
+        .parent()
+        .ok_or_else(|| "输出 ZIP 缺少父目录".to_string())?;
+    std::fs::create_dir_all(output_parent).map_err(|error| format!("无法创建输出目录：{error}"))?;
+    let output_parent = std::fs::canonicalize(output_parent)
+        .map_err(|error| format!("无法解析输出目录：{error}"))?;
+    if output_parent.starts_with(&source) {
+        return Err("输出 ZIP 必须放在主题目录之外".into());
+    }
+    let output = output_parent.join(output_name);
+    if std::fs::symlink_metadata(&output)
+        .is_ok_and(|metadata| metadata.file_type().is_symlink() || !metadata.is_file())
+    {
+        return Err("输出路径必须是普通文件，不能是目录或符号链接".into());
+    }
+
+    let manifest_path = source.join("theme.json");
+    let manifest_metadata = std::fs::symlink_metadata(&manifest_path)
+        .map_err(|error| format!("无法读取 theme.json：{error}"))?;
+    if manifest_metadata.file_type().is_symlink()
+        || !manifest_metadata.is_file()
+        || manifest_metadata.len() == 0
+        || manifest_metadata.len() > MAX_MANIFEST_BYTES
+    {
+        return Err("theme.json 必须是 1 字节到 64 KB 的普通文件".into());
+    }
+    let manifest_bytes =
+        std::fs::read(&manifest_path).map_err(|error| format!("无法读取 theme.json：{error}"))?;
+    let manifest: ThemeManifest = serde_json::from_slice(&manifest_bytes)
+        .map_err(|error| format!("theme.json 格式错误：{error}"))?;
+    validate_manifest(&manifest)?;
+
+    let image_path = safe_child(&source, &manifest.image)?;
+    let image_metadata = std::fs::symlink_metadata(&image_path)
+        .map_err(|error| format!("无法读取主题图片：{error}"))?;
+    if image_metadata.file_type().is_symlink()
+        || !image_metadata.is_file()
+        || image_metadata.len() == 0
+        || image_metadata.len() > MAX_IMAGE_BYTES
+    {
+        return Err("主题图片必须是 1 字节到 16 MB 的普通文件".into());
+    }
+    let entries = std::fs::read_dir(&source)
+        .map_err(|error| format!("无法读取主题目录：{error}"))?
+        .map(|entry| {
+            let entry = entry.map_err(|error| format!("无法读取主题文件：{error}"))?;
+            let metadata = entry
+                .path()
+                .symlink_metadata()
+                .map_err(|error| format!("无法读取主题文件：{error}"))?;
+            if metadata.file_type().is_symlink() || !metadata.is_file() {
+                return Err("主题目录只允许普通文件".to_string());
+            }
+            entry
+                .file_name()
+                .into_string()
+                .map_err(|_| "主题文件名必须是 UTF-8".to_string())
+        })
+        .collect::<Result<HashSet<_>, _>>()?;
+    if entries != HashSet::from(["theme.json".to_string(), manifest.image.clone()]) {
+        return Err("主题目录必须且只能包含 theme.json 和清单引用的图片".into());
+    }
+    let image_bytes =
+        std::fs::read(&image_path).map_err(|error| format!("无法读取主题图片：{error}"))?;
+
+    let temporary = output_parent.join(format!(
+        ".{output_name}.{}.tmp.zip",
+        Uuid::new_v4().simple()
+    ));
+    let result = (|| {
+        let mut writer = ZipWriter::new(
+            File::create(&temporary).map_err(|error| format!("无法创建主题 ZIP：{error}"))?,
+        );
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        writer
+            .start_file("theme.json", options)
+            .map_err(|error| format!("无法写入 theme.json：{error}"))?;
+        writer
+            .write_all(&manifest_bytes)
+            .map_err(|error| format!("无法写入 theme.json：{error}"))?;
+        writer
+            .start_file(&manifest.image, options)
+            .map_err(|error| format!("无法写入主题图片：{error}"))?;
+        writer
+            .write_all(&image_bytes)
+            .map_err(|error| format!("无法写入主题图片：{error}"))?;
+        writer
+            .finish()
+            .map_err(|error| format!("无法完成主题 ZIP：{error}"))?;
+        let prepared = inspect_package(&temporary)?;
+        replace_output_file(&temporary, &output)?;
+        let package_bytes = std::fs::metadata(&output)
+            .map_err(|error| format!("无法读取输出 ZIP：{error}"))?
+            .len();
+        Ok(ThemePackageOutcome {
+            package_path: output.display().to_string(),
+            theme_id: prepared.manifest.id,
+            theme_name: prepared.manifest.name,
+            package_bytes,
+        })
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&temporary);
+    }
+    result
+}
+
+fn replace_output_file(temporary: &Path, output: &Path) -> Result<(), String> {
+    if !output.exists() {
+        return std::fs::rename(temporary, output)
+            .map_err(|error| format!("无法保存主题 ZIP：{error}"));
+    }
+    let backup = output.with_extension(format!("zip.{}.backup", Uuid::new_v4().simple()));
+    std::fs::rename(output, &backup).map_err(|error| format!("无法备份原主题 ZIP：{error}"))?;
+    if let Err(error) = std::fs::rename(temporary, output) {
+        let _ = std::fs::rename(&backup, output);
+        return Err(format!("无法更新主题 ZIP：{error}"));
+    }
+    let _ = std::fs::remove_file(backup);
+    Ok(())
 }
 
 const BUILT_IN_THEMES: &[BuiltInTheme] = &[
@@ -580,6 +725,75 @@ mod tests {
                 (&manifest.image, image),
             ],
         );
+    }
+
+    fn theme_directory(path: &Path, theme: &ThemeManifest, image: Vec<u8>) {
+        std::fs::create_dir_all(path).unwrap();
+        std::fs::write(
+            path.join("theme.json"),
+            serde_json::to_vec_pretty(theme).unwrap(),
+        )
+        .unwrap();
+        std::fs::write(path.join(&theme.image), image).unwrap();
+    }
+
+    #[test]
+    fn packages_and_replaces_a_valid_theme_directory() {
+        let root = tempfile::tempdir().unwrap();
+        let source = root.path().join("source");
+        let output = root.path().join("output/theme.zip");
+        let theme = manifest("packaged-theme", "background.png");
+        theme_directory(&source, &theme, png(1200, 720));
+
+        let first = package_directory(&source, &output).unwrap();
+        assert_eq!(first.theme_id, "packaged-theme");
+        assert_eq!(
+            first.package_path,
+            std::fs::canonicalize(&output)
+                .unwrap()
+                .display()
+                .to_string()
+        );
+        assert!(first.package_bytes > 0);
+        assert_eq!(
+            inspect_package(&output).unwrap().manifest.id,
+            "packaged-theme"
+        );
+
+        std::fs::write(&output, b"old package").unwrap();
+        let second = package_directory(&source, &output).unwrap();
+        assert_eq!(second.theme_name, "测试主题");
+        assert!(inspect_package(&output).is_ok());
+        assert!(!output
+            .parent()
+            .unwrap()
+            .read_dir()
+            .unwrap()
+            .any(|entry| entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .contains("backup")));
+    }
+
+    #[test]
+    fn package_directory_rejects_extras_and_output_inside_source() {
+        let root = tempfile::tempdir().unwrap();
+        let source = root.path().join("source");
+        let theme = manifest("packaged-theme", "background.png");
+        theme_directory(&source, &theme, png(640, 480));
+
+        let inside = source.join("theme.zip");
+        assert!(package_directory(&source, &inside)
+            .unwrap_err()
+            .contains("目录之外"));
+
+        std::fs::write(source.join("notes.txt"), b"extra").unwrap();
+        let output = root.path().join("theme.zip");
+        assert!(package_directory(&source, &output)
+            .unwrap_err()
+            .contains("必须且只能包含"));
+        assert!(!output.exists());
     }
 
     #[test]

@@ -1,0 +1,2 @@
+theme-packs/*/theme.json text eol=lf
+theme-packs/*.zip binary

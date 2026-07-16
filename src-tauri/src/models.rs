@@ -106,6 +106,22 @@ pub struct ThemeInstallOutcome {
     pub theme: ThemeSummary,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThemePackageRequest {
+    pub source_path: String,
+    pub output_path: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThemePackageOutcome {
+    pub package_path: String,
+    pub theme_id: String,
+    pub theme_name: String,
+    pub package_bytes: u64,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSnapshot {
