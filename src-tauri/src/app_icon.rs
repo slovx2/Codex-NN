@@ -136,3 +136,45 @@ fn set_macos_dock_icon(png: &[u8]) {
 
 #[cfg(not(target_os = "macos"))]
 fn set_macos_dock_icon(_png: &[u8]) {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_supported_css_color_formats() {
+        assert_eq!(parse_color("#e2556d"), Some([0xe2, 0x55, 0x6d]));
+        assert_eq!(parse_color("rgb(12, 34, 56)"), Some([12, 34, 56]));
+        assert_eq!(parse_color("rgba(100%, 50%, 0%, .5)"), Some([255, 128, 0]));
+        assert_eq!(parse_color("rgb(12 34 56 / 80%)"), Some([12, 34, 56]));
+    }
+
+    #[test]
+    fn rejects_invalid_colors_and_clamps_channels() {
+        assert_eq!(parse_color("transparent"), None);
+        assert_eq!(parse_color("#123"), None);
+        assert_eq!(parse_color("rgb(nope, 2, 3)"), None);
+        assert_eq!(parse_color("rgb(300, -10, 42)"), Some([255, 0, 42]));
+    }
+
+    #[test]
+    fn shades_the_accent_around_the_source_luminance() {
+        let accent = [180, 90, 45];
+        assert_eq!(shade(accent, 128), accent);
+        let dark = shade(accent, 0);
+        let light = shade(accent, 255);
+        assert!(dark.iter().zip(accent).all(|(value, base)| *value < base));
+        assert!(light.iter().zip(accent).all(|(value, base)| *value > base));
+    }
+
+    #[test]
+    fn builds_a_complete_png_and_rgba_icon() {
+        let icon = build_icon([50, 160, 220]).unwrap();
+        assert!(icon.width > 0 && icon.height > 0);
+        assert_eq!(
+            icon.rgba.len(),
+            (icon.width as usize) * (icon.height as usize) * 4
+        );
+        assert!(icon.png.starts_with(b"\x89PNG\r\n\x1a\n"));
+    }
+}

@@ -86,6 +86,30 @@ def validate_versions_and_dependencies() -> None:
         fail("NSIS DisplayVersion 与应用版本不一致")
     if f"CodexNN_{package_version}_x64-setup.exe" not in nsis:
         fail("NSIS 输出文件名与应用版本不一致")
+    build_script = (ROOT / "scripts" / "build-desktop.sh").read_text(encoding="utf-8")
+    if f"CodexNN_{package_version}_x64-setup.exe" not in build_script:
+        fail("桌面构建脚本的 Windows 输出文件名与应用版本不一致")
+
+    if package.get("scripts", {}).get("release:prepare") != "node scripts/prepare-release.mjs":
+        fail("package.json 缺少固定的 release:prepare 版本同步命令")
+    prepare_script = (ROOT / "scripts" / "prepare-release.mjs").read_text(encoding="utf-8")
+    for required_path in (
+        "package.json",
+        "package-lock.json",
+        "src-tauri/tauri.conf.json",
+        "src-tauri/Cargo.toml",
+        "src-tauri/Cargo.lock",
+        "scripts/CodexNN.nsi",
+        "scripts/build-desktop.sh",
+    ):
+        if required_path not in prepare_script:
+            fail(f"发布版本同步脚本缺少 {required_path}")
+
+    workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    if "needs:\n      - quality-gate\n      - windows-gate" not in workflow:
+        fail("Release job 必须等待 macOS 与 Windows 质量门禁")
+    if 'npm run release:prepare -- "$RELEASE_VERSION"' not in workflow:
+        fail("Release job 未同步目标发布版本")
 
 
 def validate_plugin() -> None:

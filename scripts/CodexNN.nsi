@@ -1,6 +1,6 @@
 Unicode true
 Name "Codex NN"
-OutFile "/work/bundle/nsis/CodexNN_0.1.0_x64-setup.exe"
+OutFile "/work/bundle/nsis/CodexNN_0.2.0_x64-setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\Codex NN"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
@@ -19,7 +19,7 @@ Section "Codex NN"
   CreateShortcut "$SMPROGRAMS\Codex NN\Codex NN.lnk" "$INSTDIR\codex-nn.exe"
   CreateShortcut "$DESKTOP\Codex NN.lnk" "$INSTDIR\codex-nn.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexNN" "DisplayName" "Codex NN"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexNN" "DisplayVersion" "0.1.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexNN" "DisplayVersion" "0.2.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexNN" "Publisher" "slovx2"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexNN" "UninstallString" "$INSTDIR\Uninstall.exe"
 SectionEnd

@@ -172,11 +172,12 @@ jobs:
           tagName: v__VERSION__
           releaseName: Codex NN v__VERSION__
           releaseBody: |
-            Codex 暖暖首次公开发布。
+            Codex 暖暖主题设计与自动化能力更新。
 
-            - macOS：Universal DMG，同时支持 Apple Silicon 和 Intel
-            - Windows：x64 安装包
-            - 应用启动时会自动检查后续更新
+            - 新增 Dream Skin macOS 主题导入与安全格式转换
+            - 新增主题设计插件、Skill、Agent API 与 MCP 实时预览流程
+            - 新增星莓和苍蓝主题布局，主题引擎升级至 0.3.9
+            - 增加 macOS、Windows 双平台自动化测试与发布门禁
           releaseDraft: false
           prerelease: false
           uploadUpdaterJson: true

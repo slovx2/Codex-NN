@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   confirm: vi.fn(),
   check: vi.fn(),
   relaunch: vi.fn(),
+  cssSupports: vi.fn(),
   listeners: new Map<string, (event: { payload: unknown }) => void>(),
   handlers: new Map<string, (args?: Record<string, unknown>) => unknown>()
 }));
@@ -121,6 +122,11 @@ beforeEach(() => {
   mocks.save.mockResolvedValue(null);
   mocks.check.mockResolvedValue(null);
   mocks.relaunch.mockResolvedValue(undefined);
+  mocks.cssSupports.mockImplementation((_property: string, value: string) => value !== "not-a-color");
+  Object.defineProperty(globalThis, "CSS", {
+    configurable: true,
+    value: { supports: mocks.cssSupports }
+  });
   mocks.listen.mockImplementation((name: string, listener: (event: { payload: unknown }) => void) => {
     mocks.listeners.set(name, listener);
     return Promise.resolve(() => undefined);
@@ -128,6 +134,7 @@ beforeEach(() => {
   setHandler("get_app_snapshot", () => appSnapshot());
   setHandler("list_themes", () => [builtInTheme, customTheme]);
   setHandler("get_theme_designer_plugin_status", () => pluginStatus());
+  setHandler("set_app_accent", () => null);
   mocks.invoke.mockImplementation((name: string, args?: Record<string, unknown>) => {
     const handler = mocks.handlers.get(name);
     if (!handler) return Promise.reject(new Error(`未模拟命令：${name}`));
@@ -151,6 +158,8 @@ describe("主应用界面", () => {
     expect(text("codex-version")).toBe("Codex 1.2.3");
     expect(document.querySelector("#hero-card script")).toBeNull();
     expect(text("current-theme-name")).toContain("<script>");
+    expect(document.documentElement.style.getPropertyValue("--accent")).toBe("#ff6688");
+    expect(mocks.invoke).toHaveBeenCalledWith("set_app_accent", { accent: "#ff6688" });
     click("import-dream-skin-button");
     expect(document.getElementById("dream-import-dialog")?.hidden).toBe(false);
     click("close-dream-import-button");
@@ -164,6 +173,18 @@ describe("主应用界面", () => {
     expect(document.getElementById("page-diagnostics")?.classList.contains("active")).toBe(true);
     document.querySelector<HTMLButtonElement>('[data-open-page="themes"]')?.click();
     expect(document.getElementById("page-themes")?.classList.contains("active")).toBe(true);
+  });
+
+  it("非法主题强调色回退到应用默认色", async () => {
+    const invalidAccent = { ...builtInTheme, accent: "not-a-color" };
+    setHandler("get_app_snapshot", () => appSnapshot({ activeTheme: invalidAccent }));
+    setHandler("list_themes", () => [invalidAccent]);
+
+    await boot();
+
+    expect(mocks.cssSupports).toHaveBeenCalledWith("color", "not-a-color");
+    expect(document.documentElement.style.getPropertyValue("--accent")).toBe("#e2556d");
+    expect(mocks.invoke).toHaveBeenCalledWith("set_app_accent", { accent: "#e2556d" });
   });
 
   it("启动、应用、暂停、恢复和切换主题", async () => {

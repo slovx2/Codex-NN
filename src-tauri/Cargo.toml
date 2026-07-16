@@ -1,6 +1,6 @@
 [package]
 name = "codex-nn"
-version = "0.1.0"
+version = "0.2.0"
 description = "Codex 暖暖，一键为官方 Codex Desktop 应用主题"
 authors = ["slovx2"]
 license = "MIT"
