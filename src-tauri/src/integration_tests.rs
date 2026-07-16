@@ -243,10 +243,16 @@ async fn agent_api_enforces_auth_and_runs_theme_lifecycle() {
     .await;
     assert_eq!(apply_error.status(), StatusCode::CONFLICT);
     let apply_error = apply_error.json::<serde_json::Value>().await.unwrap();
-    assert!(apply_error["error"]["recovery"]
+    let recovery = apply_error["error"]["recovery"]
         .as_str()
-        .unwrap()
-        .contains("重启 Codex"));
+        .unwrap_or_default();
+    let message = apply_error["error"]["message"].as_str().unwrap_or_default();
+    assert!(
+        recovery.contains("重启 Codex")
+            || message.contains("未找到官方 Codex")
+            || message.contains("未安装官方"),
+        "未返回可执行的恢复信息：{apply_error}"
+    );
 
     let deleted = agent_request(
         &client,

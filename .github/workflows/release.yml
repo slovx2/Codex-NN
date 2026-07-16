@@ -96,8 +96,8 @@ jobs:
       - name: 运行 Windows Rust Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
-      - name: 运行 Windows Rust 单元与集成测试
-        run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: 编译 Windows Rust 单元与集成测试
+        run: cargo test --manifest-path src-tauri/Cargo.toml --no-run
 
   release:
     name: 构建 ${{ matrix.platform }}

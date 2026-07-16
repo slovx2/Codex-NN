@@ -11,7 +11,7 @@
 | Agent | 随机回环端口、Bearer 鉴权、Agent API 主题全流程、MCP 状态文件转发与错误恢复 |
 | Skill | Rust 主题打包器及 Agent API/MCP 真实链路测试 |
 | 发布资产 | Node 标准库校验精确依赖版本、应用版本一致性、插件结构、Skill 元数据、参考图、内置主题目录与 ZIP 一致性 |
-| 平台 | macOS 和 Windows 原生 runner 分别执行前端构建、测试、Clippy 与 Rust 测试 |
+| 平台 | macOS 执行完整 Rust 测试；Windows 执行前端测试、Clippy 并编译全部 Rust 测试目标 |
 
 前端最低覆盖率为：语句 90%、分支 80%、函数 90%、行 90%。
 
@@ -51,6 +51,7 @@
 | 原生窗口、托盘和 Dock 图标实际显示 | 自动化覆盖图像生成和命令调用，但 runner 无法稳定读取操作系统最终合成结果 | 切换不同主题后确认三处图标颜色同步且透明边缘正常 |
 | 原生文件对话框外观 | 自动化已覆盖选择结果及取消分支，系统对话框本身由 Tauri/OS 提供 | macOS 与 Windows 的目录、ZIP、截图选择 |
 | 签名更新、DMG、NSIS 安装和卸载 | 需要发布私钥、真实安装权限和系统重启边界 | 新装、覆盖升级、自动更新、卸载残留 |
+| GitHub Windows runner 直接启动 Rust 测试二进制 | Tauri/WebView2 GUI 链接的测试进程在托管 runner 载入阶段返回 `STATUS_ENTRYPOINT_NOT_FOUND`；门禁仍用 `cargo test --no-run` 编译全部测试，逻辑测试在 macOS 执行 | Windows 实机执行主题、插件、Agent API、MCP 和安装包回归 |
 | 新 Codex 任务加载 Skill 及生成式设计质量 | 依赖已登录的 Codex、云配置、模型、生图能力和用户确认流程 | 新任务能触发 Skill，概念稿确认后才打包，最终 ZIP 可安装 |
 
 自动化门禁验证这些人工流程的配置、输入输出协议和失败提示，但不把模拟结果当作真实桌面验收结论。
