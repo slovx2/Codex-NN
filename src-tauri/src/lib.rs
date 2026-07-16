@@ -1,10 +1,12 @@
 mod cdp;
 mod cdp_session;
 mod codex;
+mod dream_skin;
 mod models;
 mod paths;
 mod runtime;
 mod theme;
+mod theme_designer_plugin;
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -50,6 +52,14 @@ async fn install_theme_package(
     request: ThemeInstallRequest,
 ) -> Result<ThemeInstallOutcome, String> {
     runtime.install_theme(request).await
+}
+
+#[tauri::command]
+async fn install_dream_skin_theme(
+    runtime: State<'_, Arc<ThemeRuntime>>,
+    request: dream_skin::DreamSkinImportRequest,
+) -> Result<ThemeInstallOutcome, String> {
+    runtime.install_dream_skin_theme(request).await
 }
 
 #[tauri::command]
@@ -101,6 +111,27 @@ async fn run_diagnostics(
     runtime: State<'_, Arc<ThemeRuntime>>,
 ) -> Result<DiagnosticReport, String> {
     Ok(runtime.diagnostics().await)
+}
+
+#[tauri::command]
+fn get_theme_designer_plugin_status(
+    app: AppHandle,
+) -> Result<theme_designer_plugin::ThemeDesignerPluginStatus, String> {
+    theme_designer_plugin::inspect(&app)
+}
+
+#[tauri::command]
+fn install_theme_designer_plugin(
+    app: AppHandle,
+) -> Result<theme_designer_plugin::ThemeDesignerPluginStatus, String> {
+    theme_designer_plugin::install(&app)
+}
+
+#[tauri::command]
+fn uninstall_theme_designer_plugin(
+    app: AppHandle,
+) -> Result<theme_designer_plugin::ThemeDesignerPluginStatus, String> {
+    theme_designer_plugin::uninstall(&app)
 }
 
 fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
@@ -206,6 +237,9 @@ pub fn run() {
         .setup(|app| {
             let runtime = ThemeRuntime::new(app.handle().clone()).map_err(std::io::Error::other)?;
             app.manage(runtime);
+            if let Err(error) = theme_designer_plugin::update_if_version_changed(app.handle()) {
+                eprintln!("[codex-nn] 更新主题设计插件失败：{error}");
+            }
             setup_tray(app.handle())?;
             Ok(())
         })
@@ -213,6 +247,7 @@ pub fn run() {
             get_app_snapshot,
             list_themes,
             install_theme_package,
+            install_dream_skin_theme,
             delete_theme,
             activate_theme,
             apply_theme,
@@ -221,6 +256,9 @@ pub fn run() {
             restore_theme,
             verify_theme,
             run_diagnostics,
+            get_theme_designer_plugin_status,
+            install_theme_designer_plugin,
+            uninstall_theme_designer_plugin,
         ])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {

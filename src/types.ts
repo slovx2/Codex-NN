@@ -33,6 +33,14 @@ export type ThemeInstallOutcome = {
   theme: ThemeSummary;
 };
 
+export type ThemeDesignerPluginStatus = {
+  installed: boolean;
+  managed: boolean;
+  conflict: boolean;
+  version: string;
+  message: string | null;
+};
+
 export type DiagnosticReport = {
   pass: boolean;
   checks: Array<{ name: string; pass: boolean; detail: string }>;

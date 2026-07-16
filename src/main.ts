@@ -7,6 +7,7 @@ import type {
   AppSnapshot,
   DiagnosticReport,
   SessionState,
+  ThemeDesignerPluginStatus,
   ThemeInstallOutcome,
   ThemeSummary,
   VerificationReport
@@ -19,6 +20,7 @@ if (!root) throw new Error("缺少 #app 根节点");
 let snapshot: AppSnapshot | null = null;
 let themes: ThemeSummary[] = [];
 let selectedThemeId = "";
+let designerPlugin: ThemeDesignerPluginStatus | null = null;
 let busy = false;
 
 root.innerHTML = `
@@ -31,6 +33,7 @@ root.innerHTML = `
       <nav class="navigation" aria-label="主导航">
         <button class="nav-item active" data-page="home"><span>⌂</span><b>首页</b></button>
         <button class="nav-item" data-page="themes"><span>◫</span><b>主题库</b></button>
+        <button class="nav-item" data-page="designer"><span>✦</span><b>设计主题</b></button>
         <button class="nav-item" data-page="diagnostics"><span>⌁</span><b>诊断</b></button>
       </nav>
       <div class="sidebar-status">
@@ -75,13 +78,46 @@ root.innerHTML = `
       <section id="page-themes" class="page">
         <header class="page-heading compact">
           <div><span class="eyebrow">LOCAL LIBRARY</span><h2>我的主题</h2><p>通过 ZIP 主题包安装，选择后可立即热切换。</p></div>
-          <button id="import-theme-button" class="button primary compact-button" data-operation>＋ 安装主题包</button>
+          <div class="heading-actions">
+            <button id="import-dream-skin-button" class="button secondary compact-button" data-operation>导入 Dream Skin</button>
+            <button id="import-theme-button" class="button primary compact-button" data-operation>＋ 安装主题包</button>
+          </div>
         </header>
         <div id="theme-list" class="theme-grid"></div>
         <footer class="theme-footer">
           <div><span>已选择</span><strong id="selected-theme-name">尚未选择主题</strong></div>
           <button id="activate-theme-button" class="button primary compact-button" data-operation>应用主题</button>
         </footer>
+      </section>
+
+      <section id="page-designer" class="page">
+        <header class="page-heading compact">
+          <div><span class="eyebrow">THEME STUDIO</span><h2>让 Codex 帮你设计主题</h2><p>从概念稿出发，生成可直接安装的 Codex NN schema v1 主题包。</p></div>
+        </header>
+        <div class="designer-layout">
+          <article class="designer-hero">
+            <span class="designer-spark">✦</span>
+            <div><span>CODEX NN THEME DESIGNER</span><h3>描述一个世界，让 Codex 把它变成主题</h3><p>你可以提供概念稿，也可以只描述风格。Codex 会先展示完整界面概念，等你确认后再生成背景、配色、文案和主题 ZIP。</p></div>
+          </article>
+          <article class="plugin-panel">
+            <div class="plugin-heading">
+              <div class="plugin-icon">NN</div>
+              <div><span>Codex 插件</span><h3>主题设计插件</h3></div>
+              <strong id="designer-plugin-state" class="plugin-state neutral">检测中</strong>
+            </div>
+            <p>安装后，在 Codex 中新建任务并说“帮我设计一个 Codex NN 主题”。插件会指导 Codex 完成概念确认、素材制作和 schema v1 打包。</p>
+            <ol class="designer-steps">
+              <li><i>1</i><span><b>提供想法</b><small>文字描述或现有概念稿</small></span></li>
+              <li><i>2</i><span><b>确认概念</b><small>先看整体界面与视觉语言</small></span></li>
+              <li><i>3</i><span><b>获得主题包</b><small>图片、文案、配色与 ZIP</small></span></li>
+            </ol>
+            <div id="designer-plugin-message" class="plugin-message">正在检查 Codex 插件状态</div>
+            <div class="plugin-actions">
+              <button id="install-designer-plugin-button" class="button primary" data-operation disabled>安装主题设计插件</button>
+              <button id="uninstall-designer-plugin-button" class="button subtle danger" data-operation disabled>卸载插件</button>
+            </div>
+          </article>
+        </div>
       </section>
 
       <section id="page-diagnostics" class="page">
@@ -96,6 +132,18 @@ root.innerHTML = `
         <div id="diagnostic-results" class="diagnostic-results empty-state">还没有诊断结果</div>
       </section>
     </main>
+  </div>
+  <div id="dream-import-dialog" class="modal-backdrop" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dream-import-title">
+      <button id="close-dream-import-button" class="modal-close" aria-label="关闭">×</button>
+      <span class="eyebrow">DREAM SKIN IMPORT</span>
+      <h3 id="dream-import-title">导入 Dream Skin macOS 主题</h3>
+      <p>选择 Dream Skin 主题目录，或选择只包含 theme.json 与图片的 ZIP。导入后会转换为 Codex NN schema v1 并直接安装。</p>
+      <div class="dream-import-options">
+        <button id="choose-dream-folder-button" class="import-option" data-operation><span>▤</span><b>选择主题目录</b><small>适用于 themes/&lt;id&gt; 文件夹</small></button>
+        <button id="choose-dream-zip-button" class="import-option" data-operation><span>◇</span><b>选择 ZIP</b><small>支持根目录或单层包装目录</small></button>
+      </div>
+    </div>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 `;
@@ -123,6 +171,12 @@ byId("apply-button").addEventListener("click", () => void applyCurrentTheme());
 byId("pause-button").addEventListener("click", () => void pauseTheme());
 byId("restore-button").addEventListener("click", () => void restoreTheme());
 byId("import-theme-button").addEventListener("click", () => void importThemePackage());
+byId("import-dream-skin-button").addEventListener("click", () => openDreamImportDialog());
+byId("close-dream-import-button").addEventListener("click", () => closeDreamImportDialog());
+byId("choose-dream-folder-button").addEventListener("click", () => void chooseDreamSkinSource(true));
+byId("choose-dream-zip-button").addEventListener("click", () => void chooseDreamSkinSource(false));
+byId("install-designer-plugin-button").addEventListener("click", () => void installDesignerPlugin());
+byId("uninstall-designer-plugin-button").addEventListener("click", () => void uninstallDesignerPlugin());
 byId("activate-theme-button").addEventListener("click", () => void activateSelectedTheme());
 byId("diagnose-button").addEventListener("click", () => void runDiagnostics());
 byId("verify-button").addEventListener("click", () => void runVerification(null));
@@ -130,15 +184,25 @@ byId("screenshot-button").addEventListener("click", () => void chooseScreenshot(
 
 async function refresh(preserveSelection = true): Promise<void> {
   const previousSelection = preserveSelection ? selectedThemeId : "";
-  [snapshot, themes] = await Promise.all([
+  const pluginStatus = invoke<ThemeDesignerPluginStatus>("get_theme_designer_plugin_status")
+    .catch((error): ThemeDesignerPluginStatus => ({
+      installed: false,
+      managed: false,
+      conflict: true,
+      version: "未知",
+      message: `无法读取 Codex 插件状态：${errorMessage(error)}`
+    }));
+  [snapshot, themes, designerPlugin] = await Promise.all([
     invoke<AppSnapshot>("get_app_snapshot"),
-    invoke<ThemeSummary[]>("list_themes")
+    invoke<ThemeSummary[]>("list_themes"),
+    pluginStatus
   ]);
   selectedThemeId = themes.some((theme) => theme.id === previousSelection)
     ? previousSelection
     : snapshot.activeTheme?.id ?? themes[0]?.id ?? "";
   renderSnapshot();
   renderThemes();
+  renderDesignerPlugin();
 }
 
 async function checkForUpdates(): Promise<void> {
@@ -224,6 +288,40 @@ function renderThemes(): void {
   setButtonsDisabled(busy);
 }
 
+function renderDesignerPlugin(): void {
+  const state = byId("designer-plugin-state");
+  const message = byId("designer-plugin-message");
+  const installButton = byId<HTMLButtonElement>("install-designer-plugin-button");
+  const uninstallButton = byId<HTMLButtonElement>("uninstall-designer-plugin-button");
+  if (!designerPlugin) {
+    state.textContent = "检测中";
+    state.className = "plugin-state neutral";
+    message.textContent = "正在检查 Codex 插件状态";
+    installButton.disabled = true;
+    uninstallButton.disabled = true;
+    return;
+  }
+  if (designerPlugin.conflict) {
+    state.textContent = "需要处理";
+    state.className = "plugin-state danger";
+  } else if (designerPlugin.installed) {
+    state.textContent = "已安装";
+    state.className = "plugin-state success";
+  } else {
+    state.textContent = "未安装";
+    state.className = "plugin-state neutral";
+  }
+  message.textContent = designerPlugin.message
+    ?? (designerPlugin.installed
+      ? `插件 v${designerPlugin.version} 已就绪，请在 Codex 中新建任务使用。`
+      : "插件只会添加主题设计指导，不会修改模型、账号或现有主题。");
+  installButton.textContent = designerPlugin.installed || designerPlugin.managed
+    ? "重新安装主题设计插件"
+    : "安装主题设计插件";
+  installButton.disabled = busy || !snapshot?.codex.installed || designerPlugin.conflict;
+  uninstallButton.disabled = busy || !designerPlugin.managed || designerPlugin.conflict;
+}
+
 async function launchCodex(): Promise<void> {
   await runOperation(snapshot?.codex.running ? "正在重启 Codex" : "正在启动 Codex", async () => {
     snapshot = await invoke<AppSnapshot>("launch_codex");
@@ -302,6 +400,78 @@ async function importThemePackage(): Promise<void> {
     selectedThemeId = outcome.theme.id;
     await refresh(true);
     showToast(outcome.updated ? `已更新“${outcome.theme.name}”` : `已安装“${outcome.theme.name}”`);
+  });
+}
+
+function openDreamImportDialog(): void {
+  byId("dream-import-dialog").hidden = false;
+  byId<HTMLButtonElement>("choose-dream-folder-button").focus();
+}
+
+function closeDreamImportDialog(): void {
+  byId("dream-import-dialog").hidden = true;
+}
+
+async function chooseDreamSkinSource(directory: boolean): Promise<void> {
+  closeDreamImportDialog();
+  const sourcePath = await open(directory ? {
+    multiple: false,
+    directory: true,
+    title: "选择 Dream Skin macOS 主题目录"
+  } : {
+    multiple: false,
+    directory: false,
+    title: "选择 Dream Skin macOS 主题 ZIP",
+    filters: [{ name: "Dream Skin 主题包", extensions: ["zip"] }]
+  });
+  if (typeof sourcePath !== "string") return;
+  await runOperation("正在转换 Dream Skin 主题", async () => {
+    let outcome = await invoke<ThemeInstallOutcome>("install_dream_skin_theme", {
+      request: { sourcePath, allowUpdate: false }
+    });
+    if (outcome.needsConfirmation) {
+      const confirmed = await confirmDialog(`转换后的主题“${outcome.theme.name}”已经安装。是否更新？`, {
+        title: "更新 Dream Skin 主题",
+        kind: "warning"
+      });
+      if (!confirmed) return;
+      outcome = await invoke<ThemeInstallOutcome>("install_dream_skin_theme", {
+        request: { sourcePath, allowUpdate: true }
+      });
+    }
+    if (!outcome.installed) return;
+    selectedThemeId = outcome.theme.id;
+    await refresh(true);
+    showToast(outcome.updated
+      ? `已更新 Dream Skin 主题“${outcome.theme.name}”`
+      : `已导入 Dream Skin 主题“${outcome.theme.name}”`);
+  });
+}
+
+async function installDesignerPlugin(): Promise<void> {
+  await runOperation("正在安装主题设计插件", async () => {
+    designerPlugin = await invoke<ThemeDesignerPluginStatus>("install_theme_designer_plugin");
+    renderDesignerPlugin();
+    if (!designerPlugin.installed) {
+      throw new Error(designerPlugin.message ?? "主题设计插件未能完成安装");
+    }
+    showToast("主题设计插件已安装，请在 Codex 中新建任务使用");
+  });
+}
+
+async function uninstallDesignerPlugin(): Promise<void> {
+  const confirmed = await confirmDialog("卸载后，新建的 Codex 任务将不再加载主题设计 Skill。继续吗？", {
+    title: "卸载主题设计插件",
+    kind: "warning"
+  });
+  if (!confirmed) return;
+  await runOperation("正在卸载主题设计插件", async () => {
+    designerPlugin = await invoke<ThemeDesignerPluginStatus>("uninstall_theme_designer_plugin");
+    renderDesignerPlugin();
+    if (designerPlugin.managed || designerPlugin.conflict) {
+      throw new Error(designerPlugin.message ?? "主题设计插件未能完成卸载");
+    }
+    showToast("主题设计插件已卸载");
   });
 }
 
@@ -389,6 +559,7 @@ function setButtonsDisabled(disabled: boolean): void {
     byId<HTMLButtonElement>("apply-button").disabled = !snapshot?.activeTheme;
     byId<HTMLButtonElement>("activate-theme-button").disabled = !selectedThemeId;
   }
+  renderDesignerPlugin();
 }
 
 function showToast(message: string, error = false): void {

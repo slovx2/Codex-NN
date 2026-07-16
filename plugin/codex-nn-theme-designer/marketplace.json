@@ -1,0 +1,20 @@
+{
+  "name": "codex-nn",
+  "interface": {
+    "displayName": "Codex NN"
+  },
+  "plugins": [
+    {
+      "name": "codex-nn-theme-designer",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-nn-theme-designer"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Creativity"
+    }
+  ]
+}

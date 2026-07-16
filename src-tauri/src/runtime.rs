@@ -10,6 +10,7 @@ use tokio::{
 use crate::{
     cdp::{self, ThemePayload},
     codex,
+    dream_skin::{self, DreamSkinImportRequest},
     models::{
         AppSnapshot, DiagnosticCheck, DiagnosticReport, PersistedState, ProgressEvent,
         SessionState, ThemeInstallOutcome, ThemeInstallRequest, ThemeSummary, VerificationReport,
@@ -129,6 +130,36 @@ impl ThemeRuntime {
         }
         let _ = self.emit_snapshot().await;
         Ok(outcome)
+    }
+
+    pub async fn install_dream_skin_theme(
+        &self,
+        request: DreamSkinImportRequest,
+    ) -> Result<ThemeInstallOutcome, String> {
+        let source = PathBuf::from(request.source_path);
+        let temporary = self
+            .paths
+            .root
+            .join(format!(".dream-import-{}.zip", uuid::Uuid::new_v4()));
+        let conversion_source = source.clone();
+        let conversion_target = temporary.clone();
+        let conversion = tokio::task::spawn_blocking(move || {
+            dream_skin::convert_to_package(&conversion_source, &conversion_target)
+        })
+        .await
+        .map_err(|error| format!("Dream Skin 转换任务异常结束：{error}"))?;
+        if let Err(error) = conversion {
+            let _ = std::fs::remove_file(&temporary);
+            return Err(error);
+        }
+        let outcome = self
+            .install_theme(ThemeInstallRequest {
+                package_path: temporary.display().to_string(),
+                allow_update: request.allow_update,
+            })
+            .await;
+        let _ = std::fs::remove_file(&temporary);
+        outcome
     }
 
     pub async fn delete_theme(&self, id: String) -> Result<AppSnapshot, String> {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex NN 主题设计"
+  short_description: "从概念稿生成可安装的 Codex NN schema v1 主题包"
+  default_prompt: "使用 $design-codex-nn-theme，根据我的描述设计一个 Codex NN 主题。"

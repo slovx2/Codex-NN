@@ -80,6 +80,12 @@ my-theme.zip
 
 Theme packages contain only a manifest and a local image. Scripts, CSS, remote resources, and encrypted files are not supported. See the [Theme Package v1 specification](./docs/theme-package-v1.md) for all fields, image requirements, and packaging instructions.
 
+To migrate a Dream Skin macOS theme, select **Import Dream Skin** and choose either its theme directory or a two-file ZIP. Codex NN converts it to schema v1 and installs it without executing bundled scripts or CSS.
+
+## Designing Themes with Codex
+
+Open **Design Theme** and install the theme designer plugin, then start a new task in Codex. Provide a concept image or describe a visual direction. Codex confirms the full concept first, then creates the background, palette, copy, and a validated Codex NN schema v1 ZIP. The plugin can be removed from the same page.
+
 ## How It Works
 
 Codex NN connects to a locally running Codex page through the Chrome DevTools Protocol (CDP), listening only on `127.0.0.1`. It applies the selected theme and keeps the theme state active in the background.

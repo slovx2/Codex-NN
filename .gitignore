@@ -9,6 +9,8 @@ src-tauri/gen/
 .vscode/
 .idea/
 .local/
+__pycache__/
+*.pyc
 .env
 .env.*
 *.log

@@ -90,6 +90,12 @@ my-theme.zip
 
 主题包仅包含声明文件和本地图片，不支持脚本、CSS、远程资源或加密文件。完整字段、图片规格和打包方法请查看 [主题包 v1 规范](./docs/theme-package-v1.md)。
 
+从 Dream Skin macOS 迁移主题时，点击「导入 Dream Skin」，可以直接选择它的主题目录或双文件 ZIP。Codex NN 会转换为 schema v1 并安装，不会执行其中的脚本或 CSS。
+
+## 使用 Codex 设计主题
+
+打开「设计主题」并安装主题设计插件，然后在 Codex 中新建任务。你可以提供概念稿，也可以只描述想要的视觉风格；Codex 会先让你确认整体概念，再生成背景、配色、文案和经过校验的 Codex NN schema v1 ZIP。插件可随时从同一页面卸载。
+
 ## 工作方式
 
 Codex NN 通过仅监听 `127.0.0.1` 的 Chrome DevTools Protocol（CDP）连接，为正在运行的 Codex 页面加载主题，并由后台守护进程维持主题状态。
