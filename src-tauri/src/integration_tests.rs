@@ -1,16 +1,50 @@
-use std::{fs::File, io::Write, path::Path};
+use std::{fs::File, io::Write, path::Path, time::Duration};
 
 use image::ImageEncoder;
+use reqwest::{Client, Method, StatusCode};
 use serde_json::json;
 use tempfile::TempDir;
 use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
 
 use crate::{
+    agent_api::{AgentApiRuntime, AgentApiStateFile, AGENT_API_STATE_RELATIVE_PATH},
     dream_skin::DreamSkinImportRequest,
     models::{SessionState, ThemeInstallRequest, ThemeManifest},
     paths::AppPaths,
     runtime::ThemeRuntime,
 };
+
+async fn wait_for_agent_api(client: &Client, state: &AgentApiStateFile) {
+    let url = format!("http://127.0.0.1:{}/agent/v1/status", state.port);
+    for _ in 0..50 {
+        if client
+            .get(&url)
+            .bearer_auth(&state.token)
+            .send()
+            .await
+            .is_ok()
+        {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+    panic!("Agent API 未在预期时间内启动");
+}
+
+async fn agent_request(
+    client: &Client,
+    state: &AgentApiStateFile,
+    method: Method,
+    path: &str,
+    body: Option<serde_json::Value>,
+) -> reqwest::Response {
+    let url = format!("http://127.0.0.1:{}{path}", state.port);
+    let mut request = client.request(method, url).bearer_auth(&state.token);
+    if let Some(body) = body {
+        request = request.json(&body);
+    }
+    request.send().await.unwrap()
+}
 
 fn test_runtime() -> (TempDir, AppPaths, std::sync::Arc<ThemeRuntime>) {
     let root = tempfile::tempdir().unwrap();
@@ -51,6 +85,146 @@ fn package(path: &Path, manifest: &ThemeManifest) {
     writer.start_file(&manifest.image, options).unwrap();
     writer.write_all(&png()).unwrap();
     writer.finish().unwrap();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn agent_api_enforces_auth_and_runs_theme_lifecycle() {
+    let (root, paths, runtime) = test_runtime();
+    let api = AgentApiRuntime::start(runtime, &paths).unwrap();
+    let state_path = paths.root.join(AGENT_API_STATE_RELATIVE_PATH);
+    let state: AgentApiStateFile =
+        serde_json::from_slice(&std::fs::read(&state_path).unwrap()).unwrap();
+    let client = Client::new();
+    wait_for_agent_api(&client, &state).await;
+
+    assert_ne!(state.port, 0);
+    assert_eq!(state.token.len(), 32);
+    assert_eq!(state.pid, std::process::id());
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            std::fs::metadata(&state_path).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+
+    let unauthorized = client
+        .get(format!(
+            "http://127.0.0.1:{}/agent/v1/diagnostics",
+            state.port
+        ))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(unauthorized.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        unauthorized.json::<serde_json::Value>().await.unwrap()["error"]["code"],
+        "unauthorized"
+    );
+
+    let status = agent_request(&client, &state, Method::GET, "/agent/v1/status", None).await;
+    assert_eq!(status.status(), StatusCode::OK);
+
+    let diagnostics =
+        agent_request(&client, &state, Method::GET, "/agent/v1/diagnostics", None).await;
+    assert_eq!(diagnostics.status(), StatusCode::OK);
+    let diagnostics = diagnostics.text().await.unwrap();
+    assert!(!diagnostics.contains("previewDataUrl"));
+    assert!(!diagnostics.contains("base64"));
+    let diagnostics: serde_json::Value = serde_json::from_str(&diagnostics).unwrap();
+    assert_eq!(diagnostics["data"]["snapshot"]["session"], "off");
+    assert!(diagnostics["data"]["recommendations"][0]
+        .as_str()
+        .unwrap()
+        .contains("从 Codex NN App 启动 Codex"));
+    assert_eq!(
+        diagnostics["data"]["logPaths"][0],
+        paths.logs.display().to_string()
+    );
+
+    let first = root.path().join("agent-theme.zip");
+    package(&first, &manifest("agent-theme", "Agent 主题"));
+    let installed = agent_request(
+        &client,
+        &state,
+        Method::POST,
+        "/agent/v1/themes/install",
+        Some(json!({ "packagePath": first.display().to_string() })),
+    )
+    .await
+    .json::<serde_json::Value>()
+    .await
+    .unwrap();
+    assert_eq!(installed["data"]["installed"], true);
+
+    package(&first, &manifest("agent-theme", "Agent 主题已更新"));
+    let updated = agent_request(
+        &client,
+        &state,
+        Method::POST,
+        "/agent/v1/themes/update",
+        Some(json!({ "packagePath": first.display().to_string() })),
+    )
+    .await
+    .json::<serde_json::Value>()
+    .await
+    .unwrap();
+    assert_eq!(updated["data"]["updated"], true);
+    assert_eq!(updated["data"]["theme"]["name"], "Agent 主题已更新");
+
+    let activated = agent_request(
+        &client,
+        &state,
+        Method::POST,
+        "/agent/v1/themes/activate",
+        Some(json!({ "id": "agent-theme" })),
+    )
+    .await
+    .json::<serde_json::Value>()
+    .await
+    .unwrap();
+    assert_eq!(
+        activated["data"]["snapshot"]["activeTheme"]["id"],
+        "agent-theme"
+    );
+
+    let apply_error = agent_request(
+        &client,
+        &state,
+        Method::POST,
+        "/agent/v1/theme/apply",
+        Some(json!({})),
+    )
+    .await;
+    assert_eq!(apply_error.status(), StatusCode::CONFLICT);
+    let apply_error = apply_error.json::<serde_json::Value>().await.unwrap();
+    assert!(apply_error["error"]["recovery"]
+        .as_str()
+        .unwrap()
+        .contains("重启 Codex"));
+
+    let deleted = agent_request(
+        &client,
+        &state,
+        Method::POST,
+        "/agent/v1/themes/delete",
+        Some(json!({ "id": "agent-theme" })),
+    )
+    .await
+    .json::<serde_json::Value>()
+    .await
+    .unwrap();
+    assert_eq!(
+        deleted["data"]["snapshot"]["activeTheme"]["id"],
+        "strawberry-starlight"
+    );
+    assert!(std::fs::read_to_string(&paths.logs)
+        .unwrap()
+        .contains(" AGENT 删除主题 agent-theme"));
+
+    api.stop();
+    assert!(!state_path.exists());
 }
 
 #[tokio::test]

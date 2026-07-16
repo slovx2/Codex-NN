@@ -95,6 +95,8 @@ def validate_plugin() -> None:
         fail("插件 name 不正确")
     if manifest.get("skills") != "./skills/":
         fail("插件 skills 路径不正确")
+    if manifest.get("mcpServers") != "./.mcp.json":
+        fail("插件 mcpServers 路径不正确")
     plugins = marketplace.get("plugins")
     if not isinstance(plugins, list) or len(plugins) != 1:
         fail("marketplace 必须且只能发布一个插件")
@@ -110,11 +112,38 @@ def validate_plugin() -> None:
     agent = (SKILL_ROOT / "agents" / "openai.yaml").read_text(encoding="utf-8")
     if "$design-codex-nn-theme" not in agent:
         fail("openai.yaml 默认提示词必须显式触发 Skill")
+    if "通过 Codex NN MCP 安装或更新主题并切换预览" not in skill:
+        fail("Skill 缺少通过 MCP 安装、更新和预览主题的流程")
+    if "从 Codex NN App 启动或重启 Codex" not in skill:
+        fail("Skill 缺少 CDP 异常恢复方法")
     reference = SKILL_ROOT / "assets" / "codex-ui-concept-reference.png"
     if not reference.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
         fail("Codex UI 概念参考图不是有效 PNG")
     if not (SKILL_ROOT / "scripts" / "package_theme.py").is_file():
         fail("Skill 缺少主题打包器")
+
+    static_mcp = load_json(PLUGIN_ROOT / ".mcp.json")
+    template_text = (PLUGIN_ROOT / ".mcp.json.template").read_text(encoding="utf-8")
+    if template_text.count("{{CODEX_NN_COMMAND_JSON}}") != 1:
+        fail("MCP 模板必须且只能包含一个可执行文件占位符")
+    if template_text.count("{{CODEX_NN_APP_DATA_DIR_JSON}}") != 1:
+        fail("MCP 模板必须且只能包含一个 App 数据目录占位符")
+    rendered_mcp = json.loads(
+        template_text.replace("{{CODEX_NN_COMMAND_JSON}}", json.dumps("/app/codex-nn"))
+        .replace("{{CODEX_NN_APP_DATA_DIR_JSON}}", json.dumps("/data/codex-nn"))
+    )
+    for label, config in (("静态 MCP", static_mcp), ("MCP 模板", rendered_mcp)):
+        server = config.get("mcpServers", {}).get("codex-nn", {})
+        if server.get("args") != ["mcp"]:
+            fail(f"{label} 必须通过 Codex NN 的 mcp 子命令启动")
+        if server.get("default_tools_approval_mode") != "approve":
+            fail(f"{label} 必须保留工具审批")
+        if server.get("startup_timeout_sec") != 30:
+            fail(f"{label} 启动超时必须为 30 秒")
+    if rendered_mcp["mcpServers"]["codex-nn"].get("env", {}).get(
+        "CODEX_NN_APP_DATA_DIR"
+    ) != "/data/codex-nn":
+        fail("MCP 模板未传递 Codex NN App 数据目录")
 
 
 def validate_theme_packs() -> None:

@@ -63,6 +63,12 @@ function install(layoutPreset = "standard", id = "engine-test"): Record<string, 
   return window.eval(renderScript(layoutPreset, id)) as Record<string, unknown>;
 }
 
+async function flushEngineMutations(): Promise<void> {
+  await Promise.resolve();
+  await new Promise((resolve) => window.setTimeout(resolve, 0));
+  await Promise.resolve();
+}
+
 beforeEach(() => {
   document.documentElement.className = "light";
   document.body.innerHTML = `
@@ -110,6 +116,19 @@ afterEach(() => {
 });
 
 describe("主题注入引擎", () => {
+  it.each([
+    ["standard", "standard", "light"],
+    ["dreamSkin", "dream-skin", "light"],
+    ["strawberryStarlight", "strawberry-starlight", "light"],
+    ["azureNeon", "azure-neon", "dark"]
+  ])("映射 %s 布局并选择正确 Shell", (preset, layout, shell) => {
+    const result = install(preset, `layout-${preset}`);
+
+    expect(result).toMatchObject({ layout, shell });
+    expect(document.documentElement.dataset.nnThemeLayout).toBe(layout);
+    expect(document.documentElement.dataset.nnThemeShell).toBe(shell);
+  });
+
   it("安装主题并通过重复 ensure 保持单一装饰层", () => {
     const result = install();
     const state = window.__CODEX_NN_THEME_STATE__;
@@ -151,6 +170,36 @@ describe("主题注入引擎", () => {
     expect(disconnect).toHaveBeenCalledOnce();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:theme-art");
     expect(window.__CODEX_NN_THEME_STATE__?.themeId).toBe("second-theme");
+    expect(document.querySelectorAll("#codex-nn-theme-chrome")).toHaveLength(1);
+  });
+
+  it("关键路由节点变化时不等待动画帧就更新布局", async () => {
+    install("azureNeon", "route-test");
+    await flushEngineMutations();
+    const requestFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation(() => 991);
+
+    const route = document.querySelector('[role="main"]')!;
+    route.innerHTML = '<div class="thread-scroll-container"></div>';
+    await Promise.resolve();
+
+    expect(route.classList.contains("nn-theme-home")).toBe(false);
+    expect(document.querySelector("main")?.classList.contains("nn-theme-home-shell")).toBe(false);
+    expect(requestFrame).not.toHaveBeenCalled();
+  });
+
+  it("稳定 DOM 上重复 ensure 不会触发观察器回环", async () => {
+    install("strawberryStarlight", "stable-test");
+    await flushEngineMutations();
+    const requestFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation(() => 992);
+
+    window.__CODEX_NN_THEME_STATE__?.ensure();
+    await Promise.resolve();
+
+    expect(requestFrame).not.toHaveBeenCalled();
     expect(document.querySelectorAll("#codex-nn-theme-chrome")).toHaveLength(1);
   });
 });
