@@ -1,4 +1,5 @@
 mod agent_api;
+mod app_icon;
 mod cdp;
 mod cdp_session;
 mod codex;
@@ -26,6 +27,7 @@ use tauri::{
 };
 
 const MAIN_WINDOW: &str = "main";
+const TRAY_ID: &str = "main-tray";
 const MENU_SHOW: &str = "show";
 const MENU_APPLY: &str = "apply";
 const MENU_LAUNCH: &str = "launch";
@@ -116,6 +118,11 @@ async fn run_diagnostics(
 }
 
 #[tauri::command]
+fn set_app_accent(app: AppHandle, accent: String) -> Result<(), String> {
+    app_icon::set_accent(&app, &accent)
+}
+
+#[tauri::command]
 fn get_theme_designer_plugin_status(
     app: AppHandle,
 ) -> Result<theme_designer_plugin::ThemeDesignerPluginStatus, String> {
@@ -149,7 +156,7 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
         .build()?;
     let runtime = app.state::<Arc<ThemeRuntime>>().inner().clone();
     let lifecycle = app.state::<Arc<Lifecycle>>().inner().clone();
-    let mut tray = TrayIconBuilder::new()
+    let mut tray = TrayIconBuilder::with_id(TRAY_ID)
         .menu(&menu)
         .tooltip("Codex 暖暖")
         .show_menu_on_left_click(true)
@@ -269,6 +276,7 @@ pub fn run() {
             restore_theme,
             verify_theme,
             run_diagnostics,
+            set_app_accent,
             get_theme_designer_plugin_status,
             install_theme_designer_plugin,
             uninstall_theme_designer_plugin,

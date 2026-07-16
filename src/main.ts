@@ -22,6 +22,9 @@ let themes: ThemeSummary[] = [];
 let selectedThemeId = "";
 let designerPlugin: ThemeDesignerPluginStatus | null = null;
 let busy = false;
+let appliedAccent = "";
+
+const DEFAULT_ACCENT = "#e2556d";
 
 root.innerHTML = `
   <div class="app-shell">
@@ -229,6 +232,7 @@ async function checkForUpdates(): Promise<void> {
 
 function renderSnapshot(): void {
   if (!snapshot) return;
+  syncAppAccent(snapshot.activeTheme?.accent);
   const status = sessionMeta(snapshot.session);
   const header = byId("header-status");
   header.textContent = status.label;
@@ -252,6 +256,17 @@ function renderSnapshot(): void {
     ${snapshot.lastError ? `<p class="error-note">${escapeHtml(snapshot.lastError)}</p>` : ""}
   `;
   setButtonsDisabled(busy);
+}
+
+function syncAppAccent(themeAccent: string | undefined): void {
+  const candidate = themeAccent?.trim() ?? "";
+  const accent = candidate && CSS.supports("color", candidate) ? candidate : DEFAULT_ACCENT;
+  document.documentElement.style.setProperty("--accent", accent);
+  if (accent === appliedAccent) return;
+  appliedAccent = accent;
+  void invoke("set_app_accent", { accent }).catch((error) => {
+    console.warn("同步应用图标颜色失败", error);
+  });
 }
 
 function renderThemes(): void {
