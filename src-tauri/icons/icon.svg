@@ -12,6 +12,6 @@
   <rect width="512" height="512" rx="118" fill="url(#bg)"/>
   <circle cx="408" cy="105" r="58" fill="#FFDDE2" opacity=".5"/>
   <circle cx="95" cy="414" r="82" fill="#7B2856" opacity=".28"/>
-  <path d="M122 357V155h53l82 116V155h57v202h-52l-83-117v117h-57Zm215 0V155h53l0 202h-53Z" fill="#FFF9F9" filter="url(#shadow)"/>
+  <path d="M72 357V155h48l80 119V155h48v202h-48l-80-119v119H72Zm192 0V155h48l80 119V155h48v202h-48l-80-119v119h-48Z" fill="#FFF9F9" filter="url(#shadow)"/>
   <path d="M356 110l8 17 18 8-18 8-8 18-8-18-18-8 18-8 8-17Z" fill="#FFF4F6"/>
 </svg>
