@@ -83,3 +83,38 @@ fn secure_file(path: &Path) -> Result<(), String> {
 fn secure_file(_path: &Path) -> Result<(), String> {
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn creates_app_directories_and_atomically_replaces_files() {
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths::from_root(root.path().join("nested/app-data")).unwrap();
+        assert!(paths.root.is_dir());
+        assert!(paths.themes.is_dir());
+
+        let target = paths.root.join("settings.json");
+        atomic_write(&target, b"first").unwrap();
+        atomic_write(&target, b"second").unwrap();
+        assert_eq!(std::fs::read(&target).unwrap(), b"second");
+        assert!(!paths
+            .root
+            .join(format!(".settings.json.{}.tmp", std::process::id()))
+            .exists());
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                std::fs::metadata(&paths.root).unwrap().permissions().mode() & 0o777,
+                0o700
+            );
+            assert_eq!(
+                std::fs::metadata(target).unwrap().permissions().mode() & 0o777,
+                0o600
+            );
+        }
+    }
+}

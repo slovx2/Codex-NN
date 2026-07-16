@@ -136,7 +136,7 @@ fn update_paths_if_version_changed(paths: &PluginPaths) -> Result<(), String> {
     if bundle_current {
         return Ok(());
     }
-    write_plugin_files(&paths)?;
+    write_plugin_files(paths)?;
     state.plugin_version = PLUGIN_VERSION.to_string();
     state.updated_at = Utc::now().to_rfc3339();
     write_json(&paths.managed_state_path, &state)

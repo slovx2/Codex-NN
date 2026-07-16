@@ -11,6 +11,9 @@ mod runtime;
 mod theme;
 mod theme_designer_plugin;
 
+#[cfg(test)]
+mod integration_tests;
+
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,

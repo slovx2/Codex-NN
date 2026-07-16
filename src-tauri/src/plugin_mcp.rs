@@ -62,9 +62,7 @@ async fn handle_mcp_line(line: &str) -> Option<Value> {
     if message.get("method").and_then(Value::as_str) == Some("notifications/initialized") {
         return None;
     }
-    let Some(id) = message.get("id").cloned() else {
-        return None;
-    };
+    let id = message.get("id").cloned()?;
     match handle_mcp_request(&message).await {
         Ok(result) => Some(json!({ "jsonrpc": "2.0", "id": id, "result": result })),
         Err(error) => Some(mcp_error(id, -32000, error)),
@@ -106,11 +104,19 @@ async fn handle_mcp_request(message: &Value) -> Result<Value, String> {
 }
 
 async fn call_tool(name: &str, input: Value) -> Result<Value, String> {
+    let state_path = agent_state_path()?;
+    call_tool_at(name, input, &state_path).await
+}
+
+async fn call_tool_at(name: &str, input: Value, state_path: &Path) -> Result<Value, String> {
     match name {
-        "codex_nn_list_themes" => request_json(Method::GET, "/agent/v1/themes", None).await,
+        "codex_nn_list_themes" => {
+            request_json_at(state_path, Method::GET, "/agent/v1/themes", None).await
+        }
         "codex_nn_install_theme" => {
             let package_path = required_absolute_zip(&input)?;
-            request_json(
+            request_json_at(
+                state_path,
                 Method::POST,
                 "/agent/v1/themes/install",
                 Some(json!({ "packagePath": package_path })),
@@ -119,7 +125,8 @@ async fn call_tool(name: &str, input: Value) -> Result<Value, String> {
         }
         "codex_nn_update_theme" => {
             let package_path = required_absolute_zip(&input)?;
-            request_json(
+            request_json_at(
+                state_path,
                 Method::POST,
                 "/agent/v1/themes/update",
                 Some(json!({ "packagePath": package_path })),
@@ -127,7 +134,8 @@ async fn call_tool(name: &str, input: Value) -> Result<Value, String> {
             .await
         }
         "codex_nn_activate_theme" => {
-            request_json(
+            request_json_at(
+                state_path,
                 Method::POST,
                 "/agent/v1/themes/activate",
                 Some(json!({ "id": required_id(&input)? })),
@@ -135,7 +143,8 @@ async fn call_tool(name: &str, input: Value) -> Result<Value, String> {
             .await
         }
         "codex_nn_delete_theme" => {
-            request_json(
+            request_json_at(
+                state_path,
                 Method::POST,
                 "/agent/v1/themes/delete",
                 Some(json!({ "id": required_id(&input)? })),
@@ -143,19 +152,37 @@ async fn call_tool(name: &str, input: Value) -> Result<Value, String> {
             .await
         }
         "codex_nn_apply_theme" => {
-            request_json(Method::POST, "/agent/v1/theme/apply", Some(json!({}))).await
+            request_json_at(
+                state_path,
+                Method::POST,
+                "/agent/v1/theme/apply",
+                Some(json!({})),
+            )
+            .await
         }
         "codex_nn_launch_codex" => {
-            request_json(Method::POST, "/agent/v1/codex/launch", Some(json!({}))).await
+            request_json_at(
+                state_path,
+                Method::POST,
+                "/agent/v1/codex/launch",
+                Some(json!({})),
+            )
+            .await
         }
-        "codex_nn_diagnose" => request_json(Method::GET, "/agent/v1/diagnostics", None).await,
+        "codex_nn_diagnose" => {
+            request_json_at(state_path, Method::GET, "/agent/v1/diagnostics", None).await
+        }
         _ => Err(format!("未知工具：{name}")),
     }
 }
 
-async fn request_json(method: Method, path: &str, body: Option<Value>) -> Result<Value, String> {
-    let state_path = agent_state_path()?;
-    let state = read_agent_state(&state_path)?;
+async fn request_json_at(
+    state_path: &Path,
+    method: Method,
+    path: &str,
+    body: Option<Value>,
+) -> Result<Value, String> {
+    let state = read_agent_state(state_path)?;
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_secs(2))
         .timeout(Duration::from_secs(70))
@@ -349,7 +376,58 @@ fn id_schema() -> Value {
 
 #[cfg(test)]
 mod tests {
+    use std::{fs::File, io::Write, time::Duration};
+
+    use image::ImageEncoder;
+    use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
+
+    use crate::{
+        agent_api::{AgentApiRuntime, AGENT_API_STATE_RELATIVE_PATH},
+        paths::AppPaths,
+        runtime::ThemeRuntime,
+    };
+
     use super::*;
+
+    fn theme_package(path: &Path, name: &str) {
+        let mut manifest: Value = serde_json::from_str(include_str!(
+            "../../theme-packs/strawberry-starlight/theme.json"
+        ))
+        .unwrap();
+        manifest["id"] = Value::String("mcp-theme".into());
+        manifest["name"] = Value::String(name.into());
+        manifest["layoutPreset"] = Value::String("standard".into());
+        manifest["image"] = Value::String("background.png".into());
+
+        let pixels = vec![96_u8; 64 * 48 * 3];
+        let mut image = Vec::new();
+        image::codecs::png::PngEncoder::new(&mut image)
+            .write_image(&pixels, 64, 48, image::ExtendedColorType::Rgb8)
+            .unwrap();
+
+        let mut archive = ZipWriter::new(File::create(path).unwrap());
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        archive.start_file("theme.json", options).unwrap();
+        archive
+            .write_all(&serde_json::to_vec_pretty(&manifest).unwrap())
+            .unwrap();
+        archive.start_file("background.png", options).unwrap();
+        archive.write_all(&image).unwrap();
+        archive.finish().unwrap();
+    }
+
+    async fn wait_for_bridge(state_path: &Path) {
+        for _ in 0..50 {
+            if call_tool_at("codex_nn_diagnose", json!({}), state_path)
+                .await
+                .is_ok()
+            {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        panic!("MCP 未能连接 Agent API");
+    }
 
     #[tokio::test]
     async fn lists_all_theme_and_diagnostic_tools() {
@@ -384,5 +462,82 @@ mod tests {
             "error": { "message": "CDP 不可用", "recovery": "从 App 重启 Codex" }
         }));
         assert!(message.contains("处理方法"));
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn forwards_theme_tools_through_agent_state_file() {
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths::from_root(root.path().join("app-data")).unwrap();
+        let runtime = ThemeRuntime::new_for_test(paths.clone()).unwrap();
+        let api = AgentApiRuntime::start(runtime, &paths).unwrap();
+        let state_path = paths.root.join(AGENT_API_STATE_RELATIVE_PATH);
+        wait_for_bridge(&state_path).await;
+
+        let diagnostics = call_tool_at("codex_nn_diagnose", json!({}), &state_path)
+            .await
+            .unwrap();
+        assert_eq!(diagnostics["snapshot"]["session"], "off");
+        let themes = call_tool_at("codex_nn_list_themes", json!({}), &state_path)
+            .await
+            .unwrap();
+        let serialized = serde_json::to_string(&themes).unwrap();
+        assert_eq!(themes["themes"].as_array().unwrap().len(), 2);
+        assert!(!serialized.contains("previewDataUrl"));
+        assert!(!serialized.contains("base64"));
+
+        let package = root.path().join("mcp-theme.zip");
+        theme_package(&package, "MCP 主题");
+        let installed = call_tool_at(
+            "codex_nn_install_theme",
+            json!({ "package_path": package.display().to_string() }),
+            &state_path,
+        )
+        .await
+        .unwrap();
+        assert_eq!(installed["installed"], true);
+
+        theme_package(&package, "MCP 主题已更新");
+        let updated = call_tool_at(
+            "codex_nn_update_theme",
+            json!({ "package_path": package.display().to_string() }),
+            &state_path,
+        )
+        .await
+        .unwrap();
+        assert_eq!(updated["updated"], true);
+        assert_eq!(updated["theme"]["name"], "MCP 主题已更新");
+
+        let activated = call_tool_at(
+            "codex_nn_activate_theme",
+            json!({ "id": "mcp-theme" }),
+            &state_path,
+        )
+        .await
+        .unwrap();
+        assert_eq!(activated["snapshot"]["activeTheme"]["id"], "mcp-theme");
+
+        let apply_error = call_tool_at("codex_nn_apply_theme", json!({}), &state_path)
+            .await
+            .unwrap_err();
+        assert!(apply_error.contains("处理方法"));
+        assert!(apply_error.contains("重启 Codex"));
+
+        let deleted = call_tool_at(
+            "codex_nn_delete_theme",
+            json!({ "id": "mcp-theme" }),
+            &state_path,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            deleted["snapshot"]["activeTheme"]["id"],
+            "strawberry-starlight"
+        );
+
+        api.stop();
+        assert!(call_tool_at("codex_nn_diagnose", json!({}), &state_path)
+            .await
+            .unwrap_err()
+            .contains("Agent API 未运行"));
     }
 }
