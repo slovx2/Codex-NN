@@ -400,6 +400,9 @@ fn validate_manifest(manifest: &ThemeManifest) -> Result<(), String> {
     }
     validate_id(&manifest.id)?;
     validate_text("主题名称", &manifest.name, 80, true)?;
+    if !matches!(manifest.layout_preset.as_str(), "standard" | "dreamSkin") {
+        return Err("主题布局只能是 standard 或 dreamSkin".into());
+    }
     validate_text("品牌副标题", &manifest.brand_subtitle, 80, false)?;
     validate_text("主题标语", &manifest.tagline, 160, false)?;
     validate_text("项目提示", &manifest.project_prefix, 80, false)?;
@@ -594,7 +597,17 @@ mod tests {
             .starts_with("data:image/jpeg;base64,"));
         let (loaded, image) = store.load("test-theme").unwrap();
         assert_eq!(loaded.name, "测试主题");
+        assert_eq!(loaded.layout_preset, "standard");
         assert!(!image.is_empty());
+    }
+
+    #[test]
+    fn defaults_legacy_manifests_to_standard_layout() {
+        let mut value: serde_json::Value =
+            serde_json::from_str(STRAWBERRY_STARLIGHT_THEME).unwrap();
+        value.as_object_mut().unwrap().remove("layoutPreset");
+        let manifest: ThemeManifest = serde_json::from_value(value).unwrap();
+        assert_eq!(manifest.layout_preset, "standard");
     }
 
     #[test]
@@ -675,6 +688,12 @@ mod tests {
         value.colors.accent = "url(evil)".into();
         package(&color, &value, png(10, 10));
         assert!(store.install(color, false).is_err());
+
+        let layout = root.path().join("layout.zip");
+        let mut value = manifest("bad-layout", "background.png");
+        value.layout_preset = "arbitraryScript".into();
+        package(&layout, &value, png(10, 10));
+        assert!(store.install(layout, false).is_err());
 
         let dimensions = root.path().join("dimensions.zip");
         package(

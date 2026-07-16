@@ -97,13 +97,12 @@ html.codex-nn-theme main.main-surface {
   overflow: hidden !important;
 }
 
-/* Task pages borrow the reference's atmospheric wallpaper treatment while
-   keeping every Codex message, output and control as live native DOM. */
+/* 对话页只保留主题渐变，主题图片仅用于新对话页的头图和装饰裁切。 */
 html.codex-nn-theme main.main-surface:not(.nn-theme-home-shell) {
   background:
-    linear-gradient(90deg, rgba(4, 10, 17, .95) 0%, rgba(6, 17, 24, .86) 47%, rgba(8, 18, 25, .64) 100%),
-    radial-gradient(circle at 70% 38%, rgba(124, 255, 70, .08), transparent 28%),
-    var(--nn-theme-art) 76% center / cover no-repeat !important;
+    radial-gradient(circle at 78% 8%, color-mix(in srgb, var(--ds-purple) 24%, transparent), transparent 31%),
+    radial-gradient(circle at 22% 12%, color-mix(in srgb, var(--ds-cyan) 10%, transparent), transparent 28%),
+    linear-gradient(180deg, var(--ds-panel) 0%, var(--ds-bg) 100%) !important;
 }
 
 html.codex-nn-theme main.main-surface:not(.nn-theme-home-shell) [role="main"] {
@@ -507,7 +506,7 @@ html.codex-nn-theme[data-nn-theme-shell="light"] {
 
 html.codex-nn-theme[data-nn-theme-shell="light"] body {
   background:
-    radial-gradient(circle at 88% 6%, rgba(255, 200, 210, .22), transparent 34%),
+    radial-gradient(circle at 88% 6%, color-mix(in srgb, var(--ds-green) 12%, transparent), transparent 34%),
     linear-gradient(180deg, #fbf8f9 0%, #f3eef0 100%) !important;
   color: var(--ds-text) !important;
   font-family: "SF Pro Text", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif !important;
@@ -516,15 +515,17 @@ html.codex-nn-theme[data-nn-theme-shell="light"] body {
 html.codex-nn-theme[data-nn-theme-shell="light"] body::before {
   opacity: .12 !important;
   background-image:
-    radial-gradient(circle, rgba(226, 85, 99, .35) 0 1px, transparent 1.8px),
-    radial-gradient(circle, rgba(243, 168, 175, .28) 0 1px, transparent 1.8px) !important;
+    radial-gradient(circle, color-mix(in srgb, var(--ds-green) 35%, transparent) 0 1px, transparent 1.8px),
+    radial-gradient(circle, color-mix(in srgb, var(--ds-cyan) 28%, transparent) 0 1px, transparent 1.8px) !important;
 }
 
 html.codex-nn-theme[data-nn-theme-shell="light"] aside.app-shell-left-panel {
-  background: linear-gradient(180deg, #ffffff 0%, #fbf7f8 100%) !important;
-  border: 1px solid rgba(40, 30, 32, .08) !important;
+  background:
+    radial-gradient(circle at 12% 2%, color-mix(in srgb, var(--ds-green) 13%, transparent), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #f8f7fa 100%) !important;
+  border: 1px solid color-mix(in srgb, var(--ds-green) 18%, rgba(40, 30, 32, .07)) !important;
   border-left: 0 !important;
-  box-shadow: 8px 0 24px rgba(40, 20, 24, .05) !important;
+  box-shadow: 8px 0 26px color-mix(in srgb, var(--ds-green) 9%, rgba(40, 20, 24, .04)) !important;
   color: #1f1a1b !important;
 }
 
@@ -546,14 +547,14 @@ html.codex-nn-theme[data-nn-theme-shell="light"] aside.app-shell-left-panel svg 
 }
 
 html.codex-nn-theme[data-nn-theme-shell="light"] aside.app-shell-left-panel button:hover {
-  background: rgba(217, 72, 86, .08) !important;
+  background: color-mix(in srgb, var(--ds-green) 10%, transparent) !important;
   box-shadow: none !important;
   transform: none !important;
   color: #1f1a1b !important;
 }
 
 html.codex-nn-theme[data-nn-theme-shell="light"] aside.app-shell-left-panel button[aria-label^="切换模式"] {
-  color: #1f1a1b !important;
+  color: var(--ds-green) !important;
   text-shadow: none !important;
 }
 
@@ -563,24 +564,26 @@ html.codex-nn-theme[data-nn-theme-shell="light"] aside.app-shell-left-panel butt
 
 html.codex-nn-theme[data-nn-theme-shell="light"] aside.app-shell-left-panel [class~="bg-token-list-hover-background"],
 html.codex-nn-theme[data-nn-theme-shell="light"] aside.app-shell-left-panel [aria-current="page"] {
-  background: rgba(217, 72, 86, .10) !important;
-  border: 1px solid rgba(217, 72, 86, .14) !important;
-  box-shadow: none !important;
+  background: color-mix(in srgb, var(--ds-green) 13%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--ds-green) 24%, transparent) !important;
+  box-shadow: inset 3px 0 var(--ds-green) !important;
   color: #1f1a1b !important;
 }
 
 html.codex-nn-theme[data-nn-theme-shell="light"] main.main-surface {
   background:
-    linear-gradient(180deg, rgba(252, 250, 251, .82) 0%, rgba(247, 242, 243, .9) 100%),
-    var(--nn-theme-art) 70% 12% / cover no-repeat !important;
+    radial-gradient(circle at 88% 8%, color-mix(in srgb, var(--ds-green) 10%, transparent), transparent 32%),
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--ds-cyan) 7%, transparent), transparent 28%),
+    linear-gradient(180deg, #fcfafb 0%, #f4eef1 100%) !important;
   border: 1px solid rgba(40, 30, 32, .07) !important;
   box-shadow: inset 0 1px rgba(255, 255, 255, .85) !important;
 }
 
 html.codex-nn-theme[data-nn-theme-shell="light"] main.main-surface:not(.nn-theme-home-shell) {
   background:
-    linear-gradient(105deg, rgba(252, 250, 251, .88) 0%, rgba(252, 250, 251, .58) 42%, rgba(252, 250, 251, .28) 78%, rgba(252, 250, 251, .16) 100%),
-    var(--nn-theme-art) 72% center / cover no-repeat !important;
+    radial-gradient(circle at 84% 10%, color-mix(in srgb, var(--ds-green) 13%, transparent), transparent 30%),
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--ds-cyan) 9%, transparent), transparent 27%),
+    linear-gradient(180deg, #fcfafb 0%, #f4eef1 100%) !important;
 }
 
 html.codex-nn-theme[data-nn-theme-shell="light"] main.main-surface:not(.nn-theme-home-shell) [role="main"] {
@@ -691,4 +694,308 @@ html.codex-nn-theme[data-nn-theme-shell="light"] .nn-theme-quote {
 
 html.codex-nn-theme[data-nn-theme-shell="light"] .nn-theme-particles {
   opacity: .2 !important;
+}
+
+/* Dream Skin 预设严格复刻 Windows 版本；主题包仍只提供清单与图片。 */
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] {
+  color-scheme: light !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] body {
+  background:
+    radial-gradient(circle at 78% 2%, color-mix(in srgb, var(--ds-cyan) 32%, transparent), transparent 25%),
+    radial-gradient(circle at 24% 12%, color-mix(in srgb, var(--ds-lime) 28%, transparent), transparent 28%),
+    linear-gradient(135deg, #fff9fc 0%, var(--ds-panel-2) 48%, var(--ds-bg) 100%) !important;
+  color: var(--ds-text) !important;
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] body::before {
+  opacity: .34 !important;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, .98) 0 1px, transparent 2px),
+    radial-gradient(circle, color-mix(in srgb, var(--ds-cyan) 70%, transparent) 0 1px, transparent 2px) !important;
+  background-position: 0 0, 23px 31px !important;
+  background-size: 53px 53px, 67px 67px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] aside.app-shell-left-panel {
+  background: linear-gradient(180deg, rgba(255, 250, 253, .98), rgba(255, 239, 248, .96)) !important;
+  border: 1px solid color-mix(in srgb, var(--ds-cyan) 40%, transparent) !important;
+  border-left: 0 !important;
+  border-radius: 0 20px 20px 0 !important;
+  box-shadow: 10px 0 32px color-mix(in srgb, var(--ds-green) 10%, transparent), inset -1px 0 rgba(255, 255, 255, .9) !important;
+  color: var(--ds-text) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] aside.app-shell-left-panel button,
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] aside.app-shell-left-panel a,
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] aside.app-shell-left-panel span,
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] aside.app-shell-left-panel div {
+  color: var(--ds-text) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] aside.app-shell-left-panel svg {
+  color: var(--ds-green) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] aside.app-shell-left-panel button:hover {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ds-cyan) 26%, transparent), color-mix(in srgb, var(--ds-lime) 27%, transparent)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-green) 22%, transparent) !important;
+  transform: translateX(1px) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] aside.app-shell-left-panel [class~="bg-token-list-hover-background"],
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] aside.app-shell-left-panel [aria-current="page"] {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ds-lime) 42%, transparent), color-mix(in srgb, var(--ds-cyan) 34%, transparent)) !important;
+  border: 1px solid color-mix(in srgb, var(--ds-green) 30%, transparent) !important;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--ds-green) 10%, transparent) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] main.main-surface,
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] main.main-surface:not(.nn-theme-home-shell) {
+  background:
+    radial-gradient(circle at 84% 10%, color-mix(in srgb, var(--ds-cyan) 18%, transparent), transparent 30%),
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--ds-lime) 18%, transparent), transparent 26%),
+    linear-gradient(180deg, #fff8fc 0%, var(--ds-panel-2) 100%) !important;
+  border: 1px solid color-mix(in srgb, var(--ds-cyan) 35%, transparent) !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 20px 0 0 0 !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .95), -8px 0 30px color-mix(in srgb, var(--ds-green) 8%, transparent) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] main.main-surface > header.app-header-tint {
+  background: linear-gradient(90deg, rgba(255, 249, 252, .95), color-mix(in srgb, var(--ds-cyan) 20%, rgba(255, 249, 252, .88)), color-mix(in srgb, var(--ds-lime) 28%, rgba(255, 249, 252, .82))) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--ds-cyan) 28%, transparent) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] main.nn-theme-home-shell > header.app-header-tint > div:nth-child(3) {
+  visibility: hidden !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] main.main-surface:not(.nn-theme-home-shell) article {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-brand,
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-status,
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-quote,
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-particles,
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-orbit {
+  display: none !important;
+}
+
+.nn-dream-brand,
+.nn-dream-signature,
+.nn-dream-ribbon,
+.nn-dream-polaroid {
+  display: none;
+}
+
+.nn-dream-brand {
+  position: absolute;
+  left: 25px;
+  top: 3px;
+  height: 40px;
+  align-items: center;
+  gap: 10px;
+  color: var(--ds-green);
+  text-shadow: 0 1px 0 white;
+}
+
+html[data-nn-theme-layout="dream-skin"] #codex-nn-theme-chrome.nn-theme-home-shell .nn-dream-brand { display: flex; }
+.nn-dream-note { font-size: 29px; color: var(--ds-lime); filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--ds-cyan) 34%, transparent)); }
+.nn-dream-brand b { display: block; font-size: 15px; letter-spacing: .04em; }
+.nn-dream-brand small { display: block; margin-top: 1px; color: var(--ds-muted); font-size: 10px; letter-spacing: .03em; }
+
+.nn-dream-signature {
+  position: absolute;
+  right: 92px;
+  top: 6px;
+  color: var(--ds-cyan);
+  font: italic 20px/1.2 "Segoe Script", "Comic Sans MS", cursive;
+  text-shadow: 0 0 8px white, 0 2px 8px color-mix(in srgb, var(--ds-green) 24%, transparent);
+  transform: rotate(-3deg);
+}
+
+html[data-nn-theme-layout="dream-skin"] #codex-nn-theme-chrome.nn-theme-home-shell .nn-dream-signature { display: block; }
+
+.nn-dream-sparkles { position: absolute; inset: 48px 0 0; display: none; opacity: .72; }
+html[data-nn-theme-layout="dream-skin"] #codex-nn-theme-chrome .nn-dream-sparkles { display: block; }
+.nn-dream-sparkles i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: white; box-shadow: 0 0 10px 3px color-mix(in srgb, var(--ds-cyan) 66%, transparent); }
+.nn-dream-sparkles i::before, .nn-dream-sparkles i::after { content: ""; position: absolute; left: 2px; top: -6px; width: 1px; height: 17px; background: linear-gradient(transparent, rgba(255, 255, 255, .95), transparent); }
+.nn-dream-sparkles i::after { transform: rotate(90deg); }
+.nn-dream-sparkles i:nth-child(1) { left: 7%; top: 11%; }
+.nn-dream-sparkles i:nth-child(2) { left: 31%; top: 5%; opacity: .55; }
+.nn-dream-sparkles i:nth-child(3) { left: 55%; top: 17%; opacity: .82; }
+.nn-dream-sparkles i:nth-child(4) { left: 78%; top: 8%; opacity: .64; }
+.nn-dream-sparkles i:nth-child(5) { left: 92%; top: 27%; opacity: .9; }
+.nn-dream-sparkles i:nth-child(6) { left: 66%; top: 66%; opacity: .48; }
+
+.nn-dream-polaroid {
+  position: absolute;
+  right: 11px;
+  bottom: 74px;
+  width: 116px;
+  height: 150px;
+  background-image: var(--nn-theme-art);
+  background-size: 915% auto;
+  background-position: 100% 100%;
+  border: 7px solid rgba(255, 253, 253, .96);
+  border-bottom-width: 20px;
+  box-shadow: 0 9px 20px color-mix(in srgb, var(--ds-green) 22%, transparent), 0 0 0 1px color-mix(in srgb, var(--ds-cyan) 26%, transparent);
+  transform: rotate(-7deg);
+  border-radius: 2px;
+}
+
+html[data-nn-theme-layout="dream-skin"] #codex-nn-theme-chrome.nn-theme-home-shell .nn-dream-polaroid { display: block; }
+.nn-dream-polaroid::before { content: "🎀"; position: absolute; left: -21px; top: -24px; font-size: 32px; filter: drop-shadow(0 3px 4px color-mix(in srgb, var(--ds-green) 25%, transparent)); }
+
+.nn-dream-ribbon {
+  position: absolute;
+  left: 50%;
+  bottom: 68px;
+  align-items: center;
+  gap: 8px;
+  color: var(--ds-cyan);
+  font-size: 30px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 4px 5px color-mix(in srgb, var(--ds-green) 26%, transparent));
+}
+
+html[data-nn-theme-layout="dream-skin"] #codex-nn-theme-chrome.nn-theme-home-shell .nn-dream-ribbon { display: flex; }
+.nn-dream-ribbon span { font-size: 15px; color: var(--ds-lime); }
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home > div:first-child > div:first-child > div:first-child {
+  border: 2px solid color-mix(in srgb, var(--ds-cyan) 58%, white) !important;
+  border-radius: 25px !important;
+  overflow: visible !important;
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--ds-purple) 6%, transparent), color-mix(in srgb, var(--ds-cyan) 5%, transparent)),
+    var(--nn-theme-art) !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100%, auto 300% !important;
+  background-position: center, right 22% !important;
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--ds-green) 20%, transparent), inset 0 0 0 4px rgba(255, 255, 255, .20) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home > div:first-child > div:first-child > div:first-child::before {
+  content: "" !important;
+  width: 58% !important;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ds-green) 82%, #32104e) 0%, color-mix(in srgb, var(--ds-green) 86%, #4b1768) 54%, color-mix(in srgb, var(--ds-lime) 56%, transparent) 78%, transparent 100%) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home [data-feature="game-source"] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  color: white !important;
+  font-size: clamp(20px, 2vw, 30px) !important;
+  line-height: 1.3 !important;
+  font-weight: 750 !important;
+  text-shadow: 0 2px 12px color-mix(in srgb, var(--ds-green) 42%, transparent), 0 1px 0 rgba(255, 255, 255, .28) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home [data-feature="game-source"]::before {
+  content: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home [data-feature="game-source"]::after {
+  color: rgba(255, 248, 255, .94) !important;
+  font-size: 15px !important;
+  text-shadow: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home [data-feature="game-source"] button {
+  border-color: rgba(255, 226, 245, .72) !important;
+  background: rgba(255, 233, 247, .22) !important;
+  color: #ffe0f3 !important;
+  text-decoration-color: rgba(255, 224, 243, .72) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home .group\/home-suggestions button {
+  border: 1px solid color-mix(in srgb, var(--ds-cyan) 55%, white) !important;
+  border-radius: 23px !important;
+  background:
+    radial-gradient(circle at 50% 25%, rgba(255, 255, 255, .96), transparent 34%),
+    linear-gradient(145deg, rgba(255, 251, 247, .96), color-mix(in srgb, var(--ds-cyan) 14%, white)) !important;
+  color: var(--ds-text) !important;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--ds-green) 11%, transparent), inset 0 0 0 3px rgba(255, 255, 255, .50) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home .group\/home-suggestions button:hover {
+  transform: translateY(-4px) !important;
+  border-color: color-mix(in srgb, var(--ds-green) 42%, transparent) !important;
+  box-shadow: 0 13px 26px color-mix(in srgb, var(--ds-green) 18%, transparent), 0 0 0 2px color-mix(in srgb, var(--ds-lime) 16%, transparent) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home .group\/home-suggestions button > span:first-child > span:first-child {
+  color: white !important;
+  background: linear-gradient(145deg, var(--ds-cyan), var(--ds-green)) !important;
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--ds-cyan) 30%, transparent), 0 5px 12px color-mix(in srgb, var(--ds-green) 24%, transparent) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home .group\/home-suggestions button svg {
+  color: white !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .composer-surface-chrome {
+  border: 2px solid color-mix(in srgb, var(--ds-cyan) 58%, transparent) !important;
+  border-radius: 25px !important;
+  background:
+    radial-gradient(circle at 88% 22%, rgba(255, 255, 255, .92), transparent 24%),
+    linear-gradient(145deg, rgba(255, 252, 253, .96), color-mix(in srgb, var(--ds-cyan) 16%, white)) !important;
+  box-shadow: 0 10px 25px color-mix(in srgb, var(--ds-green) 15%, transparent), inset 0 0 0 4px rgba(255, 255, 255, .45) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .composer-surface-chrome::before {
+  content: "♡" !important;
+  color: white !important;
+  border: 0 !important;
+  background: linear-gradient(145deg, var(--ds-cyan), var(--ds-green)) !important;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--ds-green) 22%, transparent) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home div:has(> .horizontal-scroll-fade-mask .group\/project-selector) {
+  border-color: color-mix(in srgb, var(--ds-cyan) 44%, transparent) !important;
+  background: linear-gradient(180deg, rgba(255, 248, 252, .94), color-mix(in srgb, var(--ds-cyan) 15%, white)) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home div:has(> .horizontal-scroll-fade-mask .group\/project-selector)::before {
+  color: var(--ds-green) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .nn-theme-home .group\/project-selector > button {
+  border-color: color-mix(in srgb, var(--ds-green) 38%, transparent) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .92), color-mix(in srgb, var(--ds-lime) 18%, white)) !important;
+  color: var(--ds-green) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .ProseMirror {
+  color: var(--ds-text) !important;
+  caret-color: var(--ds-green) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"] button[class~="bg-token-foreground"] {
+  background: linear-gradient(145deg, var(--ds-lime), var(--ds-green)) !important;
+  color: white !important;
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--ds-green) 26%, transparent) !important;
+}
+
+@media (max-width: 1120px) {
+  .nn-dream-polaroid { display: none !important; }
+  .nn-dream-ribbon { bottom: 70px; font-size: 25px; }
+}
+
+@media (max-width: 900px) {
+  .nn-dream-signature { display: none !important; }
+  .nn-dream-brand { left: 15px; }
+  .nn-dream-brand b { font-size: 13px; }
 }

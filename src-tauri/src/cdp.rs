@@ -10,7 +10,7 @@ use crate::{
     models::{ThemeManifest, VerificationReport},
 };
 
-const THEME_ENGINE_VERSION: &str = "0.1.0";
+const THEME_ENGINE_VERSION: &str = "0.2.0";
 const CSS: &str = include_str!("../resources/theme-engine/nn-theme.css");
 const RENDERER: &str = include_str!("../resources/theme-engine/renderer-inject.js");
 
@@ -251,8 +251,43 @@ async fn capture(session: &mut CdpSession, path: &Path) -> Result<(), String> {
 }
 
 const PROBE_SCRIPT: &str = r#"(() => { const shell = !!document.querySelector('main.main-surface'); const sidebar = !!document.querySelector('aside.app-shell-left-panel'); const composer = !!document.querySelector('.composer-surface-chrome'); const main = !!document.querySelector('[role="main"]'); return { codex: shell && sidebar && (composer || main) }; })()"#;
-const REMOVE_SCRIPT: &str = r#"(() => { const state = window.__CODEX_NN_THEME_STATE__; if (state?.cleanup) return state.cleanup(); document.documentElement?.classList.remove('codex-nn-theme'); document.getElementById('codex-nn-theme-style')?.remove(); document.getElementById('codex-nn-theme-chrome')?.remove(); delete window.__CODEX_NN_THEME_STATE__; return true; })()"#;
-const VERIFY_SCRIPT: &str = r#"(() => { const visible = n => { if (!n) return false; const r=n.getBoundingClientRect(), s=getComputedStyle(n); return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'; }; const chrome=document.getElementById('codex-nn-theme-chrome'); const result={ installed:document.documentElement.classList.contains('codex-nn-theme'), stylePresent:!!document.getElementById('codex-nn-theme-style'), chromePresent:!!chrome, pointerEvents:getComputedStyle(chrome||document.body).pointerEvents, sidebar:visible(document.querySelector('aside.app-shell-left-panel')), composer:visible(document.querySelector('.composer-surface-chrome')), overflowX:document.documentElement.scrollWidth>document.documentElement.clientWidth }; result.pass=result.installed&&result.stylePresent&&result.chromePresent&&result.pointerEvents==='none'&&result.sidebar&&result.composer&&!result.overflowX; return result; })()"#;
+const REMOVE_SCRIPT: &str = r#"(() => { const state = window.__CODEX_NN_THEME_STATE__; if (state?.cleanup) return state.cleanup(); document.documentElement?.classList.remove('codex-nn-theme'); document.documentElement?.removeAttribute('data-nn-theme-shell'); document.documentElement?.removeAttribute('data-nn-theme-layout'); document.documentElement?.style.removeProperty('--nn-theme-art'); document.getElementById('codex-nn-theme-style')?.remove(); document.getElementById('codex-nn-theme-chrome')?.remove(); delete window.__CODEX_NN_THEME_STATE__; return true; })()"#;
+const VERIFY_SCRIPT: &str = r#"(() => {
+  const visible = node => {
+    if (!node) return false;
+    const rect = node.getBoundingClientRect();
+    const style = getComputedStyle(node);
+    return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+  };
+  const box = node => {
+    if (!node) return null;
+    const rect = node.getBoundingClientRect();
+    return { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) };
+  };
+  const chrome = document.getElementById('codex-nn-theme-chrome');
+  const home = document.querySelector('.nn-theme-home');
+  const suggestions = home?.querySelector('.group\\/home-suggestions') || null;
+  const cards = suggestions ? [...suggestions.querySelectorAll('button')].map(box) : [];
+  const result = {
+    installed: document.documentElement.classList.contains('codex-nn-theme'),
+    version: window.__CODEX_NN_THEME_STATE__?.version || null,
+    themeId: window.__CODEX_NN_THEME_STATE__?.themeId || null,
+    layout: window.__CODEX_NN_THEME_STATE__?.layout || null,
+    stylePresent: !!document.getElementById('codex-nn-theme-style'),
+    chromePresent: !!chrome,
+    pointerEvents: getComputedStyle(chrome || document.body).pointerEvents,
+    sidebar: visible(document.querySelector('aside.app-shell-left-panel')),
+    composer: visible(document.querySelector('.composer-surface-chrome')),
+    homePresent: !!home,
+    hero: box(home?.firstElementChild?.firstElementChild?.firstElementChild),
+    cards,
+    overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  };
+  const homePass = !result.homePresent || (!!result.hero && (!suggestions || (cards.length >= 2 && cards.length <= 4)));
+  result.pass = result.installed && result.stylePresent && result.chromePresent &&
+    result.pointerEvents === 'none' && result.sidebar && result.composer && !result.overflowX && homePass;
+  return result;
+})()"#;
 
 #[cfg(test)]
 mod tests {

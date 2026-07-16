@@ -60,6 +60,8 @@ pub struct ThemeManifest {
     pub schema_version: u8,
     pub id: String,
     pub name: String,
+    #[serde(default = "default_layout_preset")]
+    pub layout_preset: String,
     pub brand_subtitle: String,
     pub tagline: String,
     pub project_prefix: String,
@@ -68,6 +70,10 @@ pub struct ThemeManifest {
     pub quote: String,
     pub image: String,
     pub colors: ThemeColors,
+}
+
+fn default_layout_preset() -> String {
+    "standard".into()
 }
 
 #[derive(Debug, Clone, Serialize)]

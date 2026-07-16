@@ -4,8 +4,10 @@
   const STYLE_ID = "codex-nn-theme-style";
   const CHROME_ID = "codex-nn-theme-chrome";
   const SHELL_ATTR = "data-nn-theme-shell";
+  const LAYOUT_ATTR = "data-nn-theme-layout";
   const VERSION = __CODEX_NN_THEME_VERSION_JSON__;
   const THEME = themeConfig && typeof themeConfig === "object" ? themeConfig : {};
+  const LAYOUT = THEME.layoutPreset === "dreamSkin" ? "dream-skin" : "standard";
   const THEME_VARIABLES = [
     "--ds-bg", "--ds-panel", "--ds-panel-2", "--ds-green", "--ds-lime",
     "--ds-cyan", "--ds-purple", "--ds-text", "--ds-muted", "--ds-line",
@@ -122,17 +124,16 @@
 
     let variables;
     if (shell === "light") {
-      // Structural tokens stay light so banners stay readable; accents follow theme.
       variables = {
-        "--ds-bg": "#f6f2f3",
-        "--ds-panel": "#ffffff",
-        "--ds-panel-2": "#fff7f8",
+        "--ds-bg": colors.background || "#f6f2f3",
+        "--ds-panel": colors.panel || "#ffffff",
+        "--ds-panel-2": colors.panelAlt || "#fff7f8",
         "--ds-green": accent,
         "--ds-lime": accentAlt,
         "--ds-cyan": secondary,
         "--ds-purple": highlight,
-        "--ds-text": "#1f1a1b",
-        "--ds-muted": "#6b5f62",
+        "--ds-text": colors.text || "#1f1a1b",
+        "--ds-muted": colors.muted || "#6b5f62",
         "--ds-line": colors.line || "rgba(196, 120, 128, .22)",
       };
     } else {
@@ -169,9 +170,10 @@
     if (window[DISABLED_KEY]) return;
     const root = document.documentElement;
     if (!root) return;
-    const shell = detectShellMode();
+    const shell = LAYOUT === "dream-skin" ? "light" : detectShellMode();
     root.classList.add("codex-nn-theme");
     root.setAttribute(SHELL_ATTR, shell);
+    root.setAttribute(LAYOUT_ATTR, LAYOUT);
     root.style.setProperty("--nn-theme-art", `url("${artUrl}")`);
     applyTheme(root, shell);
 
@@ -200,7 +202,7 @@
     if (!shellMain || !document.body) return;
     shellMain.classList.toggle("nn-theme-home-shell", Boolean(home));
     let chrome = document.getElementById(CHROME_ID);
-    if (!chrome || chrome.parentElement !== document.body) {
+    if (!chrome || chrome.parentElement !== document.body || !chrome.querySelector(".nn-dream-brand")) {
       chrome?.remove();
       chrome = document.createElement("div");
       chrome.id = CHROME_ID;
@@ -213,13 +215,21 @@
         <div class="nn-theme-status"><i></i><span></span></div>
         <div class="nn-theme-quote"></div>
         <div class="nn-theme-particles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="nn-theme-orbit"></div>`;
+        <div class="nn-theme-orbit"></div>
+        <div class="nn-dream-brand"><span class="nn-dream-note">♫</span><span><b></b><small></small></span></div>
+        <div class="nn-dream-signature"></div>
+        <div class="nn-dream-sparkles"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="nn-dream-ribbon"><span>♡</span>🎀<span>✦</span></div>
+        <div class="nn-dream-polaroid"></div>`;
       document.body.appendChild(chrome);
     }
     chrome.querySelector(".nn-theme-brand b").textContent = THEME.name || "Codex 暖暖";
     chrome.querySelector(".nn-theme-brand small").textContent = THEME.brandSubtitle || "CODEX NN";
     chrome.querySelector(".nn-theme-status span").textContent = THEME.statusText || "CODEX NN ONLINE";
     chrome.querySelector(".nn-theme-quote").textContent = THEME.quote || "MAKE SOMETHING WONDERFUL";
+    chrome.querySelector(".nn-dream-brand b").textContent = THEME.name || "Codex Dream Skin";
+    chrome.querySelector(".nn-dream-brand small").textContent = THEME.brandSubtitle || "Codex App 限定版 ✦";
+    chrome.querySelector(".nn-dream-signature").textContent = THEME.quote || "Dream Skin ♡";
     const shellBox = shellMain.getBoundingClientRect();
     chrome.style.left = `${Math.round(shellBox.left)}px`;
     chrome.style.top = `${Math.round(shellBox.top)}px`;
@@ -233,6 +243,7 @@
     window[DISABLED_KEY] = true;
     document.documentElement?.classList.remove("codex-nn-theme");
     document.documentElement?.removeAttribute(SHELL_ATTR);
+    document.documentElement?.removeAttribute(LAYOUT_ATTR);
     document.documentElement?.style.removeProperty("--nn-theme-art");
     for (const name of THEME_VARIABLES) document.documentElement?.style.removeProperty(name);
     document.querySelectorAll(".nn-theme-home").forEach((node) => node.classList.remove("nn-theme-home"));
@@ -291,8 +302,15 @@
     artUrl,
     version: VERSION,
     themeId: THEME.id || "custom",
+    layout: LAYOUT,
     detectShellMode,
   };
   ensure();
-  return { installed: true, version: VERSION, themeId: THEME.id || "custom", shell: detectShellMode() };
+  return {
+    installed: true,
+    version: VERSION,
+    themeId: THEME.id || "custom",
+    shell: LAYOUT === "dream-skin" ? "light" : detectShellMode(),
+    layout: LAYOUT,
+  };
 })(__CODEX_NN_THEME_CSS_JSON__, __CODEX_NN_THEME_ART_JSON__, __CODEX_NN_THEME_CONFIG_JSON__)

@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "azure-neon-frontier",
   "name": "苍蓝矩阵",
+  "layoutPreset": "standard",
   "brandSubtitle": "CODEX NN · NEON CORE",
   "tagline": "连接深空，点亮下一行代码。",
   "projectPrefix": "接入任务矩阵 · ",
