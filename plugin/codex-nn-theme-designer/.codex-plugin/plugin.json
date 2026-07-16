@@ -11,10 +11,11 @@
   "license": "MIT",
   "keywords": ["codex", "theme", "design"],
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Codex NN 主题设计",
     "shortDescription": "从概念稿制作可安装的 schema v1 主题包",
-    "longDescription": "先与用户确认 Codex 界面概念稿，再生成背景、配色、文案、主题清单和经过校验的 Codex NN ZIP 主题包。",
+    "longDescription": "先确认 Codex 界面概念稿，再生成主题包，并通过本地 MCP 安装、切换和诊断效果。",
     "developerName": "Codex NN / slovx2",
     "category": "Creativity",
     "capabilities": ["Interactive", "Write"],

@@ -235,8 +235,9 @@ impl ThemeStore {
 
         let directory = self.paths.themes.join(built_in.id);
         let image_path = directory.join(&manifest.image);
-        if directory.join("theme.json").is_file()
-            && image_path.is_file()
+        let manifest_path = directory.join("theme.json");
+        if std::fs::read(&manifest_path).is_ok_and(|bytes| bytes == built_in.manifest.as_bytes())
+            && std::fs::read(&image_path).is_ok_and(|bytes| bytes == built_in.image)
             && directory.join("preview.jpg").is_file()
         {
             return Ok(());
@@ -245,7 +246,7 @@ impl ThemeStore {
         std::fs::create_dir_all(&directory)
             .map_err(|error| format!("无法创建内置主题 {}：{error}", built_in.id))?;
         atomic_write(&image_path, built_in.image)?;
-        atomic_write(&directory.join("theme.json"), built_in.manifest.as_bytes())?;
+        atomic_write(&manifest_path, built_in.manifest.as_bytes())?;
         let image = image::load_from_memory(built_in.image)
             .map_err(|error| format!("内置主题 {} 的图片损坏：{error}", built_in.id))?;
         atomic_write(&directory.join("preview.jpg"), &encode_preview(&image)?)
@@ -400,8 +401,11 @@ fn validate_manifest(manifest: &ThemeManifest) -> Result<(), String> {
     }
     validate_id(&manifest.id)?;
     validate_text("主题名称", &manifest.name, 80, true)?;
-    if !matches!(manifest.layout_preset.as_str(), "standard" | "dreamSkin") {
-        return Err("主题布局只能是 standard 或 dreamSkin".into());
+    if !matches!(
+        manifest.layout_preset.as_str(),
+        "standard" | "dreamSkin" | "strawberryStarlight" | "azureNeon"
+    ) {
+        return Err("主题布局只能是 standard、dreamSkin、strawberryStarlight 或 azureNeon".into());
     }
     validate_text("品牌副标题", &manifest.brand_subtitle, 80, false)?;
     validate_text("主题标语", &manifest.tagline, 160, false)?;
@@ -543,6 +547,7 @@ mod tests {
         let mut value: ThemeManifest = serde_json::from_str(STRAWBERRY_STARLIGHT_THEME).unwrap();
         value.id = id.into();
         value.name = "测试主题".into();
+        value.layout_preset = "standard".into();
         value.image = image.into();
         value
     }
@@ -650,6 +655,10 @@ mod tests {
 
             let (loaded, image) = store.load(built_in.id).unwrap();
             assert_eq!(loaded.id, built_in.id);
+            assert!(matches!(
+                loaded.layout_preset.as_str(),
+                "strawberryStarlight" | "azureNeon"
+            ));
             assert!(!image.is_empty());
 
             let package_path = root.path().join(format!("{}.zip", built_in.id));
@@ -661,6 +670,21 @@ mod tests {
             assert!(store.install(package_path, true).is_err());
             assert!(store.delete(built_in.id).is_err());
         }
+    }
+
+    #[test]
+    fn refreshes_changed_built_in_files_on_startup() {
+        let (_root, store) = test_store();
+        let manifest_path = store
+            .paths
+            .themes
+            .join("strawberry-starlight")
+            .join("theme.json");
+        std::fs::write(&manifest_path, b"{}").unwrap();
+
+        let refreshed = ThemeStore::new(store.paths.clone()).unwrap();
+        let (manifest, _) = refreshed.load("strawberry-starlight").unwrap();
+        assert_eq!(manifest.layout_preset, "strawberryStarlight");
     }
 
     #[test]

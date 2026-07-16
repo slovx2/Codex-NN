@@ -10,7 +10,7 @@ use crate::{
     models::{ThemeManifest, VerificationReport},
 };
 
-const THEME_ENGINE_VERSION: &str = "0.2.0";
+const THEME_ENGINE_VERSION: &str = "0.3.9";
 const CSS: &str = include_str!("../resources/theme-engine/nn-theme.css");
 const RENDERER: &str = include_str!("../resources/theme-engine/renderer-inject.js");
 

@@ -1,9 +1,11 @@
+mod agent_api;
 mod cdp;
 mod cdp_session;
 mod codex;
 mod dream_skin;
 mod models;
 mod paths;
+mod plugin_mcp;
 mod runtime;
 mod theme;
 mod theme_designer_plugin;
@@ -192,6 +194,7 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
                 let runtime = runtime.clone();
                 tauri::async_runtime::spawn(async move {
                     let _ = runtime.pause_theme().await;
+                    stop_agent_api(&app);
                     app.exit(0);
                 });
             }
@@ -220,6 +223,12 @@ fn hide_main<R: Runtime>(app: &AppHandle<R>) {
     set_dock_visibility(app, false);
 }
 
+fn stop_agent_api<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(runtime) = app.try_state::<agent_api::AgentApiRuntime>() {
+        runtime.stop();
+    }
+}
+
 #[cfg(target_os = "macos")]
 fn set_dock_visibility<R: Runtime>(app: &AppHandle<R>, visible: bool) {
     let _ = app.set_dock_visibility(visible);
@@ -239,7 +248,11 @@ pub fn run() {
         .manage(Arc::new(Lifecycle::default()))
         .setup(|app| {
             let runtime = ThemeRuntime::new(app.handle().clone()).map_err(std::io::Error::other)?;
+            let paths = paths::AppPaths::resolve(app.handle()).map_err(std::io::Error::other)?;
+            let agent_api = agent_api::AgentApiRuntime::start(runtime.clone(), &paths)
+                .map_err(std::io::Error::other)?;
             app.manage(runtime);
+            app.manage(agent_api);
             if let Err(error) = theme_designer_plugin::update_if_version_changed(app.handle()) {
                 eprintln!("[codex-nn] 更新主题设计插件失败：{error}");
             }
@@ -283,6 +296,7 @@ pub fn run() {
                 let runtime = app.state::<Arc<ThemeRuntime>>().inner().clone();
                 tauri::async_runtime::spawn(async move {
                     let _ = runtime.pause_theme().await;
+                    stop_agent_api(&app);
                     app.exit(0);
                 });
             }
@@ -291,4 +305,8 @@ pub fn run() {
         tauri::RunEvent::Reopen { .. } => show_main(app),
         _ => {}
     });
+}
+
+pub fn run_mcp() -> i32 {
+    plugin_mcp::run()
 }

@@ -7,7 +7,11 @@
   const LAYOUT_ATTR = "data-nn-theme-layout";
   const VERSION = __CODEX_NN_THEME_VERSION_JSON__;
   const THEME = themeConfig && typeof themeConfig === "object" ? themeConfig : {};
-  const LAYOUT = THEME.layoutPreset === "dreamSkin" ? "dream-skin" : "standard";
+  const LAYOUT = ({
+    dreamSkin: "dream-skin",
+    strawberryStarlight: "strawberry-starlight",
+    azureNeon: "azure-neon",
+  })[THEME.layoutPreset] || "standard";
   const THEME_VARIABLES = [
     "--ds-bg", "--ds-panel", "--ds-panel-2", "--ds-green", "--ds-lime",
     "--ds-cyan", "--ds-purple", "--ds-text", "--ds-muted", "--ds-line",
@@ -20,6 +24,7 @@
   if (previous?.observer) previous.observer.disconnect();
   if (previous?.timer) clearInterval(previous.timer);
   if (previous?.scheduler?.timeout) clearTimeout(previous.scheduler.timeout);
+  if (previous?.scheduler?.frame) cancelAnimationFrame(previous.scheduler.frame);
   if (previous?.resizeHandler) window.removeEventListener("resize", previous.resizeHandler);
   if (previous?.mediaHandler && previous?.mediaQuery) {
     try { previous.mediaQuery.removeEventListener("change", previous.mediaHandler); } catch {}
@@ -36,6 +41,18 @@
   })();
 
   const cssString = (value) => JSON.stringify(String(value ?? ""));
+
+  const setAttribute = (node, name, value) => {
+    if (node.getAttribute(name) !== value) node.setAttribute(name, value);
+  };
+
+  const setProperty = (node, name, value) => {
+    if (node.style.getPropertyValue(name) !== value) node.style.setProperty(name, value);
+  };
+
+  const setText = (node, value) => {
+    if (node && node.textContent !== value) node.textContent = value;
+  };
 
   const parseRgb = (value) => {
     if (!value || value === "transparent") return null;
@@ -152,12 +169,12 @@
     }
 
     for (const [name, value] of Object.entries(variables)) {
-      if (typeof value === "string" && value) root.style.setProperty(name, value);
+      if (typeof value === "string" && value) setProperty(root, name, value);
     }
-    root.style.setProperty("--nn-theme-name", cssString(THEME.name || "Codex 暖暖"));
-    root.style.setProperty("--nn-theme-tagline", cssString(THEME.tagline || "Make something wonderful."));
-    root.style.setProperty("--nn-theme-project-prefix", cssString(THEME.projectPrefix || "选择项目 · "));
-    root.style.setProperty("--nn-theme-project-label", cssString(THEME.projectLabel || "◉  选择项目"));
+    setProperty(root, "--nn-theme-name", cssString(THEME.name || "Codex 暖暖"));
+    setProperty(root, "--nn-theme-tagline", cssString(THEME.tagline || "Make something wonderful."));
+    setProperty(root, "--nn-theme-project-prefix", cssString(THEME.projectPrefix || "选择项目 · "));
+    setProperty(root, "--nn-theme-project-label", cssString(THEME.projectLabel || "◉  选择项目"));
   };
 
   const existingStyle = document.getElementById(STYLE_ID);
@@ -170,11 +187,13 @@
     if (window[DISABLED_KEY]) return;
     const root = document.documentElement;
     if (!root) return;
-    const shell = LAYOUT === "dream-skin" ? "light" : detectShellMode();
+    const shell = LAYOUT === "dream-skin" || LAYOUT === "strawberry-starlight"
+      ? "light"
+      : LAYOUT === "azure-neon" ? "dark" : detectShellMode();
     root.classList.add("codex-nn-theme");
-    root.setAttribute(SHELL_ATTR, shell);
-    root.setAttribute(LAYOUT_ATTR, LAYOUT);
-    root.style.setProperty("--nn-theme-art", `url("${artUrl}")`);
+    setAttribute(root, SHELL_ATTR, shell);
+    setAttribute(root, LAYOUT_ATTR, LAYOUT);
+    setProperty(root, "--nn-theme-art", `url("${artUrl}")`);
     applyTheme(root, shell);
 
     let style = document.getElementById(STYLE_ID);
@@ -223,20 +242,21 @@
         <div class="nn-dream-polaroid"></div>`;
       document.body.appendChild(chrome);
     }
-    chrome.querySelector(".nn-theme-brand b").textContent = THEME.name || "Codex 暖暖";
-    chrome.querySelector(".nn-theme-brand small").textContent = THEME.brandSubtitle || "CODEX NN";
-    chrome.querySelector(".nn-theme-status span").textContent = THEME.statusText || "CODEX NN ONLINE";
-    chrome.querySelector(".nn-theme-quote").textContent = THEME.quote || "MAKE SOMETHING WONDERFUL";
-    chrome.querySelector(".nn-dream-brand b").textContent = THEME.name || "Codex Dream Skin";
-    chrome.querySelector(".nn-dream-brand small").textContent = THEME.brandSubtitle || "Codex App 限定版 ✦";
-    chrome.querySelector(".nn-dream-signature").textContent = THEME.quote || "Dream Skin ♡";
+    setText(chrome.querySelector(".nn-theme-brand b"), THEME.name || "Codex 暖暖");
+    setText(chrome.querySelector(".nn-theme-brand small"), THEME.brandSubtitle || "CODEX NN");
+    setText(chrome.querySelector(".nn-theme-portal-mark"), LAYOUT === "strawberry-starlight" ? "♡" : "◈");
+    setText(chrome.querySelector(".nn-theme-status span"), THEME.statusText || "CODEX NN ONLINE");
+    setText(chrome.querySelector(".nn-theme-quote"), THEME.quote || "MAKE SOMETHING WONDERFUL");
+    setText(chrome.querySelector(".nn-dream-brand b"), THEME.name || "Codex Dream Skin");
+    setText(chrome.querySelector(".nn-dream-brand small"), THEME.brandSubtitle || "Codex App 限定版 ✦");
+    setText(chrome.querySelector(".nn-dream-signature"), THEME.quote || "Dream Skin ♡");
     const shellBox = shellMain.getBoundingClientRect();
-    chrome.style.left = `${Math.round(shellBox.left)}px`;
-    chrome.style.top = `${Math.round(shellBox.top)}px`;
-    chrome.style.width = `${Math.round(shellBox.width)}px`;
-    chrome.style.height = `${Math.round(shellBox.height)}px`;
+    setProperty(chrome, "left", `${Math.round(shellBox.left)}px`);
+    setProperty(chrome, "top", `${Math.round(shellBox.top)}px`);
+    setProperty(chrome, "width", `${Math.round(shellBox.width)}px`);
+    setProperty(chrome, "height", `${Math.round(shellBox.height)}px`);
     chrome.classList.toggle("nn-theme-home-shell", Boolean(home));
-    chrome.dataset.nnThemeShell = shell;
+    setAttribute(chrome, "data-nn-theme-shell", shell);
   };
 
   const cleanup = () => {
@@ -254,6 +274,7 @@
     state?.observer?.disconnect();
     if (state?.timer) clearInterval(state.timer);
     if (state?.scheduler?.timeout) clearTimeout(state.scheduler.timeout);
+    if (state?.scheduler?.frame) cancelAnimationFrame(state.scheduler.frame);
     if (state?.resizeHandler) window.removeEventListener("resize", state.resizeHandler);
     if (state?.mediaHandler && state?.mediaQuery) {
       try { state.mediaQuery.removeEventListener("change", state.mediaHandler); } catch {}
@@ -263,15 +284,41 @@
     return true;
   };
 
-  const scheduler = { timeout: null };
-  const scheduleEnsure = () => {
-    if (scheduler.timeout) clearTimeout(scheduler.timeout);
-    scheduler.timeout = setTimeout(() => {
-      scheduler.timeout = null;
-      ensure();
-    }, 180);
+  const scheduler = { frame: null, timeout: null, lastRun: 0 };
+  const runScheduledEnsure = (timestamp = performance.now()) => {
+    scheduler.frame = null;
+    scheduler.timeout = null;
+    const remaining = 100 - (timestamp - scheduler.lastRun);
+    if (remaining > 0) {
+      scheduler.timeout = setTimeout(runScheduledEnsure, remaining);
+      return;
+    }
+    scheduler.lastRun = performance.now();
+    ensure();
   };
-  const observer = new MutationObserver(scheduleEnsure);
+  const scheduleEnsure = () => {
+    if (scheduler.frame !== null || scheduler.timeout !== null) return;
+    scheduler.frame = requestAnimationFrame(runScheduledEnsure);
+  };
+  const layoutSelector = '[data-testid="home-icon"], [data-feature="game-source"], .thread-scroll-container';
+  const touchesLayout = (node) => node?.nodeType === Node.ELEMENT_NODE && (
+    node.matches?.(layoutSelector) || node.querySelector?.(layoutSelector)
+  );
+  const observer = new MutationObserver((records) => {
+    const layoutChanged = records.some((record) => record.type === "childList" && (
+      [...record.addedNodes].some(touchesLayout) || [...record.removedNodes].some(touchesLayout)
+    ));
+    if (!layoutChanged) {
+      scheduleEnsure();
+      return;
+    }
+    if (scheduler.frame !== null) cancelAnimationFrame(scheduler.frame);
+    if (scheduler.timeout !== null) clearTimeout(scheduler.timeout);
+    scheduler.frame = null;
+    scheduler.timeout = null;
+    scheduler.lastRun = performance.now();
+    ensure();
+  });
   observer.observe(document.documentElement, {
     childList: true,
     subtree: true,
@@ -310,7 +357,9 @@
     installed: true,
     version: VERSION,
     themeId: THEME.id || "custom",
-    shell: LAYOUT === "dream-skin" ? "light" : detectShellMode(),
+    shell: LAYOUT === "dream-skin" || LAYOUT === "strawberry-starlight"
+      ? "light"
+      : LAYOUT === "azure-neon" ? "dark" : detectShellMode(),
     layout: LAYOUT,
   };
 })(__CODEX_NN_THEME_CSS_JSON__, __CODEX_NN_THEME_ART_JSON__, __CODEX_NN_THEME_CONFIG_JSON__)

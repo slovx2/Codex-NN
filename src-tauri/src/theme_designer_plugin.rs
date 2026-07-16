@@ -52,6 +52,7 @@ struct PluginConfigSnapshot {
 }
 
 struct PluginPaths {
+    app_data_root: PathBuf,
     config_path: PathBuf,
     marketplace_root: PathBuf,
     marketplace_manifest_path: PathBuf,
@@ -83,6 +84,7 @@ impl PluginPaths {
             .join(MARKETPLACE_NAME)
             .join(PLUGIN_NAME);
         Self {
+            app_data_root: app_data.clone(),
             config_path: codex_home.join("config.toml"),
             marketplace_manifest_path: marketplace_root
                 .join(".agents")
@@ -119,12 +121,19 @@ fn update_paths_if_version_changed(paths: &PluginPaths) -> Result<(), String> {
     let Some(mut state) = read_managed_state(&paths.managed_state_path)? else {
         return Ok(());
     };
-    if state.marker != PLUGIN_MARKER || state.plugin_version == PLUGIN_VERSION {
+    if state.marker != PLUGIN_MARKER {
         return Ok(());
     }
     let config = read_config(&paths.config_path)?;
     let snapshot = read_plugin_config(&config);
     if !config_matches_state(&snapshot, &state) {
+        return Ok(());
+    }
+    let bundle_current = state.plugin_version == PLUGIN_VERSION
+        && paths.marketplace_manifest_path.is_file()
+        && plugin_bundle_complete(&paths.plugin_root, paths)
+        && plugin_bundle_complete(&paths.plugin_cache_root, paths);
+    if bundle_current {
         return Ok(());
     }
     write_plugin_files(paths)?;
@@ -143,8 +152,8 @@ fn inspect_paths(paths: &PluginPaths) -> Result<ThemeDesignerPluginStatus, Strin
         && snapshot.plugin_enabled
         && snapshot.features_plugins;
     let bundles_ready = paths.marketplace_manifest_path.is_file()
-        && plugin_bundle_complete(&paths.plugin_root)
-        && plugin_bundle_complete(&paths.plugin_cache_root);
+        && plugin_bundle_complete(&paths.plugin_root, paths)
+        && plugin_bundle_complete(&paths.plugin_cache_root, paths);
 
     let managed = state
         .as_ref()
@@ -360,28 +369,54 @@ fn config_matches_state(snapshot: &PluginConfigSnapshot, state: &PluginManagedSt
 fn write_plugin_files(paths: &PluginPaths) -> Result<(), String> {
     remove_dir_if_exists(&paths.plugin_root)?;
     remove_dir_if_exists(&paths.plugin_cache_base_root)?;
-    write_plugin_bundle(&paths.plugin_root)?;
-    write_plugin_bundle(&paths.plugin_cache_root)?;
+    write_plugin_bundle(&paths.plugin_root, paths)?;
+    write_plugin_bundle(&paths.plugin_cache_root, paths)?;
     let marketplace = plugin_asset("marketplace.json")?;
     atomic_write(&paths.marketplace_manifest_path, marketplace)?;
     Ok(())
 }
 
-fn write_plugin_bundle(root: &Path) -> Result<(), String> {
+fn write_plugin_bundle(root: &Path, paths: &PluginPaths) -> Result<(), String> {
     for (relative, content) in THEME_DESIGNER_PLUGIN_ASSETS {
-        if *relative == "marketplace.json" {
+        if matches!(*relative, "marketplace.json" | ".mcp.json") {
             continue;
         }
-        atomic_write(&root.join(relative), content)?;
+        if *relative == ".mcp.json.template" {
+            atomic_write(&root.join(".mcp.json"), plugin_mcp_json(paths)?.as_bytes())?;
+        } else {
+            atomic_write(&root.join(relative), content)?;
+        }
     }
     Ok(())
 }
 
-fn plugin_bundle_complete(root: &Path) -> bool {
+fn plugin_bundle_complete(root: &Path, paths: &PluginPaths) -> bool {
     THEME_DESIGNER_PLUGIN_ASSETS
         .iter()
-        .filter(|(relative, _)| *relative != "marketplace.json")
-        .all(|(relative, _)| root.join(relative).is_file())
+        .filter(|(relative, _)| !matches!(*relative, "marketplace.json" | ".mcp.json"))
+        .all(|(relative, _)| {
+            if *relative == ".mcp.json.template" {
+                return plugin_mcp_json(paths).is_ok_and(|expected| {
+                    fs::read(root.join(".mcp.json"))
+                        .is_ok_and(|actual| actual == expected.as_bytes())
+                });
+            }
+            root.join(relative).is_file()
+        })
+}
+
+fn plugin_mcp_json(paths: &PluginPaths) -> Result<String, String> {
+    let command = std::env::current_exe()
+        .map_err(|error| format!("无法定位 Codex NN 可执行文件：{error}"))?;
+    let command_json =
+        serde_json::to_string(&command.display().to_string()).map_err(|error| error.to_string())?;
+    let app_data_json = serde_json::to_string(&paths.app_data_root.display().to_string())
+        .map_err(|error| error.to_string())?;
+    let template = std::str::from_utf8(plugin_asset(".mcp.json.template")?)
+        .map_err(|error| format!("MCP 配置模板不是 UTF-8：{error}"))?;
+    Ok(template
+        .replace("{{CODEX_NN_COMMAND_JSON}}", &command_json)
+        .replace("{{CODEX_NN_APP_DATA_DIR_JSON}}", &app_data_json))
 }
 
 fn plugin_asset(path: &str) -> Result<&'static [u8], String> {
@@ -458,6 +493,20 @@ mod tests {
             .plugin_cache_root
             .join(".codex-plugin/plugin.json")
             .is_file());
+        let mcp: serde_json::Value =
+            serde_json::from_slice(&fs::read(paths.plugin_cache_root.join(".mcp.json")).unwrap())
+                .unwrap();
+        assert_eq!(
+            mcp["mcpServers"]["codex-nn"]["args"],
+            serde_json::json!(["mcp"])
+        );
+        assert!(
+            Path::new(mcp["mcpServers"]["codex-nn"]["command"].as_str().unwrap()).is_absolute()
+        );
+        assert_eq!(
+            mcp["mcpServers"]["codex-nn"]["env"]["CODEX_NN_APP_DATA_DIR"],
+            paths.app_data_root.display().to_string()
+        );
         let manifest: serde_json::Value = serde_json::from_slice(
             &fs::read(paths.plugin_cache_root.join(".codex-plugin/plugin.json")).unwrap(),
         )
@@ -592,5 +641,18 @@ mod tests {
         )
         .unwrap();
         assert!(skill.contains("name: design-codex-nn-theme"));
+    }
+
+    #[test]
+    fn refreshes_stale_mcp_config_without_version_change() {
+        let (_root, paths) = test_paths();
+        install_paths(&paths).unwrap();
+        std::fs::write(paths.plugin_cache_root.join(".mcp.json"), b"{}").unwrap();
+
+        update_paths_if_version_changed(&paths).unwrap();
+
+        let installed = fs::read_to_string(paths.plugin_cache_root.join(".mcp.json")).unwrap();
+        assert!(installed.contains("CODEX_NN_APP_DATA_DIR"));
+        assert!(installed.contains("\"mcp\""));
     }
 }

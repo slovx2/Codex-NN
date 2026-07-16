@@ -20,7 +20,9 @@ description: Design Codex NN schema v1 themes from a user-provided concept image
 python3 scripts/package_theme.py /absolute/path/to/theme-dir --output /absolute/path/to/theme-id.zip
 ```
 
-7. 修复全部校验错误后，提供背景预览和可点击 ZIP 路径，明确标注为 Codex NN schema v1 主题包。
+7. 修复全部校验错误后，通过 Codex NN MCP 安装或更新主题并切换预览；用户确认效果后提供可点击 ZIP 路径。
+
+MCP 连接失败时先确认 Codex NN 正在运行。诊断提示 CDP 未连接、端口失效或会话异常时，请用户从 Codex NN App 启动或重启 Codex，再重试操作。
 
 ## 原则
 

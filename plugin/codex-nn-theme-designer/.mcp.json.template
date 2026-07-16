@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "codex-nn": {
+      "command": {{CODEX_NN_COMMAND_JSON}},
+      "args": ["mcp"],
+      "cwd": ".",
+      "env": {
+        "CODEX_NN_APP_DATA_DIR": {{CODEX_NN_APP_DATA_DIR_JSON}}
+      },
+      "default_tools_approval_mode": "approve",
+      "startup_timeout_sec": 30
+    }
+  }
+}
