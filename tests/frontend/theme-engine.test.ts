@@ -8,6 +8,7 @@ type ThemeEngineState = {
   cleanup: () => boolean;
   observer: MutationObserver;
   themeId: string;
+  revision: string;
   layout: string;
   detectShellMode: () => string;
 };
@@ -22,6 +23,14 @@ const template = readFileSync(
   resolve("src-tauri/resources/theme-engine/renderer-inject.js"),
   "utf-8"
 );
+const themeCss = readFileSync(
+  resolve("src-tauri/resources/theme-engine/nn-theme.css"),
+  "utf-8"
+);
+const cdpSource = readFileSync(resolve("src-tauri/src/cdp.rs"), "utf-8");
+const verifyScriptMatch = cdpSource.match(/const VERIFY_SCRIPT: &str = r#"([\s\S]*?)"#;/);
+if (!verifyScriptMatch) throw new Error("无法读取 VERIFY_SCRIPT");
+const verifyScript = verifyScriptMatch[1];
 
 function manifest(layoutPreset = "standard", id = "engine-test") {
   return {
@@ -51,12 +60,17 @@ function manifest(layoutPreset = "standard", id = "engine-test") {
   };
 }
 
-function renderScript(layoutPreset = "standard", id = "engine-test"): string {
+function renderScript(
+  layoutPreset = "standard",
+  id = "engine-test",
+  artDataUrl = "data:image/png;base64,aW1hZ2U="
+): string {
   return template
     .replace("__CODEX_NN_THEME_CSS_JSON__", JSON.stringify(".codex-nn-theme { color: red; }"))
-    .replace("__CODEX_NN_THEME_ART_JSON__", JSON.stringify("data:image/png;base64,aW1hZ2U="))
+    .replace("__CODEX_NN_THEME_ART_JSON__", JSON.stringify(artDataUrl))
     .replace("__CODEX_NN_THEME_CONFIG_JSON__", JSON.stringify(manifest(layoutPreset, id)))
-    .replace("__CODEX_NN_THEME_VERSION_JSON__", JSON.stringify("test-version"));
+    .replace("__CODEX_NN_THEME_VERSION_JSON__", JSON.stringify("test-version"))
+    .replace("__CODEX_NN_THEME_REVISION_JSON__", JSON.stringify(`revision-${id}`));
 }
 
 function install(layoutPreset = "standard", id = "engine-test"): Record<string, unknown> {
@@ -82,9 +96,10 @@ beforeEach(() => {
       </section>
     </main>
   `;
+  let artSequence = 0;
   Object.defineProperty(URL, "createObjectURL", {
     configurable: true,
-    value: vi.fn(() => "blob:theme-art")
+    value: vi.fn(() => `blob:theme-art-${++artSequence}`)
   });
   Object.defineProperty(URL, "revokeObjectURL", {
     configurable: true,
@@ -111,6 +126,7 @@ beforeEach(() => {
 
 afterEach(() => {
   window.__CODEX_NN_THEME_STATE__?.cleanup();
+  document.querySelectorAll("[data-test-theme-css]").forEach((node) => node.remove());
   document.documentElement.className = "";
   document.documentElement.removeAttribute("style");
 });
@@ -127,6 +143,7 @@ describe("主题注入引擎", () => {
     expect(result).toMatchObject({ layout, shell });
     expect(document.documentElement.dataset.nnThemeLayout).toBe(layout);
     expect(document.documentElement.dataset.nnThemeShell).toBe(shell);
+    expect(document.documentElement.dataset.nnThemePage).toBe("home");
   });
 
   it("安装主题并通过重复 ensure 保持单一装饰层", () => {
@@ -134,6 +151,7 @@ describe("主题注入引擎", () => {
     const state = window.__CODEX_NN_THEME_STATE__;
 
     expect(result).toMatchObject({ installed: true, themeId: "engine-test", layout: "standard" });
+    expect(result.revision).toBe("revision-engine-test");
     expect(document.documentElement.classList.contains("codex-nn-theme")).toBe(true);
     expect(document.documentElement.dataset.nnThemeShell).toBe("light");
     expect(document.getElementById("codex-nn-theme-style")?.textContent).toContain("color: red");
@@ -153,8 +171,13 @@ describe("主题注入引擎", () => {
 
     expect(state?.layout).toBe("dream-skin");
     expect(document.documentElement.dataset.nnThemeShell).toBe("light");
+    expect(document.documentElement.dataset.nnThemePage).toBe("home");
+    expect(document.querySelector(".nn-theme-home")).toBeNull();
+    expect(document.querySelector("main")?.classList.contains("nn-theme-home-shell")).toBe(false);
+    expect(document.getElementById("codex-nn-theme-chrome")).toBeNull();
     expect(state?.cleanup()).toBe(true);
     expect(document.documentElement.classList.contains("codex-nn-theme")).toBe(false);
+    expect(document.documentElement.hasAttribute("data-nn-theme-page")).toBe(false);
     expect(document.getElementById("codex-nn-theme-style")).toBeNull();
     expect(document.getElementById("codex-nn-theme-chrome")).toBeNull();
     expect(document.querySelector(".nn-theme-home")).toBeNull();
@@ -168,7 +191,8 @@ describe("主题注入引擎", () => {
     install("standard", "second-theme");
 
     expect(disconnect).toHaveBeenCalledOnce();
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:theme-art");
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:theme-art-1");
     expect(window.__CODEX_NN_THEME_STATE__?.themeId).toBe("second-theme");
     expect(document.querySelectorAll("#codex-nn-theme-chrome")).toHaveLength(1);
   });
@@ -186,7 +210,179 @@ describe("主题注入引擎", () => {
 
     expect(route.classList.contains("nn-theme-home")).toBe(false);
     expect(document.querySelector("main")?.classList.contains("nn-theme-home-shell")).toBe(false);
+    expect(document.documentElement.dataset.nnThemePage).toBe("thread");
     expect(requestFrame).not.toHaveBeenCalled();
+  });
+
+  it("新主题图片无效时保留当前主题", () => {
+    install("standard", "active-theme");
+    const previous = window.__CODEX_NN_THEME_STATE__;
+    const style = document.getElementById("codex-nn-theme-style");
+
+    expect(() => window.eval(renderScript("dreamSkin", "invalid-theme", "not-a-data-url"))).toThrow(
+      "Invalid theme art data URL"
+    );
+
+    expect(window.__CODEX_NN_THEME_STATE__).toBe(previous);
+    expect(document.getElementById("codex-nn-theme-style")).toBe(style);
+    expect(document.documentElement.dataset.nnThemeLayout).toBe("standard");
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("Dream Skin 在新版首页缺少 role 和 home icon 时仍保留原生布局", () => {
+    const route = document.querySelector("section")!;
+    route.removeAttribute("role");
+    route.querySelector('[data-testid="home-icon"]')?.remove();
+    const originalClassName = route.className;
+    const originalStyle = route.getAttribute("style");
+
+    install("dreamSkin", "native-home-test");
+
+    expect(document.documentElement.dataset.nnThemePage).toBe("home");
+    expect(document.querySelector("main")?.classList.contains("nn-theme-home-shell")).toBe(false);
+    expect(document.querySelector(".nn-theme-home")).toBeNull();
+    expect(route.className).toBe(originalClassName);
+    expect(route.getAttribute("style")).toBe(originalStyle);
+  });
+
+  it.each(["standard", "strawberryStarlight", "azureNeon"])(
+    "%s 在新版首页缺少 role 时仍完整应用 Hero 状态",
+    (preset) => {
+      const route = document.querySelector("section")!;
+      route.removeAttribute("role");
+
+      install(preset, `roleless-${preset}`);
+
+      expect(document.documentElement.dataset.nnThemePage).toBe("home");
+      expect(route.classList.contains("nn-theme-home")).toBe(true);
+      expect(document.querySelector("main")?.classList.contains("nn-theme-home-shell")).toBe(true);
+    }
+  );
+
+  it("Dream Skin 在首页没有建议卡时仍识别页面状态", () => {
+    document.querySelector(".group\\/home-suggestions")?.remove();
+
+    install("dreamSkin", "home-without-suggestions-test");
+
+    expect(document.documentElement.dataset.nnThemePage).toBe("home");
+    expect(document.querySelector("main")?.classList.contains("nn-theme-home-shell")).toBe(false);
+    expect(document.querySelector(".nn-theme-home")).toBeNull();
+  });
+
+  it("切换到 Dream Skin 时清除旧版 Hero 状态", () => {
+    install("standard", "legacy-hero-test");
+    expect(document.querySelector(".nn-theme-home")).not.toBeNull();
+
+    install("dreamSkin", "native-wallpaper-test");
+
+    expect(document.querySelector(".nn-theme-home")).toBeNull();
+    expect(document.querySelector("main")?.classList.contains("nn-theme-home-shell")).toBe(false);
+    expect(document.documentElement.dataset.nnThemePage).toBe("home");
+    expect(document.querySelectorAll("#codex-nn-theme-style")).toHaveLength(1);
+    expect(document.querySelectorAll("#codex-nn-theme-chrome")).toHaveLength(0);
+  });
+
+  it("Dream Skin 在 composer 暂时卸载时不会误判为任务页", () => {
+    document.querySelector(".composer-surface-chrome")?.remove();
+
+    install("dreamSkin", "home-without-composer-test");
+
+    expect(document.documentElement.dataset.nnThemePage).toBe("home");
+    expect(document.querySelector(".nn-theme-home")).toBeNull();
+    expect(document.querySelector("main")?.classList.contains("nn-theme-home-shell")).toBe(false);
+  });
+
+  it("Dream Skin CSS 不包含原生布局几何重排", () => {
+    const start = themeCss.indexOf("/* Dream Skin keeps Codex geometry native");
+    const end = themeCss.indexOf("/* 两个内置主题共享原生布局", start);
+    const dreamSkinCss = themeCss.slice(start, end);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    expect(dreamSkinCss).toContain("var(--nn-theme-art)");
+    expect(dreamSkinCss).toContain('data-nn-theme-page="thread"');
+    expect(dreamSkinCss).not.toMatch(
+      /^\s*(?:position|inset|top|right|bottom|left|width|height|min-width|max-width|min-height|max-height|margin|padding|overflow|display|flex|grid-template)\s*:/m
+    );
+  });
+
+  it("Dream Skin 透明化全高分栏表面但不影响局部控件", () => {
+    document.documentElement.className = "codex-nn-theme";
+    document.documentElement.dataset.nnThemeLayout = "dream-skin";
+    const style = document.createElement("style");
+    style.dataset.testThemeCss = "true";
+    style.textContent = `
+      .bg-token-main-surface-primary { background: rgb(250, 250, 250); }
+      ${themeCss}
+    `;
+    document.head.appendChild(style);
+    document.querySelector("main")!.innerHTML = `
+      <div><aside><div><div id="absolute-pane" class="absolute bg-token-main-surface-primary"></div></div></aside></div>
+      <div><div id="full-height-pane" class="isolate h-full bg-token-main-surface-primary"></div></div>
+      <button id="local-control" class="bg-token-main-surface-primary">控件</button>
+    `;
+
+    expect(getComputedStyle(document.getElementById("absolute-pane")!).backgroundColor).toBe(
+      "rgba(0, 0, 0, 0)"
+    );
+    expect(getComputedStyle(document.getElementById("full-height-pane")!).backgroundColor).toBe(
+      "rgba(0, 0, 0, 0)"
+    );
+    expect(getComputedStyle(document.getElementById("local-control")!).backgroundColor).toBe(
+      "rgb(250, 250, 250)"
+    );
+  });
+
+  it("CDP 验证 Dream Skin 无装饰层，并拒绝页面状态不一致", () => {
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      right: 100,
+      bottom: 50,
+      left: 0,
+      width: 100,
+      height: 50,
+      toJSON: () => ({})
+    } as DOMRect);
+    install("dreamSkin", "verify-native-dream");
+
+    const valid = window.eval(verifyScript) as { pass: boolean };
+    expect(valid.pass).toBe(true);
+
+    document.documentElement.dataset.nnThemePage = "thread";
+    const stale = window.eval(verifyScript) as { pass: boolean };
+    expect(stale.pass).toBe(false);
+  });
+
+  it("CDP 验证拒绝组合任务页残留的 Hero 状态", () => {
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      right: 100,
+      bottom: 50,
+      left: 0,
+      width: 100,
+      height: 50,
+      toJSON: () => ({})
+    } as DOMRect);
+    const route = document.querySelector('[role="main"]')!;
+    route.innerHTML = `
+      <div><div><div></div></div></div>
+      <span data-testid="home-icon"></span>
+      <div data-feature="game-source"></div>
+      <div class="group/home-suggestions"><button>一</button><button>二</button></div>
+      <div class="composer-surface-chrome"></div>
+    `;
+    install("standard", "verify-composed-layout");
+    const chrome = document.getElementById("codex-nn-theme-chrome")!;
+    chrome.style.pointerEvents = "none";
+    expect((window.eval(verifyScript) as { pass: boolean }).pass).toBe(true);
+
+    route.appendChild(Object.assign(document.createElement("div"), { className: "thread-scroll-container" }));
+    document.documentElement.dataset.nnThemePage = "thread";
+    expect((window.eval(verifyScript) as { pass: boolean }).pass).toBe(false);
   });
 
   it("稳定 DOM 上重复 ensure 不会触发观察器回环", async () => {

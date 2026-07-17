@@ -46,6 +46,7 @@ v1 沿用 Codex Dream Skin 的运行时主题字段：
 
 - `schemaVersion` 固定为数字 `1`。
 - `layoutPreset` 可选 `standard`、`dreamSkin`、`strawberryStarlight` 或 `azureNeon`；旧清单缺省时按 `standard` 处理。
+- `dreamSkin` 使用浅色沉浸式整窗壁纸，保留 Codex 原生布局；首页显示更完整的图片，任务页会提高表面遮罩以保证文字可读性。
 - `id` 只能使用小写字母、数字和连字符，不能为空，最长 80 字符；后续更新同一主题时保持 ID 不变。
 - `name` 必填，最长 80 字符；`tagline` 最长 160 字符；其余文字字段最长 80 字符。
 - 颜色使用 `#RRGGBB`、`rgb(...)` 或 `rgba(...)`。
