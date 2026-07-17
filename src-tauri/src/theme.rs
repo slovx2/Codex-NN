@@ -202,9 +202,9 @@ pub struct ThemeStore {
     paths: AppPaths,
 }
 
-struct PreparedTheme {
-    manifest: ThemeManifest,
-    image: Vec<u8>,
+pub(crate) struct PreparedTheme {
+    pub(crate) manifest: ThemeManifest,
+    pub(crate) image: Vec<u8>,
     preview: Vec<u8>,
 }
 
@@ -416,7 +416,7 @@ impl ThemeStore {
     }
 }
 
-fn inspect_package(path: &Path) -> Result<PreparedTheme, String> {
+pub(crate) fn inspect_package(path: &Path) -> Result<PreparedTheme, String> {
     let metadata = std::fs::metadata(path).map_err(|error| format!("无法读取主题包：{error}"))?;
     if !metadata.is_file() || metadata.len() == 0 || metadata.len() > MAX_PACKAGE_BYTES {
         return Err("主题 ZIP 必须是 1 字节到 20 MB 的文件".into());

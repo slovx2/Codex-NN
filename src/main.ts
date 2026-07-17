@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { confirm as confirmDialog, open, save } from "@tauri-apps/plugin-dialog";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
+import { setupMarketplace } from "./marketplace";
 import type {
   AppSnapshot,
   DiagnosticReport,
@@ -37,6 +38,7 @@ root.innerHTML = `
       <nav class="navigation" aria-label="主导航">
         <button class="nav-item active" data-page="home"><span>⌂</span><b>首页</b></button>
         <button class="nav-item" data-page="themes"><span>◫</span><b>主题库</b></button>
+        <button class="nav-item" data-page="marketplace"><span>◎</span><b>主题广场</b></button>
         <button class="nav-item" data-page="designer"><span>✦</span><b>设计主题</b></button>
         <button class="nav-item" data-page="diagnostics"><span>⌁</span><b>诊断</b></button>
         <button id="settings-nav-item" class="nav-item" data-page="settings"><span>⚙</span><b>设置</b><i id="settings-update-dot" class="nav-update-dot" hidden></i></button>
@@ -84,6 +86,7 @@ root.innerHTML = `
         <header class="page-heading compact">
           <div><span class="eyebrow">LOCAL LIBRARY</span><h2>我的主题</h2><p>通过 ZIP 主题包安装，选择后可立即热切换。</p></div>
           <div class="heading-actions">
+            <button class="button subtle compact-button" data-open-page="marketplace">逛主题广场</button>
             <button id="import-dream-skin-button" class="button secondary compact-button" data-operation>导入 Dream Skin</button>
             <button id="import-theme-button" class="button primary compact-button" data-operation>＋ 安装主题包</button>
           </div>
@@ -93,6 +96,19 @@ root.innerHTML = `
           <div><span>已选择</span><strong id="selected-theme-name">尚未选择主题</strong></div>
           <button id="activate-theme-button" class="button primary compact-button" data-operation>应用主题</button>
         </footer>
+      </section>
+
+      <section id="page-marketplace" class="page">
+        <header class="page-heading compact marketplace-heading">
+          <div><span class="eyebrow">THEME PLAZA</span><h2>主题广场</h2><p>发现网友分享的主题，下载后由本地校验器安全安装。</p></div>
+          <div class="marketplace-tabs" role="tablist" aria-label="主题广场视图">
+            <button id="marketplace-discover-tab" class="marketplace-tab active" role="tab" aria-selected="true">发现主题</button>
+            <button id="marketplace-mine-tab" class="marketplace-tab" role="tab" aria-selected="false">我的上传</button>
+          </div>
+        </header>
+        <div id="marketplace-content" class="marketplace-content">
+          <div class="marketplace-loading">正在连接主题广场…</div>
+        </div>
       </section>
 
       <section id="page-designer" class="page">
@@ -159,6 +175,9 @@ root.innerHTML = `
       </div>
     </div>
   </div>
+  <div id="marketplace-detail-dialog" class="modal-backdrop" hidden>
+    <div id="marketplace-detail-card" class="modal-card marketplace-detail-card" role="dialog" aria-modal="true" aria-labelledby="marketplace-detail-title"></div>
+  </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 `;
 
@@ -171,6 +190,7 @@ const byId = <T extends HTMLElement>(id: string): T => {
 function showPage(page: string): void {
   document.querySelectorAll<HTMLElement>(".page").forEach((item) => item.classList.toggle("active", item.id === `page-${page}`));
   document.querySelectorAll<HTMLButtonElement>(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.page === page));
+  window.dispatchEvent(new CustomEvent("codexnn:page-changed", { detail: page }));
 }
 
 document.querySelectorAll<HTMLButtonElement>("[data-page]").forEach((button) => {
@@ -196,6 +216,13 @@ byId("diagnose-button").addEventListener("click", () => void runDiagnostics());
 byId("verify-button").addEventListener("click", () => void runVerification(null));
 byId("screenshot-button").addEventListener("click", () => void chooseScreenshot());
 byId("check-update-button").addEventListener("click", () => void checkForUpdates(true));
+
+setupMarketplace({
+  getInstalledThemes: () => themes,
+  refreshLocalThemes: () => refresh(true),
+  showToast,
+  errorMessage
+});
 
 async function refresh(preserveSelection = true): Promise<void> {
   const previousSelection = preserveSelection ? selectedThemeId : "";
