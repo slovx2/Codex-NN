@@ -10,11 +10,13 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PLUGIN_ROOT = join(ROOT, "plugin", "codex-nn-theme-designer");
 const SKILL_ROOT = join(PLUGIN_ROOT, "skills", "design-codex-nn-theme");
 const EXPECTED_THEME_IDS = new Set([
+  "adventure-atlas",
   "azure-neon-frontier",
   "miku-future-collab",
   "strawberry-starlight"
 ]);
 const EXPECTED_THEME_APPEARANCE = {
+  "adventure-atlas": "light",
   "azure-neon-frontier": "dark",
   "miku-future-collab": "light",
   "strawberry-starlight": "light"

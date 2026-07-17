@@ -2459,3 +2459,755 @@ html.codex-nn-theme[data-nn-theme-layout="miku-future"] main.main-surface:not(.n
     display: none !important;
   }
 }
+
+/* 云海远行图鉴：羊皮纸、航海罗盘与水彩冒险地图。 */
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] {
+  color-scheme: light !important;
+  --nn-theme-surface-fade: #f7f2e7;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] body {
+  color: #193b59 !important;
+  background:
+    linear-gradient(rgba(255, 255, 255, .22), rgba(238, 245, 241, .18)),
+    repeating-linear-gradient(0deg, rgba(62, 103, 111, .025) 0 1px, transparent 1px 5px),
+    #f5f0e4 !important;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "Segoe UI", serif !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] body::before {
+  opacity: .22 !important;
+  background-image:
+    radial-gradient(ellipse at 8% 92%, rgba(35, 126, 151, .32), transparent 17%),
+    radial-gradient(ellipse at 97% 9%, rgba(196, 149, 58, .28), transparent 16%) !important;
+  background-size: 100% 100% !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel {
+  background:
+    linear-gradient(90deg, rgba(255, 253, 246, .99), rgba(246, 241, 226, .97)),
+    repeating-linear-gradient(0deg, rgba(82, 73, 51, .03) 0 1px, transparent 1px 4px) !important;
+  border: 1px solid rgba(44, 123, 145, .30) !important;
+  border-left: 0 !important;
+  border-radius: 0 15px 15px 0 !important;
+  color: #193b59 !important;
+  box-shadow: 8px 0 24px rgba(41, 76, 82, .11), inset -2px 0 rgba(255, 255, 255, .72) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel::before {
+  content: "";
+  position: absolute;
+  right: 10px;
+  bottom: 58px;
+  width: 74px;
+  height: 118px;
+  opacity: .28;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 18% 22%, #4c8d8e 0 5px, transparent 6px),
+    radial-gradient(ellipse at 48% 39%, #78a29a 0 4px, transparent 5px),
+    radial-gradient(ellipse at 72% 59%, #d0a345 0 4px, transparent 5px),
+    linear-gradient(65deg, transparent 48%, #4c8d8e 49% 51%, transparent 52%);
+  transform: rotate(-12deg);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel * {
+  letter-spacing: 0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel button,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel a,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel span,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel div {
+  color: #244b66 !important;
+  text-shadow: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel svg {
+  color: #217d9a !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel button:hover {
+  color: #123c5a !important;
+  background: linear-gradient(90deg, rgba(74, 172, 192, .16), rgba(209, 154, 54, .08)) !important;
+  box-shadow: inset 0 0 0 1px rgba(38, 126, 153, .20) !important;
+  transform: translateX(1px) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel [aria-current="page"],
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] aside.app-shell-left-panel [class~="bg-token-list-hover-background"] {
+  background: linear-gradient(90deg, rgba(86, 190, 210, .22), rgba(212, 229, 221, .30)) !important;
+  border: 1px solid rgba(37, 126, 153, .28) !important;
+  box-shadow: inset 3px 0 #238aa6, 0 3px 10px rgba(42, 90, 103, .08) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] [data-nn-adventure-brand="true"] {
+  position: relative !important;
+  min-height: 45px !important;
+  padding-left: 43px !important;
+  color: #25435d !important;
+  font-family: Georgia, "Songti SC", serif !important;
+  font-size: 20px !important;
+  font-style: italic !important;
+  font-weight: 700 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] [data-nn-adventure-brand="true"]::before {
+  content: "✦";
+  position: absolute;
+  left: 5px;
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #bc8b35;
+  border-radius: 50%;
+  color: #f6e8bd;
+  background: radial-gradient(circle, #2e8dad 0 31%, #264d6c 32% 44%, #d0a346 45% 51%, #f7efd9 52% 100%);
+  box-shadow: 0 2px 6px rgba(49, 79, 82, .18);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] [data-nn-adventure-brand="true"]::after {
+  content: "ADVENTURE ATLAS" !important;
+  position: absolute;
+  left: 44px;
+  top: 31px;
+  color: #718691 !important;
+  font: 700 8px/1 "Segoe UI", sans-serif;
+  letter-spacing: 0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] [data-nn-adventure-nav="true"]::before {
+  content: attr(data-nn-adventure-icon);
+  width: 19px;
+  flex: 0 0 19px;
+  color: #217d9a;
+  font: 700 17px/1 Georgia, serif;
+  text-align: center;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] [data-nn-adventure-nav="true"] > div > span:first-child:has(svg) {
+  display: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] [data-nn-adventure-thread="true"]::before {
+  content: "✧";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  z-index: 1;
+  width: 16px;
+  color: #c18f34;
+  font-size: 13px;
+  text-align: center;
+  transform: translateY(-50%);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] [data-nn-adventure-thread="true"] {
+  padding-left: 27px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] [data-nn-adventure-section] {
+  position: relative;
+  border-top: 1px dashed rgba(44, 127, 150, .22);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] [data-nn-adventure-section="0"] {
+  border-top-color: transparent;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] main.main-surface,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] main.main-surface:not(.nn-theme-home-shell) {
+  border: 1px solid rgba(52, 126, 145, .28) !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 16px 0 0 0 !important;
+  color: #193b59 !important;
+  background:
+    radial-gradient(circle at 96% 8%, rgba(210, 163, 70, .09), transparent 26%),
+    linear-gradient(180deg, rgba(255, 253, 246, .98), rgba(242, 242, 229, .97)) !important;
+  box-shadow: -7px 0 24px rgba(41, 76, 82, .09), inset 0 1px rgba(255, 255, 255, .88) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] main.main-surface > header.app-header-tint {
+  color: #244b66 !important;
+  background: linear-gradient(90deg, rgba(255, 253, 246, .97), rgba(236, 245, 241, .94), rgba(249, 242, 221, .93)) !important;
+  border-bottom: 1px solid rgba(48, 127, 147, .24) !important;
+  box-shadow: 0 3px 13px rgba(56, 95, 95, .06) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child {
+  padding-top: 13px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child > div:first-child {
+  flex-basis: 494px !important;
+  min-height: 494px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child > div:first-child > div:first-child {
+  height: 312px !important;
+  min-height: 312px !important;
+  border: 2px solid rgba(167, 131, 65, .58) !important;
+  border-radius: 18px !important;
+  background-color: #dff1ed !important;
+  background-image:
+    linear-gradient(90deg, rgba(248, 245, 224, .75), rgba(244, 241, 220, .20) 48%, transparent 70%),
+    var(--nn-theme-art) !important;
+  background-size: 100% 100%, cover !important;
+  background-position: center, var(--nn-art-position) !important;
+  box-shadow:
+    0 13px 30px rgba(52, 85, 88, .16),
+    inset 0 0 0 5px rgba(255, 252, 237, .38),
+    inset 0 0 22px rgba(62, 104, 98, .12) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child > div:first-child > div:first-child::before {
+  width: 57% !important;
+  border-radius: 16px 0 0 16px !important;
+  background: linear-gradient(90deg, rgba(252, 248, 226, .94), rgba(248, 244, 221, .78) 62%, transparent 100%) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child > div:first-child > div:first-child::after {
+  content: "✦";
+  position: absolute;
+  right: 18px;
+  top: 15px;
+  z-index: 2;
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(180, 134, 49, .68);
+  border-radius: 50%;
+  color: #e6c677;
+  background: radial-gradient(circle, #2d86a3 0 31%, #244f6a 32% 45%, #c99a3f 46% 52%, rgba(255, 250, 229, .88) 53%);
+  box-shadow: 0 3px 10px rgba(42, 73, 82, .20);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child > div:first-child > div:first-child > div:first-child {
+  padding-left: 31px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child {
+  width: 54% !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home [data-feature="game-source"] {
+  color: #183d5d !important;
+  font-family: "Songti SC", "STSong", serif !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 1px rgba(255, 255, 255, .90) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home [data-feature="game-source"]::before {
+  margin-bottom: 8px !important;
+  color: #237d98 !important;
+  font: 800 12px/1.3 "Segoe UI", sans-serif !important;
+  letter-spacing: 0 !important;
+  text-shadow: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home [data-feature="game-source"]::after {
+  margin-top: 11px !important;
+  color: #456779 !important;
+  font-size: 13px !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 1px rgba(255, 255, 255, .88) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home [data-feature="game-source"] button {
+  border-color: rgba(45, 126, 151, .38) !important;
+  color: #1b728f !important;
+  background: rgba(250, 247, 227, .68) !important;
+  box-shadow: inset 0 -1px rgba(199, 153, 57, .18) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home .nn-theme-suggestions-slot {
+  left: 18px !important;
+  right: 18px !important;
+  margin-top: 12px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home .group\/home-suggestions button {
+  min-height: 145px !important;
+  padding: 15px 12px 13px !important;
+  border: 1px solid rgba(160, 125, 60, .42) !important;
+  border-radius: 15px !important;
+  color: #234965 !important;
+  background:
+    radial-gradient(ellipse at 12% 93%, rgba(73, 143, 137, .11), transparent 30%),
+    radial-gradient(ellipse at 90% 8%, rgba(204, 155, 61, .10), transparent 28%),
+    linear-gradient(145deg, rgba(255, 253, 244, .98), rgba(247, 241, 220, .97)) !important;
+  box-shadow:
+    0 7px 17px rgba(56, 91, 93, .12),
+    inset 0 0 0 3px rgba(255, 255, 255, .44) !important;
+  letter-spacing: 0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home .group\/home-suggestions button::after {
+  content: "♥";
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  color: #c98771;
+  font-size: 11px;
+  transform: translateX(-50%);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home .group\/home-suggestions button:hover {
+  border-color: rgba(38, 126, 153, .58) !important;
+  box-shadow: 0 12px 24px rgba(52, 88, 91, .17), 0 0 0 2px rgba(209, 154, 54, .10) !important;
+  transform: translateY(-3px) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home .group\/home-suggestions button > span:first-child > span:first-child {
+  width: 46px !important;
+  height: 46px !important;
+  border: 1px solid rgba(179, 134, 50, .62) !important;
+  color: #f8f0d8 !important;
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255, 255, 255, .46), transparent 18%),
+    linear-gradient(145deg, #6ab5c5, #287f9b 64%, #315a70) !important;
+  box-shadow: 0 0 0 6px rgba(211, 165, 76, .10), 0 4px 10px rgba(48, 83, 90, .20) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home .group\/home-suggestions button svg {
+  width: 24px !important;
+  height: 24px !important;
+  color: #fff8e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .composer-surface-chrome {
+  border: 1px solid rgba(44, 127, 150, .44) !important;
+  border-radius: 17px !important;
+  color: #284d66 !important;
+  background:
+    radial-gradient(ellipse at 93% 18%, rgba(209, 154, 54, .09), transparent 28%),
+    linear-gradient(145deg, rgba(255, 253, 244, .97), rgba(245, 241, 224, .94)) !important;
+  box-shadow: 0 8px 22px rgba(51, 87, 91, .15), inset 0 0 0 3px rgba(255, 255, 255, .52) !important;
+  backdrop-filter: blur(12px) saturate(106%) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .composer-surface-chrome::before {
+  content: "✦" !important;
+  border-color: rgba(188, 139, 53, .58) !important;
+  color: #fff7db !important;
+  background: linear-gradient(145deg, #5fb1c2, #217c99) !important;
+  box-shadow: 0 3px 10px rgba(41, 91, 105, .22) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .ProseMirror {
+  color: #234762 !important;
+  caret-color: #21829e !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] button[class~="bg-token-foreground"] {
+  color: #fffdf4 !important;
+  background: linear-gradient(145deg, #55adc1, #1f819f) !important;
+  box-shadow: 0 4px 12px rgba(31, 114, 140, .25) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home div:has(> .horizontal-scroll-fade-mask .group\/project-selector) {
+  border-color: rgba(45, 126, 151, .25) !important;
+  background: linear-gradient(180deg, rgba(250, 247, 232, .98), rgba(242, 241, 225, .94)) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home div:has(> .horizontal-scroll-fade-mask .group\/project-selector)::before {
+  color: #247c98 !important;
+  letter-spacing: 0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home .group\/project-selector > button {
+  border-color: rgba(43, 126, 152, .30) !important;
+  color: #234b66 !important;
+  background: linear-gradient(135deg, #fffdf5, #e9f1eb) !important;
+  box-shadow: 0 3px 10px rgba(44, 92, 99, .09) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-brand {
+  left: 18px !important;
+  top: 2px !important;
+  gap: 9px !important;
+  letter-spacing: 0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-portal-mark {
+  width: 32px !important;
+  height: 32px !important;
+  border: 2px solid #b98a36 !important;
+  color: #f6e6b7 !important;
+  background: radial-gradient(circle, #2c8aa9 0 31%, #254b69 32% 45%, #d0a345 46% 52%, #faf2d9 53% 100%) !important;
+  box-shadow: 0 2px 7px rgba(43, 80, 89, .18) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-brand b {
+  color: #234c68 !important;
+  font-family: "Songti SC", "STSong", serif !important;
+  font-size: 15px !important;
+  letter-spacing: 0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-brand small {
+  color: #6c8390 !important;
+  letter-spacing: 0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-status {
+  color: #6d8390 !important;
+  letter-spacing: 0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-status i {
+  background: #d2a345 !important;
+  box-shadow: 0 0 8px rgba(201, 152, 58, .48) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-quote {
+  right: 33px !important;
+  bottom: 68px !important;
+  color: rgba(47, 102, 118, .58) !important;
+  font-family: Georgia, "Songti SC", serif !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 1px rgba(255, 255, 255, .76) !important;
+  transform: rotate(-2deg) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-particles {
+  opacity: .46 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-particles i {
+  width: 3px !important;
+  height: 3px !important;
+  border-radius: 0 !important;
+  background: #d1a144 !important;
+  box-shadow: 0 0 7px rgba(205, 156, 64, .42) !important;
+  transform: rotate(45deg);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-orbit {
+  display: none !important;
+}
+
+.nn-adventure-frame,
+.nn-adventure-windrose {
+  display: none;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] #codex-nn-theme-chrome.nn-theme-home-shell .nn-adventure-frame {
+  position: absolute;
+  inset: 52px 15px 130px;
+  display: block;
+  border: 1px solid rgba(160, 124, 56, .14);
+  border-radius: 18px;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-frame i {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  border-color: rgba(177, 132, 50, .46);
+  border-style: solid;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-frame i:nth-child(1) {
+  left: -1px;
+  top: -1px;
+  border-width: 2px 0 0 2px;
+  border-radius: 15px 0 0;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-frame i:nth-child(2) {
+  right: -1px;
+  top: -1px;
+  border-width: 2px 2px 0 0;
+  border-radius: 0 15px 0 0;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-frame i:nth-child(3) {
+  left: -1px;
+  bottom: -1px;
+  border-width: 0 0 2px 2px;
+  border-radius: 0 0 0 15px;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-frame i:nth-child(4) {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 2px 2px 0;
+  border-radius: 0 0 15px;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] #codex-nn-theme-chrome.nn-theme-home-shell .nn-adventure-windrose {
+  position: absolute;
+  right: 25px;
+  top: 58px;
+  width: 44px;
+  height: 44px;
+  display: block;
+  border: 1px solid rgba(177, 132, 50, .52);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 249, 226, .88), rgba(42, 132, 158, .16));
+  box-shadow: 0 3px 10px rgba(47, 85, 92, .12);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-windrose::before,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-windrose::after,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-windrose i {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 34px;
+  background: linear-gradient(#c79537 0 48%, #287e99 49% 100%);
+  transform: translate(-50%, -50%);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-windrose::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-windrose i:first-child {
+  height: 27px;
+  opacity: .55;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-windrose i:last-child {
+  height: 27px;
+  opacity: .55;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] main.main-surface:not(.nn-theme-home-shell) [role="main"],
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] main.main-surface:not(.nn-theme-home-shell) .app-shell-main-content-frame {
+  color: #203f57 !important;
+  background: rgba(250, 248, 237, .76) !important;
+  text-shadow: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] main.main-surface:not(.nn-theme-home-shell) article,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] main.main-surface:not(.nn-theme-home-shell) [data-message-author-role] {
+  border-color: rgba(45, 126, 151, .18) !important;
+  color: #203f57 !important;
+  background: rgba(255, 253, 245, .88) !important;
+  box-shadow: 0 6px 18px rgba(53, 88, 89, .08) !important;
+  text-shadow: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-page="thread"]
+  #codex-nn-theme-chrome .nn-theme-brand,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-page="thread"]
+  #codex-nn-theme-chrome .nn-theme-status,
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-page="thread"]
+  #codex-nn-theme-chrome .nn-theme-quote {
+  display: none !important;
+}
+
+@media (max-width: 1120px) {
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child > div:first-child {
+    flex-basis: 456px !important;
+    min-height: 456px !important;
+  }
+
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child > div:first-child > div:first-child {
+    height: 284px !important;
+    min-height: 284px !important;
+  }
+
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home [data-feature="game-source"] {
+    font-size: 22px !important;
+  }
+}
+
+/* Codex 的 Electron 变体带高特异度，冒险预设在明亮 Shell 下明确接管关键表面。 */
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  aside.app-shell-left-panel {
+  background:
+    linear-gradient(90deg, rgba(255, 253, 246, .99), rgba(246, 241, 226, .97)),
+    repeating-linear-gradient(0deg, rgba(82, 73, 51, .03) 0 1px, transparent 1px 4px) !important;
+  border-color: rgba(44, 123, 145, .30) !important;
+  box-shadow: 8px 0 24px rgba(41, 76, 82, .11), inset -2px 0 rgba(255, 255, 255, .72) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  main.main-surface {
+  background:
+    radial-gradient(circle at 96% 8%, rgba(210, 163, 70, .09), transparent 26%),
+    linear-gradient(180deg, rgba(255, 253, 246, .98), rgba(242, 242, 229, .97)) !important;
+  border-color: rgba(52, 126, 145, .28) !important;
+  box-shadow: -7px 0 24px rgba(41, 76, 82, .09), inset 0 1px rgba(255, 255, 255, .88) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  main.main-surface:not(.nn-theme-home-shell)
+  section[class~="h-full"][class~="bg-token-main-surface-primary"],
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  main.main-surface:not(.nn-theme-home-shell)
+  section[class~="h-full"][class~="bg-token-main-surface-primary"]
+  > div[class~="h-full"][class~="bg-token-main-surface-primary"] {
+  color: #203f57 !important;
+  background:
+    repeating-linear-gradient(0deg, rgba(62, 103, 111, .018) 0 1px, transparent 1px 5px),
+    rgba(255, 253, 244, .91) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home > div:first-child > div:first-child > div:first-child {
+  height: 340px !important;
+  min-height: 340px !important;
+  border: 2px solid rgba(167, 131, 65, .58) !important;
+  background-color: #dff1ed !important;
+  background-image:
+    linear-gradient(90deg, rgba(248, 245, 224, .75), rgba(244, 241, 220, .20) 48%, transparent 70%),
+    var(--nn-theme-art) !important;
+  background-size: 100% 100%, cover !important;
+  background-position: center, var(--nn-art-position) !important;
+  box-shadow:
+    0 13px 30px rgba(52, 85, 88, .16),
+    inset 0 0 0 5px rgba(255, 252, 237, .38),
+    inset 0 0 22px rgba(62, 104, 98, .12) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home > div:first-child > div:first-child {
+  flex-basis: 535px !important;
+  min-height: 535px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home .group\/home-suggestions button {
+  min-height: 160px !important;
+  border: 1px solid rgba(160, 125, 60, .42) !important;
+  color: #234965 !important;
+  background:
+    radial-gradient(ellipse at 12% 93%, rgba(73, 143, 137, .11), transparent 30%),
+    radial-gradient(ellipse at 90% 8%, rgba(204, 155, 61, .10), transparent 28%),
+    linear-gradient(145deg, rgba(255, 253, 244, .98), rgba(247, 241, 220, .97)) !important;
+  box-shadow:
+    0 7px 17px rgba(56, 91, 93, .12),
+    inset 0 0 0 3px rgba(255, 255, 255, .44) !important;
+  justify-content: flex-start !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home .group\/home-suggestions button > span:first-child {
+  min-height: 58px !important;
+  justify-content: center !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home .group\/home-suggestions button > span:last-child {
+  margin-top: 18px !important;
+  align-items: center !important;
+  color: #234965 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+  text-align: center !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home .group\/home-suggestions button > span:first-child > span:first-child {
+  border: 1px solid rgba(179, 134, 50, .62) !important;
+  color: #f8f0d8 !important;
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255, 255, 255, .46), transparent 18%),
+    linear-gradient(145deg, #6ab5c5, #287f9b 64%, #315a70) !important;
+  box-shadow: 0 0 0 6px rgba(211, 165, 76, .10), 0 4px 10px rgba(48, 83, 90, .20) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home .group\/home-suggestions button svg {
+  color: #fff8e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .composer-surface-chrome {
+  border: 1px solid rgba(44, 127, 150, .44) !important;
+  color: #284d66 !important;
+  background:
+    radial-gradient(ellipse at 93% 18%, rgba(209, 154, 54, .09), transparent 28%),
+    linear-gradient(145deg, rgba(255, 253, 244, .97), rgba(245, 241, 224, .94)) !important;
+  box-shadow: 0 8px 22px rgba(51, 87, 91, .15), inset 0 0 0 3px rgba(255, 255, 255, .52) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .composer-surface-chrome::before {
+  content: "✦" !important;
+  border-color: rgba(188, 139, 53, .58) !important;
+  color: #fff7db !important;
+  background: linear-gradient(145deg, #5fb1c2, #217c99) !important;
+  box-shadow: 0 3px 10px rgba(41, 91, 105, .22) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home [data-feature="game-source"] {
+  color: #183d5d !important;
+  text-shadow: 0 1px rgba(255, 255, 255, .90) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home [data-feature="game-source"]::before {
+  color: #237d98 !important;
+  text-shadow: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home [data-feature="game-source"]::after {
+  color: #456779 !important;
+  text-shadow: 0 1px rgba(255, 255, 255, .88) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+  .nn-theme-home .group\/project-selector > button {
+  border-color: rgba(43, 126, 152, .30) !important;
+  color: #234b66 !important;
+  background: linear-gradient(135deg, #fffdf5, #e9f1eb) !important;
+  box-shadow: 0 3px 10px rgba(44, 92, 99, .09) !important;
+}
+
+@media (min-height: 1100px) {
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+    .nn-theme-home > div:first-child > div:first-child {
+    flex-basis: 770px !important;
+    min-height: 770px !important;
+  }
+
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+    .nn-theme-home > div:first-child > div:first-child > div:first-child {
+    height: 520px !important;
+    min-height: 520px !important;
+  }
+
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+    .nn-theme-home [data-feature="game-source"] {
+    font-size: 34px !important;
+  }
+
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"][data-nn-theme-shell="light"]
+    .nn-theme-home .group\/home-suggestions button {
+    min-height: 220px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home > div:first-child > div:first-child > div:first-child > div:first-child > div:first-child {
+    width: 64% !important;
+  }
+
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-theme-home .group\/home-suggestions button {
+    min-height: 124px !important;
+  }
+
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-windrose,
+  html.codex-nn-theme[data-nn-theme-layout="adventure-atlas"] .nn-adventure-frame {
+    display: none !important;
+  }
+}

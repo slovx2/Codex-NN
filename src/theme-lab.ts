@@ -63,6 +63,7 @@ app.innerHTML = `
     <nav class="lab-routes" id="lab-routes" aria-label="页面状态"></nav>
     <div class="lab-actions" role="group" aria-label="预览尺寸">
       <select id="theme-select" aria-label="预览主题">
+        <option value="adventure-atlas">云海远行图鉴</option>
         <option value="miku-future-collab">初音未来</option>
         <option value="strawberry-starlight">星莓绮梦</option>
         <option value="azure-neon-frontier">苍蓝矩阵</option>

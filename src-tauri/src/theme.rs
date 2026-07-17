@@ -37,6 +37,9 @@ const MIKU_FUTURE_COLLAB_THEME: &str =
     include_str!("../../theme-packs/miku-future-collab/theme.json");
 const MIKU_FUTURE_COLLAB_IMAGE: &[u8] =
     include_bytes!("../../theme-packs/miku-future-collab/background.webp");
+const ADVENTURE_ATLAS_THEME: &str = include_str!("../../theme-packs/adventure-atlas/theme.json");
+const ADVENTURE_ATLAS_IMAGE: &[u8] =
+    include_bytes!("../../theme-packs/adventure-atlas/background.webp");
 
 struct BuiltInTheme {
     id: &'static str,
@@ -204,6 +207,11 @@ const BUILT_IN_THEMES: &[BuiltInTheme] = &[
         id: "miku-future-collab",
         manifest: MIKU_FUTURE_COLLAB_THEME,
         image: MIKU_FUTURE_COLLAB_IMAGE,
+    },
+    BuiltInTheme {
+        id: "adventure-atlas",
+        manifest: ADVENTURE_ATLAS_THEME,
+        image: ADVENTURE_ATLAS_IMAGE,
     },
 ];
 
@@ -552,10 +560,15 @@ fn validate_manifest(manifest: &ThemeManifest) -> Result<(), String> {
     validate_text("主题名称", &manifest.name, 80, true)?;
     if !matches!(
         manifest.layout_preset.as_str(),
-        "standard" | "dreamSkin" | "strawberryStarlight" | "azureNeon" | "mikuFuture"
+        "standard"
+            | "dreamSkin"
+            | "strawberryStarlight"
+            | "azureNeon"
+            | "mikuFuture"
+            | "adventureAtlas"
     ) {
         return Err(
-            "主题布局只能是 standard、dreamSkin、strawberryStarlight、azureNeon 或 mikuFuture"
+            "主题布局只能是 standard、dreamSkin、strawberryStarlight、azureNeon、mikuFuture 或 adventureAtlas"
                 .into(),
         );
     }
@@ -935,7 +948,7 @@ mod tests {
     fn exposes_and_protects_all_built_in_themes() {
         let (root, store) = test_store();
         let themes = store.list(None).unwrap();
-        assert_eq!(themes.len(), 3);
+        assert_eq!(themes.len(), 4);
         assert_eq!(store.default_id(), "strawberry-starlight");
 
         for built_in in BUILT_IN_THEMES {
@@ -946,7 +959,7 @@ mod tests {
             assert_eq!(loaded.id, built_in.id);
             assert!(matches!(
                 loaded.layout_preset.as_str(),
-                "dreamSkin" | "strawberryStarlight" | "azureNeon" | "mikuFuture"
+                "dreamSkin" | "strawberryStarlight" | "azureNeon" | "mikuFuture" | "adventureAtlas"
             ));
             assert!(!image.is_empty());
 

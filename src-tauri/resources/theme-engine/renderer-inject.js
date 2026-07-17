@@ -21,6 +21,7 @@
     strawberryStarlight: "strawberry-starlight",
     azureNeon: "azure-neon",
     mikuFuture: "miku-future",
+    adventureAtlas: "adventure-atlas",
   })[THEME.layoutPreset] || "standard";
   const THEME_VARIABLES = [
     "--ds-bg", "--ds-panel", "--ds-panel-2", "--ds-green", "--ds-lime",
@@ -106,6 +107,49 @@
       } else {
         button.removeAttribute("data-nn-sidebar-section");
       }
+    }
+  };
+
+  const ADVENTURE_ICONS = new Map([
+    ["新建任务", "＋"], ["New task", "＋"],
+    ["已安排", "▦"], ["Scheduled", "▦"],
+    ["拉取请求", "⑂"], ["Pull requests", "⑂"],
+    ["插件", "◇"], ["Plugins", "◇"],
+    ["技能", "◇"], ["Skills", "◇"],
+    ["站点", "⌘"], ["Sites", "⌘"],
+    ["聊天", "◌"], ["Chats", "◌"],
+  ]);
+  const adventureIcon = (label) => ADVENTURE_ICONS.get(
+    String(label || "").replace(/\s+/g, " ").trim()
+  ) || null;
+
+  const decorateAdventureSidebar = () => {
+    const sidebar = document.querySelector("aside.app-shell-left-panel");
+    if (!sidebar || LAYOUT !== "adventure-atlas") return;
+    sidebar.classList.add("nn-adventure-sidebar");
+    const modeButton = sidebar.querySelector('button[aria-label*="切换模式"], button[aria-label*="Switch mode"]');
+    modeButton?.setAttribute("data-nn-adventure-brand", "true");
+    for (const button of sidebar.querySelectorAll("button")) {
+      const labelNode = button.querySelector(".text-fade-truncate") || button;
+      const label = labelNode.textContent;
+      const icon = adventureIcon(label);
+      if (icon) {
+        setAttribute(button, "data-nn-adventure-nav", "true");
+        setAttribute(button, "data-nn-adventure-icon", icon);
+        continue;
+      }
+    }
+    const scroll = sidebar.querySelector("[data-app-action-sidebar-scroll]");
+    if (scroll) {
+      for (const item of scroll.querySelectorAll('[role="listitem"]')) {
+        const row = item.querySelector('[role="button"].group') || item.querySelector('[role="button"]');
+        if (row) setAttribute(row, "data-nn-adventure-thread", "true");
+      }
+      [...scroll.children].forEach((section, index) => {
+        if (section instanceof HTMLElement) {
+          setAttribute(section, "data-nn-adventure-section", String(index % 4));
+        }
+      });
     }
   };
 
@@ -501,6 +545,7 @@
     const shellMain = document.querySelector("main.main-surface") || document.querySelector("main");
     if (!shellMain || !document.body) return;
     markSidebar(document.querySelector("aside.app-shell-left-panel") || document.querySelector("aside"));
+    decorateAdventureSidebar();
     const homeIndicator = shellMain.querySelector('[data-testid="home-icon"]');
     const gameSource = shellMain.querySelector('[data-feature="game-source"]');
     const composer = shellMain.querySelector(".composer-surface-chrome");
@@ -561,12 +606,17 @@
           <span class="nn-miku-sparkle">✦</span>
           <span class="nn-miku-heart">♡</span>
           <span class="nn-miku-badge"><b>MIKU</b><small>01 · FUTURE</small></span>
-        </div>`;
+        </div>
+        <div class="nn-adventure-frame"><i></i><i></i><i></i><i></i></div>
+        <div class="nn-adventure-windrose"><i></i><i></i></div>`;
       document.body.appendChild(chrome);
     }
     setText(chrome.querySelector(".nn-theme-brand b"), THEME.name || "Codex 暖暖");
     setText(chrome.querySelector(".nn-theme-brand small"), THEME.brandSubtitle || "CODEX NN");
-    setText(chrome.querySelector(".nn-theme-portal-mark"), LAYOUT === "strawberry-starlight" ? "♡" : "◈");
+    setText(
+      chrome.querySelector(".nn-theme-portal-mark"),
+      LAYOUT === "strawberry-starlight" ? "♡" : LAYOUT === "adventure-atlas" ? "✦" : "◈"
+    );
     setText(chrome.querySelector(".nn-theme-status span"), THEME.statusText || "CODEX NN ONLINE");
     setText(chrome.querySelector(".nn-theme-quote"), THEME.quote || "MAKE SOMETHING WONDERFUL");
     const shellBox = shellMain.getBoundingClientRect();
@@ -595,6 +645,14 @@
     document.querySelectorAll(".nn-theme-suggestions-slot").forEach((node) => node.classList.remove("nn-theme-suggestions-slot"));
     document.querySelectorAll("[data-nn-sidebar-item]").forEach((node) => node.removeAttribute("data-nn-sidebar-item"));
     document.querySelectorAll("[data-nn-sidebar-section]").forEach((node) => node.removeAttribute("data-nn-sidebar-section"));
+    document.querySelectorAll(".nn-adventure-sidebar").forEach((node) => node.classList.remove("nn-adventure-sidebar"));
+    document.querySelectorAll("[data-nn-adventure-brand]").forEach((node) => node.removeAttribute("data-nn-adventure-brand"));
+    document.querySelectorAll("[data-nn-adventure-nav]").forEach((node) => {
+      node.removeAttribute("data-nn-adventure-nav");
+      node.removeAttribute("data-nn-adventure-icon");
+    });
+    document.querySelectorAll("[data-nn-adventure-thread]").forEach((node) => node.removeAttribute("data-nn-adventure-thread"));
+    document.querySelectorAll("[data-nn-adventure-section]").forEach((node) => node.removeAttribute("data-nn-adventure-section"));
     document.getElementById(STYLE_ID)?.remove();
     document.getElementById(CHROME_ID)?.remove();
     state?.observer?.disconnect();

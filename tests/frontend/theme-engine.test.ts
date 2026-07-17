@@ -47,7 +47,7 @@ function manifest(layoutPreset = "standard", id = "engine-test") {
     quote: "TEST THE ENGINE",
     image: "background.png",
     appearance: layoutPreset === "azureNeon" ? "dark" :
-      ["strawberryStarlight", "mikuFuture"].includes(layoutPreset) ? "light" : "auto",
+      ["strawberryStarlight", "mikuFuture", "adventureAtlas"].includes(layoutPreset) ? "light" : "auto",
     art: {
       focusX: 0.74,
       focusY: 0.48,
@@ -169,7 +169,8 @@ describe("主题注入引擎", () => {
     ["dreamSkin", "dream-skin", "light"],
     ["strawberryStarlight", "strawberry-starlight", "light"],
     ["azureNeon", "azure-neon", "dark"],
-    ["mikuFuture", "miku-future", "light"]
+    ["mikuFuture", "miku-future", "light"],
+    ["adventureAtlas", "adventure-atlas", "light"]
   ])("映射 %s 布局并选择正确 Shell", (preset, layout, shell) => {
     const result = install(preset, `layout-${preset}`);
 
@@ -183,7 +184,8 @@ describe("主题注入引擎", () => {
     ["dreamSkin", false],
     ["strawberryStarlight", true],
     ["azureNeon", true],
-    ["mikuFuture", true]
+    ["mikuFuture", true],
+    ["adventureAtlas", true]
   ])("%s 在新版首页 Portal 中保留行动卡", (preset, composedHome) => {
     document.body.innerHTML = `
       <aside class="app-shell-left-panel"></aside>
@@ -282,7 +284,8 @@ describe("主题注入引擎", () => {
   it.each([
     ["strawberryStarlight", "strawberry-starlight", "light"],
     ["azureNeon", "azure-neon", "dark"],
-    ["mikuFuture", "miku-future", "light"]
+    ["mikuFuture", "miku-future", "light"],
+    ["adventureAtlas", "adventure-atlas", "light"]
   ])("%s 从首页切到聊天页后保留原布局和装饰层", (preset, layout, shell) => {
     install(preset, `built-in-${preset}`);
     const route = document.querySelector('[role="main"]')!;
@@ -307,6 +310,36 @@ describe("主题注入引擎", () => {
     expect(document.getElementById("codex-nn-theme-chrome")).not.toBeNull();
     expect(document.getElementById("codex-nn-theme-chrome")?.classList.contains("nn-theme-home-shell")).toBe(false);
     expect(document.querySelector('[class^="nn-dream-"]')).toBeNull();
+  });
+
+  it("冒险图鉴标记侧栏导航和对话，并在清理时完整撤销", () => {
+    document.querySelector("aside")!.innerHTML = `
+      <button aria-label="切换模式，当前模式：Codex"><span>Codex</span></button>
+      <button><div><span><svg></svg></span><span class="text-fade-truncate">新建任务</span></div></button>
+      <div data-app-action-sidebar-scroll>
+        <section><div role="listitem"><div class="group" role="button">远行手记</div></div></section>
+      </div>
+    `;
+
+    install("adventureAtlas", "adventure-sidebar-test");
+
+    const sidebar = document.querySelector("aside")!;
+    expect(sidebar.classList.contains("nn-adventure-sidebar")).toBe(true);
+    expect(sidebar.querySelector('[data-nn-adventure-brand="true"]')).not.toBeNull();
+    expect(sidebar.querySelector('[data-nn-adventure-icon="＋"]')).not.toBeNull();
+    expect(sidebar.querySelector('[data-nn-adventure-thread="true"]')).not.toBeNull();
+    expect(sidebar.querySelector('[data-nn-adventure-section="0"]')).not.toBeNull();
+    expect(document.querySelectorAll(".nn-adventure-frame")).toHaveLength(1);
+    expect(document.querySelectorAll(".nn-adventure-windrose")).toHaveLength(1);
+
+    window.__CODEX_NN_THEME_STATE__?.ensure();
+    expect(document.querySelectorAll(".nn-adventure-frame")).toHaveLength(1);
+    window.__CODEX_NN_THEME_STATE__?.cleanup();
+    expect(sidebar.classList.contains("nn-adventure-sidebar")).toBe(false);
+    expect(sidebar.querySelector("[data-nn-adventure-brand]")).toBeNull();
+    expect(sidebar.querySelector("[data-nn-adventure-nav]")).toBeNull();
+    expect(sidebar.querySelector("[data-nn-adventure-thread]")).toBeNull();
+    expect(sidebar.querySelector("[data-nn-adventure-section]")).toBeNull();
   });
 
   it("安装主题并通过重复 ensure 保持单一装饰层", () => {

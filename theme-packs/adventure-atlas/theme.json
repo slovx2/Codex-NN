@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "adventure-atlas",
+  "name": "云海远行图鉴",
+  "layoutPreset": "adventureAtlas",
+  "brandSubtitle": "CODEX NN · ADVENTURE ATLAS",
+  "tagline": "沿着云海出发，把灵感写成代码与故事。",
+  "projectPrefix": "启程前往 · ",
+  "projectLabel": "✦  选择远行项目",
+  "statusText": "ATLAS READY",
+  "quote": "FOLLOW THE COMPASS · FIND THE STORY",
+  "image": "background.webp",
+  "appearance": "light",
+  "art": {
+    "focusX": 0.64,
+    "focusY": 0.48,
+    "safeArea": "left",
+    "taskMode": "ambient"
+  },
+  "colors": {
+    "background": "#F5F0E4",
+    "panel": "#FFFDF6",
+    "panelAlt": "#EDF3ED",
+    "accent": "#187E9D",
+    "accentAlt": "#D19A36",
+    "secondary": "#4B8793",
+    "highlight": "#8A6A2F",
+    "text": "#193B59",
+    "muted": "#607887",
+    "line": "rgba(38, 105, 126, 0.30)"
+  }
+}
