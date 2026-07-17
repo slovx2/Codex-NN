@@ -28,6 +28,7 @@ let appliedAccent = "";
 let checkingForUpdates = false;
 
 const DEFAULT_ACCENT = "#e2556d";
+const MARKETPLACE_ENABLED: boolean = false;
 
 root.innerHTML = `
   <div class="app-shell">
@@ -39,7 +40,7 @@ root.innerHTML = `
       <nav class="navigation" aria-label="主导航">
         <button class="nav-item active" data-page="home"><span>⌂</span><b>首页</b></button>
         <button class="nav-item" data-page="themes"><span>◫</span><b>主题库</b></button>
-        <button class="nav-item" data-page="marketplace"><span>◎</span><b>主题广场</b></button>
+        ${MARKETPLACE_ENABLED ? `<button class="nav-item" data-page="marketplace"><span>◎</span><b>主题广场</b></button>` : ""}
         <button class="nav-item" data-page="designer"><span>✦</span><b>设计主题</b></button>
         <button class="nav-item" data-page="diagnostics"><span>⌁</span><b>诊断</b></button>
         <button id="settings-nav-item" class="nav-item" data-page="settings"><span>⚙</span><b>设置</b><i id="settings-update-dot" class="nav-update-dot" hidden></i></button>
@@ -87,7 +88,7 @@ root.innerHTML = `
         <header class="page-heading compact">
           <div><span class="eyebrow">LOCAL LIBRARY</span><h2>我的主题</h2><p>通过 ZIP 主题包安装，选择后可立即热切换。</p></div>
           <div class="heading-actions">
-            <button class="button subtle compact-button" data-open-page="marketplace">逛主题广场</button>
+            ${MARKETPLACE_ENABLED ? `<button class="button subtle compact-button" data-open-page="marketplace">逛主题广场</button>` : ""}
             <button id="import-dream-skin-button" class="button secondary compact-button" data-operation>导入 Dream Skin</button>
             <button id="import-theme-button" class="button primary compact-button" data-operation>＋ 安装主题包</button>
           </div>
@@ -99,7 +100,7 @@ root.innerHTML = `
         </footer>
       </section>
 
-      <section id="page-marketplace" class="page">
+      ${MARKETPLACE_ENABLED ? `<section id="page-marketplace" class="page">
         <header class="page-heading compact marketplace-heading">
           <div><span class="eyebrow">THEME PLAZA</span><h2>主题广场</h2><p>发现网友分享的主题，下载后由本地校验器安全安装。</p></div>
           <div class="marketplace-tabs" role="tablist" aria-label="主题广场视图">
@@ -110,7 +111,7 @@ root.innerHTML = `
         <div id="marketplace-content" class="marketplace-content">
           <div class="marketplace-loading">正在连接主题广场…</div>
         </div>
-      </section>
+      </section>` : ""}
 
       <section id="page-designer" class="page">
         <header class="page-heading compact">
@@ -176,9 +177,9 @@ root.innerHTML = `
       </div>
     </div>
   </div>
-  <div id="marketplace-detail-dialog" class="modal-backdrop" hidden>
+  ${MARKETPLACE_ENABLED ? `<div id="marketplace-detail-dialog" class="modal-backdrop" hidden>
     <div id="marketplace-detail-card" class="modal-card marketplace-detail-card" role="dialog" aria-modal="true" aria-labelledby="marketplace-detail-title"></div>
-  </div>
+  </div>` : ""}
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 `;
 
@@ -218,12 +219,14 @@ byId("verify-button").addEventListener("click", () => void runVerification(null)
 byId("screenshot-button").addEventListener("click", () => void chooseScreenshot());
 byId("check-update-button").addEventListener("click", () => void checkForUpdates(true));
 
-setupMarketplace({
-  getInstalledThemes: () => themes,
-  refreshLocalThemes: () => refresh(true),
-  showToast,
-  errorMessage
-});
+if (MARKETPLACE_ENABLED) {
+  setupMarketplace({
+    getInstalledThemes: () => themes,
+    refreshLocalThemes: () => refresh(true),
+    showToast,
+    errorMessage
+  });
+}
 
 async function refresh(preserveSelection = true): Promise<void> {
   const previousSelection = preserveSelection ? selectedThemeId : "";

@@ -173,6 +173,10 @@ describe("主应用界面", () => {
     expect(document.getElementById("page-diagnostics")?.classList.contains("active")).toBe(true);
     document.querySelector<HTMLButtonElement>('[data-open-page="themes"]')?.click();
     expect(document.getElementById("page-themes")?.classList.contains("active")).toBe(true);
+    expect(document.querySelector('[data-page="marketplace"]')).toBeNull();
+    expect(document.querySelector('[data-open-page="marketplace"]')).toBeNull();
+    expect(document.getElementById("page-marketplace")).toBeNull();
+    expect(document.getElementById("marketplace-detail-dialog")).toBeNull();
   });
 
   it("非法主题强调色回退到应用默认色", async () => {
