@@ -90,7 +90,7 @@ impl MarketplaceClient {
         std::fs::create_dir_all(&temporary_dir)
             .map_err(|error| format!("无法创建广场临时目录：{error}"))?;
         let api_base = option_env!("CODEX_NN_MARKETPLACE_API_BASE_URL")
-            .unwrap_or("http://127.0.0.1:8080")
+            .unwrap_or("https://api.codexnn.com")
             .trim_end_matches('/')
             .to_string();
         let http = reqwest::Client::builder()
