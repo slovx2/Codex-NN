@@ -52,7 +52,7 @@ No manual file editing or repeated scripts are required. Open Codex NN, choose a
 - **No-code theme design**: describe a visual style or provide a concept image; no knowledge of color systems, schemas, or packaging is required
 - **Built-in theme design Skill**: install the bundled designer plugin with one click and let Codex create the concept, background, palette, copy, and theme package
 - **Design with live feedback**: Codex installs, switches, and diagnoses themes through the local MCP so you can review the real interface and keep refining it in the same conversation
-- **Ready to use**: includes the Strawberry Starlight and Azure Neon Frontier themes
+- **Ready to use**: includes Strawberry Starlight, Azure Neon Frontier, and Miku Future Collab
 - **Instant switching**: hot-swap themes while a managed theme session is running
 - **Local theme library**: install, update, and manage your own ZIP theme packages
 - **Full control**: launch or restart Codex, pause theming, or restore the official appearance

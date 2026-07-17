@@ -12,13 +12,14 @@ use crate::{
     models::{ThemeManifest, VerificationReport},
 };
 
-const THEME_ENGINE_VERSION: &str = "0.4.1";
+const THEME_ENGINE_VERSION: &str = "0.4.3";
 const CSS: &str = include_str!("../resources/theme-engine/nn-theme.css");
 const RENDERER: &str = include_str!("../resources/theme-engine/renderer-inject.js");
 
 #[derive(Debug, Clone)]
 pub struct ThemePayload {
     pub theme_id: String,
+    pub revision: String,
     pub script: String,
 }
 
@@ -76,6 +77,7 @@ pub fn build_payload(manifest: &ThemeManifest, image: &[u8]) -> Result<ThemePayl
         "taskMode": if ratio >= 2.25 { "banner" } else { "ambient" },
     });
     let theme = serde_json::to_string(&theme).map_err(|error| error.to_string())?;
+    let revision = theme_revision(&theme, image);
     let script = RENDERER
         .replace(
             "__CODEX_NN_THEME_CSS_JSON__",
@@ -89,11 +91,24 @@ pub fn build_payload(manifest: &ThemeManifest, image: &[u8]) -> Result<ThemePayl
         .replace(
             "__CODEX_NN_THEME_VERSION_JSON__",
             &serde_json::to_string(THEME_ENGINE_VERSION).unwrap(),
+        )
+        .replace(
+            "__CODEX_NN_THEME_REVISION_JSON__",
+            &serde_json::to_string(&revision).unwrap(),
         );
     Ok(ThemePayload {
         theme_id: manifest.id.clone(),
+        revision,
         script,
     })
+}
+
+fn theme_revision(theme: &str, image: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(theme.as_bytes());
+    hasher.update([0]);
+    hasher.update(image);
+    format!("{:x}", hasher.finalize())
 }
 
 pub async fn endpoint_ready(port: u16) -> bool {
@@ -204,7 +219,7 @@ async fn apply_all(port: u16, payload: &ThemePayload) -> Result<usize, String> {
     let mut count = 0;
     for target in targets {
         let mut session = connect_verified(&target, port).await?;
-        let marker = format!("window.__CODEX_NN_THEME_STATE__?.version === {version} && window.__CODEX_NN_THEME_STATE__?.themeId === {theme}", version = serde_json::to_string(THEME_ENGINE_VERSION).unwrap(), theme = serde_json::to_string(&payload.theme_id).unwrap());
+        let marker = format!("window.__CODEX_NN_THEME_STATE__?.version === {version} && window.__CODEX_NN_THEME_STATE__?.themeId === {theme} && window.__CODEX_NN_THEME_STATE__?.revision === {revision}", version = serde_json::to_string(THEME_ENGINE_VERSION).unwrap(), theme = serde_json::to_string(&payload.theme_id).unwrap(), revision = serde_json::to_string(&payload.revision).unwrap());
         if session.evaluate(&marker).await?.as_bool() != Some(true) {
             let result = session.evaluate(&payload.script).await?;
             if result.get("installed").and_then(Value::as_bool) != Some(true) {
@@ -234,14 +249,20 @@ async fn list_targets(port: u16) -> Result<Vec<Target>, String> {
         .json()
         .await
         .map_err(|error| format!("CDP 页面列表格式错误：{error}"))?;
-    Ok(targets
-        .into_iter()
-        .filter(|target| {
-            target.kind == "page"
-                && target.url.starts_with("app://")
-                && !target.web_socket_debugger_url.is_empty()
-        })
-        .collect())
+    Ok(targets.into_iter().filter(is_codex_page_target).collect())
+}
+
+fn is_codex_page_target(target: &Target) -> bool {
+    let Ok(url) = reqwest::Url::parse(&target.url) else {
+        return false;
+    };
+    let has_initial_route = url
+        .query_pairs()
+        .any(|(key, _)| key.eq_ignore_ascii_case("initialRoute"));
+    target.kind == "page"
+        && url.scheme() == "app"
+        && !target.web_socket_debugger_url.is_empty()
+        && !has_initial_route
 }
 
 async fn connect_verified(target: &Target, port: u16) -> Result<CdpSession, String> {
@@ -280,7 +301,7 @@ async fn capture(session: &mut CdpSession, path: &Path) -> Result<(), String> {
 }
 
 const PROBE_SCRIPT: &str = r#"(() => { const shell = !!document.querySelector('main.main-surface'); const sidebar = !!document.querySelector('aside.app-shell-left-panel'); const composer = !!document.querySelector('.composer-surface-chrome'); const main = !!document.querySelector('[role="main"]'); return { codex: shell && sidebar && (composer || main) }; })()"#;
-const REMOVE_SCRIPT: &str = r#"(() => { const state = window.__CODEX_NN_THEME_STATE__; if (state?.cleanup) return state.cleanup(); const root = document.documentElement; root?.classList.remove('codex-nn-theme'); for (const name of ['data-nn-theme-shell', 'data-nn-theme-layout', 'data-nn-art-wide', 'data-nn-art-safe-area', 'data-nn-task-mode', 'data-nn-art-aspect', 'data-nn-art-ready']) root?.removeAttribute(name); for (const name of ['--nn-theme-art', '--nn-art-focus-x', '--nn-art-focus-y', '--nn-art-position']) root?.style.removeProperty(name); document.getElementById('codex-nn-theme-style')?.remove(); document.getElementById('codex-nn-theme-chrome')?.remove(); delete window.__CODEX_NN_THEME_STATE__; return true; })()"#;
+const REMOVE_SCRIPT: &str = r#"(() => { const state = window.__CODEX_NN_THEME_STATE__; if (state?.cleanup) return state.cleanup(); const root = document.documentElement; root?.classList.remove('codex-nn-theme'); for (const name of ['data-nn-theme-shell', 'data-nn-theme-layout', 'data-nn-theme-page', 'data-nn-art-wide', 'data-nn-art-safe-area', 'data-nn-task-mode', 'data-nn-art-aspect', 'data-nn-art-ready']) root?.removeAttribute(name); for (const name of ['--nn-theme-art', '--nn-art-focus-x', '--nn-art-focus-y', '--nn-art-position']) root?.style.removeProperty(name); document.getElementById('codex-nn-theme-style')?.remove(); document.getElementById('codex-nn-theme-chrome')?.remove(); delete window.__CODEX_NN_THEME_STATE__; return true; })()"#;
 const VERIFY_SCRIPT: &str = r#"(() => {
   const visible = node => {
     if (!node) return false;
@@ -293,36 +314,58 @@ const VERIFY_SCRIPT: &str = r#"(() => {
     const rect = node.getBoundingClientRect();
     return { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) };
   };
-  const chrome = document.getElementById('codex-nn-theme-chrome');
-  const home = document.querySelector('.nn-theme-home');
   const root = document.documentElement;
+  const chrome = document.getElementById('codex-nn-theme-chrome');
+  const shellMain = document.querySelector('main.main-surface') || document.querySelector('main');
+  const home = document.querySelector('.nn-theme-home');
+  const layout = window.__CODEX_NN_THEME_STATE__?.layout || null;
+  const thread = shellMain?.querySelector('.thread-scroll-container') || null;
+  const gameSource = shellMain?.querySelector('[data-feature="game-source"]') || null;
+  const actualPage = gameSource && !thread ? 'home' : 'thread';
+  const page = root.dataset.nnThemePage || null;
   const suggestions = home?.querySelector('.group\\/home-suggestions') || null;
   const cards = suggestions ? [...suggestions.querySelectorAll('button')].map(box) : [];
   const artWide = root.getAttribute('data-nn-art-wide') === 'true';
   const taskMode = root.getAttribute('data-nn-task-mode');
-  const immersiveExpected = !home && artWide && (taskMode === 'ambient' || taskMode === 'banner');
-  const windowBackground = getComputedStyle(document.body).backgroundImage;
+  const immersiveExpected = actualPage === 'thread' && (taskMode === 'ambient' || taskMode === 'banner');
+  const wallpaperBackground = !immersiveExpected ? 'none' : layout === 'dream-skin'
+    ? getComputedStyle(document.body, '::before').backgroundImage
+    : artWide
+      ? getComputedStyle(document.body).backgroundImage
+      : getComputedStyle(shellMain, '::before').backgroundImage;
   const result = {
     installed: document.documentElement.classList.contains('codex-nn-theme'),
     version: window.__CODEX_NN_THEME_STATE__?.version || null,
     themeId: window.__CODEX_NN_THEME_STATE__?.themeId || null,
-    layout: window.__CODEX_NN_THEME_STATE__?.layout || null,
+    revision: window.__CODEX_NN_THEME_STATE__?.revision || null,
+    layout,
     stylePresent: !!document.getElementById('codex-nn-theme-style'),
     chromePresent: !!chrome,
-    pointerEvents: getComputedStyle(chrome || document.body).pointerEvents,
+    pointerEvents: chrome ? getComputedStyle(chrome).pointerEvents : null,
     sidebar: visible(document.querySelector('aside.app-shell-left-panel')),
     composer: visible(document.querySelector('.composer-surface-chrome')),
-    homePresent: !!home,
+    page,
+    actualPage,
+    pageStateMatches: page === actualPage,
+    homePresent: actualPage === 'home',
+    nativeHome: actualPage === 'home' && layout === 'dream-skin',
     artWide,
     taskMode,
-    immersiveTask: !immersiveExpected || (windowBackground !== 'none' && windowBackground.includes('blob:')),
+    immersiveTask: !immersiveExpected || (wallpaperBackground !== 'none' && wallpaperBackground.includes('blob:')),
     hero: box(home?.firstElementChild?.firstElementChild?.firstElementChild),
     cards,
     overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
   };
-  const homePass = !result.homePresent || (!!result.hero && (!suggestions || (cards.length >= 2 && cards.length <= 4)));
-  result.pass = result.installed && result.stylePresent && result.chromePresent && result.immersiveTask &&
-    result.pointerEvents === 'none' && result.sidebar && result.composer && !result.overflowX && homePass;
+  const nativeLayout = layout === 'dream-skin';
+  const nativeLayoutPass = !nativeLayout || (!shellMain?.classList.contains('nn-theme-home-shell') && !home);
+  const composedLayoutPass = nativeLayout || (actualPage === 'home'
+    ? (!!home && !!shellMain?.classList.contains('nn-theme-home-shell') && !!chrome?.classList.contains('nn-theme-home-shell'))
+    : (!home && !shellMain?.classList.contains('nn-theme-home-shell') && !chrome?.classList.contains('nn-theme-home-shell')));
+  const composedHomePass = !result.homePresent || result.nativeHome || (!!result.hero && (!suggestions || (cards.length >= 2 && cards.length <= 4)));
+  const chromePass = nativeLayout ? !result.chromePresent : (result.chromePresent && result.pointerEvents === 'none');
+  result.pass = result.installed && result.stylePresent && chromePass && result.sidebar &&
+    result.composer && result.immersiveTask && !result.overflowX && result.pageStateMatches && nativeLayoutPass &&
+    composedLayoutPass && composedHomePass;
   return result;
 })()"#;
 
@@ -339,10 +382,75 @@ mod tests {
         let image = include_bytes!("../../theme-packs/strawberry-starlight/background.webp");
         let payload = build_payload(&manifest, image).unwrap();
         assert_eq!(payload.theme_id, "strawberry-starlight");
+        assert_eq!(payload.revision.len(), 64);
         assert!(payload.script.contains("Codex 暖暖"));
         assert!(payload.script.contains("\"wide\":true"));
         assert!(payload.script.contains("\"artKey\":"));
+        assert!(payload.script.contains(THEME_ENGINE_VERSION));
+        assert!(!payload.script.contains("__CODEX_NN_THEME_CSS_JSON__"));
+        assert!(!payload.script.contains("__CODEX_NN_THEME_ART_JSON__"));
         assert!(!payload.script.contains("__CODEX_NN_THEME_CONFIG_JSON__"));
+        assert!(!payload.script.contains("__CODEX_NN_THEME_VERSION_JSON__"));
+        assert!(!payload.script.contains("__CODEX_NN_THEME_REVISION_JSON__"));
         assert!(payload.script.len() > image.len());
+    }
+
+    #[test]
+    fn changes_revision_when_theme_content_changes() {
+        let manifest: ThemeManifest = serde_json::from_str(include_str!(
+            "../../theme-packs/strawberry-starlight/theme.json"
+        ))
+        .unwrap();
+        let image = include_bytes!("../../theme-packs/strawberry-starlight/background.webp");
+        let first = build_payload(&manifest, image).unwrap();
+        let repeated = build_payload(&manifest, image).unwrap();
+        let mut changed_manifest = manifest.clone();
+        changed_manifest.name.push_str(" changed");
+        let changed = build_payload(&changed_manifest, image).unwrap();
+
+        assert_eq!(first.revision, repeated.revision);
+        assert_ne!(first.revision, changed.revision);
+    }
+
+    #[test]
+    fn filters_auxiliary_and_non_codex_page_targets() {
+        let target = |kind: &str, url: &str, websocket: &str| Target {
+            id: "target".into(),
+            title: String::new(),
+            url: url.into(),
+            web_socket_debugger_url: websocket.into(),
+            kind: kind.into(),
+        };
+
+        assert!(is_codex_page_target(&target(
+            "page",
+            "app://-/index.html",
+            "ws://127.0.0.1/devtools/page/main",
+        )));
+        assert!(!is_codex_page_target(&target(
+            "page",
+            "app://-/index.html?initialRoute=%2Favatar-overlay",
+            "ws://127.0.0.1/devtools/page/avatar",
+        )));
+        assert!(!is_codex_page_target(&target(
+            "page",
+            "app://-/index.html?INITIALROUTE=%2Fsettings",
+            "ws://127.0.0.1/devtools/page/settings",
+        )));
+        assert!(!is_codex_page_target(&target(
+            "worker",
+            "app://-/index.html",
+            "ws://127.0.0.1/devtools/page/worker",
+        )));
+        assert!(!is_codex_page_target(&target(
+            "page",
+            "https://example.com",
+            "ws://127.0.0.1/devtools/page/external",
+        )));
+        assert!(!is_codex_page_target(&target(
+            "page",
+            "app://-/index.html",
+            "",
+        )));
     }
 }

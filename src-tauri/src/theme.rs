@@ -33,6 +33,10 @@ const AZURE_NEON_FRONTIER_THEME: &str =
     include_str!("../../theme-packs/azure-neon-frontier/theme.json");
 const AZURE_NEON_FRONTIER_IMAGE: &[u8] =
     include_bytes!("../../theme-packs/azure-neon-frontier/background.webp");
+const MIKU_FUTURE_COLLAB_THEME: &str =
+    include_str!("../../theme-packs/miku-future-collab/theme.json");
+const MIKU_FUTURE_COLLAB_IMAGE: &[u8] =
+    include_bytes!("../../theme-packs/miku-future-collab/background.webp");
 
 struct BuiltInTheme {
     id: &'static str,
@@ -195,6 +199,11 @@ const BUILT_IN_THEMES: &[BuiltInTheme] = &[
         id: "azure-neon-frontier",
         manifest: AZURE_NEON_FRONTIER_THEME,
         image: AZURE_NEON_FRONTIER_IMAGE,
+    },
+    BuiltInTheme {
+        id: "miku-future-collab",
+        manifest: MIKU_FUTURE_COLLAB_THEME,
+        image: MIKU_FUTURE_COLLAB_IMAGE,
     },
 ];
 
@@ -923,7 +932,7 @@ mod tests {
     fn exposes_and_protects_all_built_in_themes() {
         let (root, store) = test_store();
         let themes = store.list(None).unwrap();
-        assert_eq!(themes.len(), 2);
+        assert_eq!(themes.len(), 3);
         assert_eq!(store.default_id(), "strawberry-starlight");
 
         for built_in in BUILT_IN_THEMES {
@@ -934,7 +943,7 @@ mod tests {
             assert_eq!(loaded.id, built_in.id);
             assert!(matches!(
                 loaded.layout_preset.as_str(),
-                "strawberryStarlight" | "azureNeon"
+                "dreamSkin" | "strawberryStarlight" | "azureNeon"
             ));
             assert!(!image.is_empty());
 
