@@ -10,6 +10,13 @@
   "statusText": "NEURAL LINK ONLINE",
   "quote": "BUILD BEYOND THE HORIZON",
   "image": "background.webp",
+  "appearance": "dark",
+  "art": {
+    "focusX": 0.75,
+    "focusY": 0.48,
+    "safeArea": "left",
+    "taskMode": "ambient"
+  },
   "colors": {
     "background": "#030817",
     "panel": "#071529",

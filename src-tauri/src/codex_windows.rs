@@ -7,7 +7,7 @@ use std::{
 use windows::{
     core::{PCWSTR, PWSTR},
     Win32::{
-        Foundation::ERROR_INSUFFICIENT_BUFFER,
+        Foundation::{ERROR_INSUFFICIENT_BUFFER, RPC_E_CHANGED_MODE},
         NetworkManagement::IpHelper::{
             GetExtendedTcpTable, MIB_TCPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_LISTENER,
         },
@@ -15,10 +15,15 @@ use windows::{
         Storage::Packaging::Appx::{
             FindPackagesByPackageFamily, GetPackagePathByFullName, PACKAGE_FILTER_HEAD,
         },
+        System::Com::{
+            CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_LOCAL_SERVER,
+            COINIT_MULTITHREADED,
+        },
+        UI::Shell::{ApplicationActivationManager, IApplicationActivationManager, AO_NONE},
     },
 };
 
-use super::{spawn, CodexInstallation};
+use super::CodexInstallation;
 
 const PACKAGE_FAMILY: &str = "OpenAI.Codex_2p2nqsd0c76g0";
 
@@ -29,12 +34,12 @@ pub fn discover() -> Result<CodexInstallation, String> {
         .pop()
         .ok_or_else(|| "未安装官方 Microsoft Store Codex".to_string())?;
     let root = package_path(&full_name)?;
-    let executable = manifest_executable(&root)?;
+    let (executable, application_id) = manifest_executable(&root)?;
     Ok(CodexInstallation {
         app_path: root,
         executable,
         version: full_name.split('_').nth(1).unwrap_or("unknown").into(),
-        identity: PACKAGE_FAMILY.into(),
+        identity: format!("{PACKAGE_FAMILY}!{application_id}"),
     })
 }
 
@@ -104,17 +109,29 @@ fn package_path(full_name: &str) -> Result<PathBuf, String> {
     Ok(PathBuf::from(String::from_utf16_lossy(&buffer[..end])))
 }
 
-fn manifest_executable(root: &Path) -> Result<PathBuf, String> {
+fn manifest_executable(root: &Path) -> Result<(PathBuf, String), String> {
     let manifest_path = root.join("AppxManifest.xml");
     let xml = std::fs::read_to_string(&manifest_path)
         .map_err(|error| format!("无法读取 AppxManifest.xml：{error}"))?;
     let document = roxmltree::Document::parse(&xml)
         .map_err(|error| format!("AppxManifest.xml 格式错误：{error}"))?;
-    let relative = document
+    let application = document
         .descendants()
         .find(|node| node.is_element() && node.tag_name().name() == "Application")
-        .and_then(|node| node.attribute("Executable"))
+        .ok_or_else(|| "AppxManifest.xml 缺少 Application".to_string())?;
+    let relative = application
+        .attribute("Executable")
         .ok_or_else(|| "AppxManifest.xml 缺少 Application Executable".to_string())?;
+    let application_id = application
+        .attribute("Id")
+        .filter(|value| {
+            !value.is_empty()
+                && value.len() <= 64
+                && value
+                    .chars()
+                    .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character))
+        })
+        .ok_or_else(|| "AppxManifest.xml 缺少有效的 Application Id".to_string())?;
     let relative = Path::new(relative);
     if relative.is_absolute()
         || relative
@@ -130,18 +147,41 @@ fn manifest_executable(root: &Path) -> Result<PathBuf, String> {
             executable.display()
         ));
     }
-    Ok(executable)
+    Ok((executable, application_id.to_string()))
 }
 
 pub fn launch(installation: &CodexInstallation, port: Option<u16>) -> Result<(), String> {
-    let mut command = Command::new(&installation.executable);
-    if let Some(port) = port {
-        command.args([
-            "--remote-debugging-address=127.0.0.1",
-            &format!("--remote-debugging-port={port}"),
-        ]);
+    let arguments = port
+        .map(|port| format!("--remote-debugging-address=127.0.0.1 --remote-debugging-port={port}"))
+        .unwrap_or_default();
+    let app_user_model_id = wide(&installation.identity);
+    let arguments = wide(&arguments);
+    let initialized = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
+    if initialized.is_err() && initialized != RPC_E_CHANGED_MODE {
+        return Err(format!("无法初始化 Windows 应用启动器：{initialized:?}"));
     }
-    spawn(command)
+    let should_uninitialize = initialized.is_ok();
+    let result = (|| {
+        let manager: IApplicationActivationManager =
+            unsafe { CoCreateInstance(&ApplicationActivationManager, None, CLSCTX_LOCAL_SERVER) }
+                .map_err(|error| format!("无法创建 Windows 应用启动器：{error}"))?;
+        let process_id = unsafe {
+            manager.ActivateApplication(
+                PCWSTR(app_user_model_id.as_ptr()),
+                PCWSTR(arguments.as_ptr()),
+                AO_NONE,
+            )
+        }
+        .map_err(|error| format!("无法激活 Codex Store 应用：{error}"))?;
+        if process_id == 0 {
+            return Err("Windows 激活 Codex 后没有返回进程 ID".into());
+        }
+        Ok(())
+    })();
+    if should_uninitialize {
+        unsafe { CoUninitialize() };
+    }
+    result
 }
 
 pub fn request_quit(captured: &[u32]) -> Result<(), String> {
@@ -224,7 +264,7 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         std::fs::write(
             root.path().join("AppxManifest.xml"),
-            r#"<Package><Applications><Application Executable="..\evil.exe" /></Applications></Package>"#,
+            r#"<Package><Applications><Application Id="Codex" Executable="..\evil.exe" /></Applications></Package>"#,
         ).unwrap();
         assert!(manifest_executable(root.path()).is_err());
     }

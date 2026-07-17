@@ -204,6 +204,16 @@ function validateThemePacks() {
     const directory = join(root, id);
     const manifest = json(join(directory, "theme.json"));
     if (manifest.schemaVersion !== 1 || manifest.id !== id) fail(`内置主题 ${id} 的 schemaVersion 或 id 错误`);
+    const expectedAppearance = id === "strawberry-starlight" ? "light" : "dark";
+    if (manifest.appearance !== expectedAppearance) fail(`内置主题 ${id} 的 appearance 错误`);
+    if (
+      typeof manifest.art?.focusX !== "number" || manifest.art.focusX < 0 || manifest.art.focusX > 1
+      || typeof manifest.art?.focusY !== "number" || manifest.art.focusY < 0 || manifest.art.focusY > 1
+      || !["left", "right", "center", "none"].includes(manifest.art?.safeArea)
+      || !["ambient", "banner", "off"].includes(manifest.art?.taskMode)
+    ) {
+      fail(`内置主题 ${id} 的自适应图片元数据错误`);
+    }
     if (typeof manifest.image !== "string" || manifest.image.includes("/") || manifest.image.includes("\\")) {
       fail(`内置主题 ${id} 的 image 路径不安全`);
     }

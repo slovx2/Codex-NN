@@ -1,8 +1,10 @@
-use std::{path::Path, time::Duration};
+use std::{io::Cursor, path::Path, time::Duration};
 
 use base64::{engine::general_purpose::STANDARD, Engine};
+use image::ImageReader;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use tokio::sync::watch;
 
 use crate::{
@@ -10,7 +12,7 @@ use crate::{
     models::{ThemeManifest, VerificationReport},
 };
 
-const THEME_ENGINE_VERSION: &str = "0.3.9";
+const THEME_ENGINE_VERSION: &str = "0.4.1";
 const CSS: &str = include_str!("../resources/theme-engine/nn-theme.css");
 const RENDERER: &str = include_str!("../resources/theme-engine/renderer-inject.js");
 
@@ -45,8 +47,35 @@ pub fn build_payload(manifest: &ThemeManifest, image: &[u8]) -> Result<ThemePayl
         "webp" => "image/webp",
         _ => return Err(format!("不支持的主题图片格式：{extension}")),
     };
+    let (width, height) = ImageReader::new(Cursor::new(image))
+        .with_guessed_format()
+        .map_err(|error| format!("无法识别主题图片：{error}"))?
+        .into_dimensions()
+        .map_err(|error| format!("无法解析主题图片元数据：{error}"))?;
+    let ratio = f64::from(width) / f64::from(height);
+    let aspect = if ratio >= 2.25 {
+        "ultrawide"
+    } else if ratio >= 1.45 {
+        "wide"
+    } else if ratio >= 1.08 {
+        "landscape"
+    } else if ratio >= 0.9 {
+        "square"
+    } else {
+        "portrait"
+    };
     let image_url = format!("data:{mime};base64,{}", STANDARD.encode(image));
-    let theme = serde_json::to_string(manifest).map_err(|error| error.to_string())?;
+    let mut theme = serde_json::to_value(manifest).map_err(|error| error.to_string())?;
+    theme["artKey"] = Value::String(format!("{:x}", Sha256::digest(image)));
+    theme["artMetadata"] = json!({
+        "width": width,
+        "height": height,
+        "ratio": ratio,
+        "wide": ratio >= 1.75,
+        "aspect": aspect,
+        "taskMode": if ratio >= 2.25 { "banner" } else { "ambient" },
+    });
+    let theme = serde_json::to_string(&theme).map_err(|error| error.to_string())?;
     let script = RENDERER
         .replace(
             "__CODEX_NN_THEME_CSS_JSON__",
@@ -251,7 +280,7 @@ async fn capture(session: &mut CdpSession, path: &Path) -> Result<(), String> {
 }
 
 const PROBE_SCRIPT: &str = r#"(() => { const shell = !!document.querySelector('main.main-surface'); const sidebar = !!document.querySelector('aside.app-shell-left-panel'); const composer = !!document.querySelector('.composer-surface-chrome'); const main = !!document.querySelector('[role="main"]'); return { codex: shell && sidebar && (composer || main) }; })()"#;
-const REMOVE_SCRIPT: &str = r#"(() => { const state = window.__CODEX_NN_THEME_STATE__; if (state?.cleanup) return state.cleanup(); document.documentElement?.classList.remove('codex-nn-theme'); document.documentElement?.removeAttribute('data-nn-theme-shell'); document.documentElement?.removeAttribute('data-nn-theme-layout'); document.documentElement?.style.removeProperty('--nn-theme-art'); document.getElementById('codex-nn-theme-style')?.remove(); document.getElementById('codex-nn-theme-chrome')?.remove(); delete window.__CODEX_NN_THEME_STATE__; return true; })()"#;
+const REMOVE_SCRIPT: &str = r#"(() => { const state = window.__CODEX_NN_THEME_STATE__; if (state?.cleanup) return state.cleanup(); const root = document.documentElement; root?.classList.remove('codex-nn-theme'); for (const name of ['data-nn-theme-shell', 'data-nn-theme-layout', 'data-nn-art-wide', 'data-nn-art-safe-area', 'data-nn-task-mode', 'data-nn-art-aspect', 'data-nn-art-ready']) root?.removeAttribute(name); for (const name of ['--nn-theme-art', '--nn-art-focus-x', '--nn-art-focus-y', '--nn-art-position']) root?.style.removeProperty(name); document.getElementById('codex-nn-theme-style')?.remove(); document.getElementById('codex-nn-theme-chrome')?.remove(); delete window.__CODEX_NN_THEME_STATE__; return true; })()"#;
 const VERIFY_SCRIPT: &str = r#"(() => {
   const visible = node => {
     if (!node) return false;
@@ -266,8 +295,13 @@ const VERIFY_SCRIPT: &str = r#"(() => {
   };
   const chrome = document.getElementById('codex-nn-theme-chrome');
   const home = document.querySelector('.nn-theme-home');
+  const root = document.documentElement;
   const suggestions = home?.querySelector('.group\\/home-suggestions') || null;
   const cards = suggestions ? [...suggestions.querySelectorAll('button')].map(box) : [];
+  const artWide = root.getAttribute('data-nn-art-wide') === 'true';
+  const taskMode = root.getAttribute('data-nn-task-mode');
+  const immersiveExpected = !home && artWide && (taskMode === 'ambient' || taskMode === 'banner');
+  const windowBackground = getComputedStyle(document.body).backgroundImage;
   const result = {
     installed: document.documentElement.classList.contains('codex-nn-theme'),
     version: window.__CODEX_NN_THEME_STATE__?.version || null,
@@ -279,12 +313,15 @@ const VERIFY_SCRIPT: &str = r#"(() => {
     sidebar: visible(document.querySelector('aside.app-shell-left-panel')),
     composer: visible(document.querySelector('.composer-surface-chrome')),
     homePresent: !!home,
+    artWide,
+    taskMode,
+    immersiveTask: !immersiveExpected || (windowBackground !== 'none' && windowBackground.includes('blob:')),
     hero: box(home?.firstElementChild?.firstElementChild?.firstElementChild),
     cards,
     overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
   };
   const homePass = !result.homePresent || (!!result.hero && (!suggestions || (cards.length >= 2 && cards.length <= 4)));
-  result.pass = result.installed && result.stylePresent && result.chromePresent &&
+  result.pass = result.installed && result.stylePresent && result.chromePresent && result.immersiveTask &&
     result.pointerEvents === 'none' && result.sidebar && result.composer && !result.overflowX && homePass;
   return result;
 })()"#;
@@ -303,6 +340,8 @@ mod tests {
         let payload = build_payload(&manifest, image).unwrap();
         assert_eq!(payload.theme_id, "strawberry-starlight");
         assert!(payload.script.contains("Codex 暖暖"));
+        assert!(payload.script.contains("\"wide\":true"));
+        assert!(payload.script.contains("\"artKey\":"));
         assert!(!payload.script.contains("__CODEX_NN_THEME_CONFIG_JSON__"));
         assert!(payload.script.len() > image.len());
     }
