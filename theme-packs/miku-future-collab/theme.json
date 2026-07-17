@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "miku-future-collab",
   "name": "初音未来 · 未来共创",
-  "layoutPreset": "dreamSkin",
+  "layoutPreset": "mikuFuture",
   "brandSubtitle": "CODEX NN · MIKU FUTURE",
   "tagline": "与初音未来一起，把灵感写成旋律与代码。",
   "projectPrefix": "开启未来企划 · ",
@@ -13,7 +13,7 @@
   "appearance": "light",
   "art": {
     "focusX": 0.72,
-    "focusY": 0.48,
+    "focusY": 0.0,
     "safeArea": "left",
     "taskMode": "ambient"
   },

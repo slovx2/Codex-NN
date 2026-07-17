@@ -20,6 +20,7 @@
     dreamSkin: "dream-skin",
     strawberryStarlight: "strawberry-starlight",
     azureNeon: "azure-neon",
+    mikuFuture: "miku-future",
   })[THEME.layoutPreset] || "standard";
   const THEME_VARIABLES = [
     "--ds-bg", "--ds-panel", "--ds-panel-2", "--ds-green", "--ds-lime",
@@ -76,6 +77,36 @@
 
   const setText = (node, value) => {
     if (node && node.textContent !== value) node.textContent = value;
+  };
+
+  const normalizeText = (node) => String(
+    node?.getAttribute?.("aria-label") || node?.textContent || ""
+  ).replace(/\s+/g, " ").trim();
+
+  const markSidebar = (aside) => {
+    if (!aside) return;
+    const navItems = new Map([
+      ["新建任务", "new-task"], ["New task", "new-task"],
+      ["拉取请求", "pull-requests"], ["Pull requests", "pull-requests"],
+      ["已安排", "scheduled"], ["Scheduled", "scheduled"],
+      ["插件", "plugins"], ["Plugins", "plugins"],
+    ]);
+    const sections = new Map([
+      ["项目", "projects"], ["Projects", "projects"],
+      ["任务", "tasks"], ["Tasks", "tasks"],
+    ]);
+    for (const button of aside.querySelectorAll("button")) {
+      const label = normalizeText(button);
+      const navItem = navItems.get(label);
+      const section = sections.get(label);
+      if (navItem) setAttribute(button, "data-nn-sidebar-item", navItem);
+      else button.removeAttribute("data-nn-sidebar-item");
+      if (section && button.hasAttribute("data-app-action-sidebar-section-toggle")) {
+        setAttribute(button, "data-nn-sidebar-section", section);
+      } else {
+        button.removeAttribute("data-nn-sidebar-section");
+      }
+    }
   };
 
   const sharedAncestor = (first, second, boundary) => {
@@ -469,6 +500,7 @@
 
     const shellMain = document.querySelector("main.main-surface") || document.querySelector("main");
     if (!shellMain || !document.body) return;
+    markSidebar(document.querySelector("aside.app-shell-left-panel") || document.querySelector("aside"));
     const homeIndicator = shellMain.querySelector('[data-testid="home-icon"]');
     const gameSource = shellMain.querySelector('[data-feature="game-source"]');
     const composer = shellMain.querySelector(".composer-surface-chrome");
@@ -524,7 +556,12 @@
         <div class="nn-theme-status"><i></i><span></span></div>
         <div class="nn-theme-quote"></div>
         <div class="nn-theme-particles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="nn-theme-orbit"></div>`;
+        <div class="nn-theme-orbit"></div>
+        <div class="nn-miku-header-decor">
+          <span class="nn-miku-sparkle">✦</span>
+          <span class="nn-miku-heart">♡</span>
+          <span class="nn-miku-badge"><b>MIKU</b><small>01 · FUTURE</small></span>
+        </div>`;
       document.body.appendChild(chrome);
     }
     setText(chrome.querySelector(".nn-theme-brand b"), THEME.name || "Codex 暖暖");
@@ -556,6 +593,8 @@
     document.querySelectorAll(".nn-theme-home-shell").forEach((node) => node.classList.remove("nn-theme-home-shell"));
     document.querySelectorAll(".nn-theme-suggestions").forEach((node) => node.classList.remove("nn-theme-suggestions"));
     document.querySelectorAll(".nn-theme-suggestions-slot").forEach((node) => node.classList.remove("nn-theme-suggestions-slot"));
+    document.querySelectorAll("[data-nn-sidebar-item]").forEach((node) => node.removeAttribute("data-nn-sidebar-item"));
+    document.querySelectorAll("[data-nn-sidebar-section]").forEach((node) => node.removeAttribute("data-nn-sidebar-section"));
     document.getElementById(STYLE_ID)?.remove();
     document.getElementById(CHROME_ID)?.remove();
     state?.observer?.disconnect();

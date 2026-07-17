@@ -52,12 +52,13 @@ v1 沿用 Codex Dream Skin 的运行时主题字段：
 字段限制：
 
 - `schemaVersion` 固定为数字 `1`。
-- `layoutPreset` 可选 `standard`、`dreamSkin`、`strawberryStarlight` 或 `azureNeon`；旧清单缺省时按 `standard` 处理。
+- `layoutPreset` 可选 `standard`、`dreamSkin`、`strawberryStarlight`、`azureNeon` 或 `mikuFuture`；旧清单缺省时按 `standard` 处理。
 - `appearance` 可选 `auto`、`light` 或 `dark`。`auto` 跟随 Codex/系统外观，图片亮度不会擅自改变明暗模式。
 - `art.focusX` / `art.focusY` 是 `0..1` 的归一化焦点坐标。
 - `art.safeArea` 可选 `auto`、`left`、`right`、`center` 或 `none`，表示适合放置文字和控件的低信息区域。
 - `art.taskMode` 是聊天页主题图的显式开关，可选 `auto`、`ambient`、`banner` 或 `off`。缺省或 `off` 时聊天页不使用主题图；`auto` 按图片比例选择模式，`ambient` 使用低干扰整窗背景，`banner` 适合超宽图。
 - `dreamSkin` 使用跟随 `appearance` 的沉浸式整窗壁纸并保留 Codex 原生布局；首页显示完整主题图，聊天页是否显示由 `art.taskMode` 控制。
+- `mikuFuture` 使用浅色薄荷工作台、音乐装饰和居中的大尺寸行动卡，适合初音未来主题。
 - `id` 只能使用小写字母、数字和连字符，不能为空，最长 80 字符；后续更新同一主题时保持 ID 不变。
 - `name` 必填，最长 80 字符；`tagline` 最长 160 字符；其余文字字段最长 80 字符。
 - `colors` 可以省略或只提供需要覆盖的字段；缺省颜色由图片在本地分析生成。显式颜色使用 `#RRGGBB`、`rgb(...)` 或 `rgba(...)`。

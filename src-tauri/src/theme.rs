@@ -552,9 +552,12 @@ fn validate_manifest(manifest: &ThemeManifest) -> Result<(), String> {
     validate_text("主题名称", &manifest.name, 80, true)?;
     if !matches!(
         manifest.layout_preset.as_str(),
-        "standard" | "dreamSkin" | "strawberryStarlight" | "azureNeon"
+        "standard" | "dreamSkin" | "strawberryStarlight" | "azureNeon" | "mikuFuture"
     ) {
-        return Err("主题布局只能是 standard、dreamSkin、strawberryStarlight 或 azureNeon".into());
+        return Err(
+            "主题布局只能是 standard、dreamSkin、strawberryStarlight、azureNeon 或 mikuFuture"
+                .into(),
+        );
     }
     validate_text("品牌副标题", &manifest.brand_subtitle, 80, false)?;
     validate_text("主题标语", &manifest.tagline, 160, false)?;
@@ -943,7 +946,7 @@ mod tests {
             assert_eq!(loaded.id, built_in.id);
             assert!(matches!(
                 loaded.layout_preset.as_str(),
-                "dreamSkin" | "strawberryStarlight" | "azureNeon"
+                "dreamSkin" | "strawberryStarlight" | "azureNeon" | "mikuFuture"
             ));
             assert!(!image.is_empty());
 

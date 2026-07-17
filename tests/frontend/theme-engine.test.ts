@@ -47,7 +47,7 @@ function manifest(layoutPreset = "standard", id = "engine-test") {
     quote: "TEST THE ENGINE",
     image: "background.png",
     appearance: layoutPreset === "azureNeon" ? "dark" :
-      layoutPreset === "strawberryStarlight" ? "light" : "auto",
+      ["strawberryStarlight", "mikuFuture"].includes(layoutPreset) ? "light" : "auto",
     art: {
       focusX: 0.74,
       focusY: 0.48,
@@ -168,7 +168,8 @@ describe("主题注入引擎", () => {
     ["standard", "standard", "light"],
     ["dreamSkin", "dream-skin", "light"],
     ["strawberryStarlight", "strawberry-starlight", "light"],
-    ["azureNeon", "azure-neon", "dark"]
+    ["azureNeon", "azure-neon", "dark"],
+    ["mikuFuture", "miku-future", "light"]
   ])("映射 %s 布局并选择正确 Shell", (preset, layout, shell) => {
     const result = install(preset, `layout-${preset}`);
 
@@ -181,7 +182,8 @@ describe("主题注入引擎", () => {
   it.each([
     ["dreamSkin", false],
     ["strawberryStarlight", true],
-    ["azureNeon", true]
+    ["azureNeon", true],
+    ["mikuFuture", true]
   ])("%s 在新版首页 Portal 中保留行动卡", (preset, composedHome) => {
     document.body.innerHTML = `
       <aside class="app-shell-left-panel"></aside>
@@ -237,9 +239,50 @@ describe("主题注入引擎", () => {
     }
   });
 
+  it("Miku 预设标记侧栏入口并以几何中心定位行动卡图标", () => {
+    document.body.innerHTML = `
+      <aside class="app-shell-left-panel">
+        <button>新建任务</button>
+        <button>拉取请求</button>
+        <button data-app-action-sidebar-section-toggle>项目</button>
+      </aside>
+      <main class="main-surface">
+        <section role="main">
+          <span data-testid="home-icon"></span>
+          <div data-feature="game-source"></div>
+          <section class="group/home-suggestions">
+            <button><span><span id="miku-action-icon"><svg></svg></span></span><span>行动</span></button>
+          </section>
+          <div class="composer-surface-chrome"></div>
+        </section>
+      </main>
+    `;
+    const style = document.createElement("style");
+    style.dataset.testThemeCss = "true";
+    style.textContent = themeCss;
+    document.head.appendChild(style);
+
+    install("mikuFuture", "miku-layout-test");
+
+    expect(document.querySelector("button")?.dataset.nnSidebarItem).toBe("new-task");
+    expect(document.querySelectorAll("button")[1]?.dataset.nnSidebarItem).toBe("pull-requests");
+    expect(document.querySelectorAll("button")[2]?.dataset.nnSidebarSection).toBe("projects");
+    expect(document.querySelector(".nn-miku-header-decor")).not.toBeNull();
+    const icon = document.querySelector<SVGElement>("#miku-action-icon > svg")!;
+    expect(getComputedStyle(icon).position).toBe("absolute");
+    expect(getComputedStyle(icon).left).toBe("50%");
+    expect(getComputedStyle(icon).top).toBe("50%");
+    expect(getComputedStyle(icon).transform).toContain("-50%");
+
+    expect(window.__CODEX_NN_THEME_STATE__?.cleanup()).toBe(true);
+    expect(document.querySelector("[data-nn-sidebar-item]")).toBeNull();
+    expect(document.querySelector("[data-nn-sidebar-section]")).toBeNull();
+  });
+
   it.each([
     ["strawberryStarlight", "strawberry-starlight", "light"],
-    ["azureNeon", "azure-neon", "dark"]
+    ["azureNeon", "azure-neon", "dark"],
+    ["mikuFuture", "miku-future", "light"]
   ])("%s 从首页切到聊天页后保留原布局和装饰层", (preset, layout, shell) => {
     install(preset, `built-in-${preset}`);
     const route = document.querySelector('[role="main"]')!;
