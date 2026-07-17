@@ -1,0 +1,265 @@
+:root {
+  color: #f7f3f5;
+  background: #171316;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#theme-lab {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+#theme-lab {
+  display: grid;
+  grid-template-rows: 70px minmax(0, 1fr) 32px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(194, 94, 135, .16), transparent 32%),
+    linear-gradient(145deg, #171316, #21191e 54%, #151216);
+}
+
+.lab-toolbar {
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px 18px 10px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(27, 21, 25, .82);
+  backdrop-filter: blur(18px);
+}
+
+.lab-brand {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 2px 10px;
+  min-width: 300px;
+}
+
+.lab-brand span {
+  color: #e293b3;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
+.lab-brand strong {
+  font-size: 17px;
+}
+
+.lab-brand small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: #a99ca2;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lab-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.lab-routes {
+  display: flex;
+  min-width: 0;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .15);
+}
+
+.lab-routes button {
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  color: #9d9096;
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lab-routes button:hover,
+.lab-routes button.is-active {
+  color: #fff;
+  background: rgba(255, 255, 255, .1);
+}
+
+.lab-actions button {
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 9px;
+  color: #d9cfd3;
+  background: rgba(255, 255, 255, .045);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.lab-actions select {
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border: 1px solid rgba(226, 147, 179, .38);
+  border-radius: 9px;
+  color: #f7eaf0;
+  background: #33242b;
+  font: inherit;
+  font-size: 11px;
+}
+
+.lab-actions button:hover,
+.lab-actions button.is-active {
+  border-color: rgba(226, 147, 179, .55);
+  color: white;
+  background: rgba(194, 94, 135, .2);
+}
+
+#refresh-theme {
+  margin-left: 5px;
+  color: #21161b;
+  background: #e8a0bd;
+}
+
+.lab-stage {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+  place-items: center;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .025) 1px, transparent 1px);
+  background-position: center;
+  background-size: 24px 24px;
+}
+
+.lab-viewport {
+  position: relative;
+  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 13px;
+  background: white;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .46), 0 3px 12px rgba(0, 0, 0, .3);
+}
+
+.lab-viewport::before {
+  position: absolute;
+  right: 8px;
+  bottom: calc(100% + 7px);
+  content: attr(data-size);
+  color: #8f8288;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+#codex-preview {
+  display: block;
+  border: 0;
+  border-radius: 12px;
+  opacity: 0;
+  transform-origin: left top;
+  transition: opacity .18s ease;
+}
+
+#codex-preview.is-ready {
+  opacity: 1;
+}
+
+.fixture-navigation-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.fixture-navigation-target {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.fixture-navigation-target:focus-visible {
+  opacity: 1;
+  outline: 2px solid #e293b3;
+  outline-offset: -2px;
+}
+
+.lab-loading {
+  position: absolute;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 10px;
+  color: #cfc3c8;
+  background: rgba(24, 18, 22, .86);
+  font-size: 12px;
+}
+
+.lab-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-top: 1px solid rgba(255, 255, 255, .07);
+  color: #8f8388;
+  background: #171316;
+  font-size: 10px;
+}
+
+#lab-status-text[data-kind="ready"] {
+  color: #8fd0ae;
+}
+
+#lab-status-text[data-kind="error"] {
+  color: #f29a9a;
+}
+
+@media (max-width: 920px) {
+  #theme-lab {
+    grid-template-rows: 104px minmax(0, 1fr) 32px;
+  }
+
+  .lab-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: center;
+    padding-block: 9px;
+  }
+
+  .lab-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .lab-routes {
+    grid-column: 1 / -1;
+    overflow-x: auto;
+  }
+
+  .lab-actions button:nth-child(2),
+  .lab-actions button:nth-child(4) {
+    display: none;
+  }
+}

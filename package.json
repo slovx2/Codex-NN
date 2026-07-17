@@ -12,6 +12,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "theme:fixture": "node ../capture-codex-fixture.mjs",
+    "theme:dev": "vite --host 127.0.0.1 --open /theme-lab.html",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

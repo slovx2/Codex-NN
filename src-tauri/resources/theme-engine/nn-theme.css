@@ -240,6 +240,7 @@ html.codex-nn-theme .nn-theme-home {
 
 .nn-theme-home > div:first-child > div:first-child > div:first-child {
   position: relative !important;
+  z-index: 2;
   isolation: isolate;
   width: calc(100% - 44px) !important;
   max-width: none !important;
@@ -342,14 +343,19 @@ html.codex-nn-theme .nn-theme-home {
   opacity: .88;
 }
 
-.nn-theme-home > div:first-child > div:first-child > div:first-child > div:nth-child(2) {
+.nn-theme-home .nn-theme-suggestions-slot {
   left: 14px !important;
   right: 14px !important;
   top: 100% !important;
+  z-index: 3 !important;
   margin-top: 13px !important;
 }
 
-.nn-theme-home .group\/home-suggestions { overflow: visible !important; }
+.nn-theme-home .nn-theme-suggestions {
+  position: relative !important;
+  z-index: 3 !important;
+  overflow: visible !important;
+}
 
 .nn-theme-home .group\/home-suggestions button {
   position: relative !important;
@@ -618,7 +624,7 @@ html.codex-nn-theme[data-nn-theme-shell="light"]:not([data-nn-theme-layout="drea
   background-size: 100% 100%, 100% 100%, cover !important;
   background-position: center, center, 58% center !important;
   box-shadow: 0 16px 36px rgba(40, 16, 22, .14), inset 0 1px 0 rgba(255, 255, 255, .12) !important;
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
 html.codex-nn-theme[data-nn-theme-shell="light"]:not([data-nn-theme-layout="dream-skin"]) .nn-theme-home > div:first-child > div:first-child > div:first-child::before {
@@ -869,13 +875,46 @@ html.codex-nn-theme[data-nn-theme-layout="dream-skin"] .composer-surface-chrome:
 }
 
 html.codex-nn-theme[data-nn-theme-layout="dream-skin"][data-nn-theme-page="home"]
-  main.main-surface .group\/home-suggestions button {
+  main.main-surface .nn-theme-suggestions {
+  z-index: 3 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"][data-nn-theme-page="home"]
+  main.main-surface .nn-theme-suggestions button {
+  border: 1px solid var(--nn-dream-line) !important;
+  border-radius: 18px !important;
   color: var(--ds-text) !important;
   background: color-mix(in srgb, var(--ds-panel) var(--nn-dream-card-mix), transparent) !important;
-  border-color: var(--nn-dream-line) !important;
   box-shadow: 0 8px 22px color-mix(in srgb, var(--ds-text) 10%, transparent) !important;
   backdrop-filter: blur(10px) saturate(112%) !important;
-  transform: none !important;
+  transform: translateY(0) !important;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"][data-nn-theme-page="home"]
+  main.main-surface .nn-theme-suggestions button:hover {
+  border-color: color-mix(in srgb, var(--ds-green) 56%, transparent) !important;
+  box-shadow: 0 13px 28px color-mix(in srgb, var(--ds-text) 14%, transparent) !important;
+  transform: translateY(-3px) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"][data-nn-theme-page="home"]
+  main.main-surface .nn-theme-suggestions button span {
+  color: var(--ds-text) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"][data-nn-theme-page="home"]
+  main.main-surface .nn-theme-suggestions button > span:first-child > span:has(> svg) {
+  border: 1px solid color-mix(in srgb, var(--ds-green) 34%, transparent) !important;
+  border-radius: 50% !important;
+  color: var(--ds-green) !important;
+  background: color-mix(in srgb, var(--ds-green) 14%, var(--ds-panel)) !important;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--ds-green) 18%, transparent) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="dream-skin"][data-nn-theme-page="home"]
+  main.main-surface .nn-theme-suggestions button svg {
+  color: var(--ds-green) !important;
 }
 
 /* 两个内置主题共享原生布局，只用受控预设改变视觉语言。 */

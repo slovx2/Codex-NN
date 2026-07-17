@@ -474,6 +474,14 @@
     const composer = shellMain.querySelector(".composer-surface-chrome");
     const thread = shellMain.querySelector(".thread-scroll-container");
     const isHome = Boolean(gameSource && !thread);
+    const suggestions = isHome
+      ? shellMain.querySelector(".group\\/home-suggestions")
+      : null;
+    const suggestionsSlot = suggestions?.parentElement || null;
+    const initialSuggestionsSlot = suggestionsSlot &&
+      suggestionsSlot.parentElement?.contains(gameSource)
+      ? suggestionsSlot
+      : null;
     const home = isHome
       ? homeIndicator?.closest('[role="main"]') || gameSource?.closest('[role="main"]') ||
         sharedAncestor(gameSource, composer, shellMain)
@@ -484,6 +492,16 @@
       }
     }
     if (LAYOUT !== "dream-skin" && home) home.classList.add("nn-theme-home");
+    for (const candidate of document.querySelectorAll(".nn-theme-suggestions")) {
+      if (candidate !== suggestions) candidate.classList.remove("nn-theme-suggestions");
+    }
+    for (const candidate of document.querySelectorAll(".nn-theme-suggestions-slot")) {
+      if (candidate !== initialSuggestionsSlot) candidate.classList.remove("nn-theme-suggestions-slot");
+    }
+    suggestions?.classList.add("nn-theme-suggestions");
+    if (initialSuggestionsSlot && initialSuggestionsSlot !== home) {
+      initialSuggestionsSlot.classList.add("nn-theme-suggestions-slot");
+    }
 
     const composedHome = Boolean(home && LAYOUT !== "dream-skin");
     setAttribute(root, PAGE_ATTR, isHome ? "home" : "thread");
@@ -536,6 +554,8 @@
     for (const name of THEME_VARIABLES) document.documentElement?.style.removeProperty(name);
     document.querySelectorAll(".nn-theme-home").forEach((node) => node.classList.remove("nn-theme-home"));
     document.querySelectorAll(".nn-theme-home-shell").forEach((node) => node.classList.remove("nn-theme-home-shell"));
+    document.querySelectorAll(".nn-theme-suggestions").forEach((node) => node.classList.remove("nn-theme-suggestions"));
+    document.querySelectorAll(".nn-theme-suggestions-slot").forEach((node) => node.classList.remove("nn-theme-suggestions-slot"));
     document.getElementById(STYLE_ID)?.remove();
     document.getElementById(CHROME_ID)?.remove();
     state?.observer?.disconnect();

@@ -179,6 +179,65 @@ describe("主题注入引擎", () => {
   });
 
   it.each([
+    ["dreamSkin", false],
+    ["strawberryStarlight", true],
+    ["azureNeon", true]
+  ])("%s 在新版首页 Portal 中保留行动卡", (preset, composedHome) => {
+    document.body.innerHTML = `
+      <aside class="app-shell-left-panel"></aside>
+      <main class="main-surface">
+        <section role="main">
+          <div class="min-h-full">
+            <div class="hero-row">
+              <div id="hero-shell">
+                <div><div><div data-feature="game-source"></div></div></div>
+                <div id="suggestions-slot">
+                  <section class="group/home-suggestions">
+                    <div><button><span><span><svg></svg></span></span><span>行动一</span></button></div>
+                  </section>
+                </div>
+              </div>
+            </div>
+            <div><div class="composer-surface-chrome"></div></div>
+          </div>
+        </section>
+      </main>
+    `;
+    const style = document.createElement("style");
+    style.dataset.testThemeCss = "true";
+    style.textContent = themeCss;
+    document.head.appendChild(style);
+
+    install(preset, `portal-${preset}`);
+
+    const route = document.querySelector('[role="main"]')!;
+    const suggestions = document.querySelector(".group\\/home-suggestions")!;
+    const slot = document.getElementById("suggestions-slot")!;
+    expect(suggestions.classList.contains("nn-theme-suggestions")).toBe(true);
+    expect(slot.classList.contains("nn-theme-suggestions-slot")).toBe(true);
+    expect(route.classList.contains("nn-theme-home")).toBe(composedHome);
+    expect(getComputedStyle(suggestions).zIndex).toBe("3");
+    if (composedHome) {
+      const heroStyle = getComputedStyle(document.getElementById("hero-shell")!);
+      expect(heroStyle.zIndex).toBe("2");
+      expect(heroStyle.overflow).toBe("visible");
+      expect(getComputedStyle(slot).zIndex).toBe("3");
+
+      const followUpArea = document.createElement("div");
+      const followUpSlot = document.createElement("div");
+      followUpArea.appendChild(followUpSlot);
+      route.appendChild(followUpArea);
+      followUpSlot.appendChild(suggestions);
+      window.__CODEX_NN_THEME_STATE__?.ensure();
+      expect(slot.classList.contains("nn-theme-suggestions-slot")).toBe(false);
+      expect(followUpSlot.classList.contains("nn-theme-suggestions-slot")).toBe(false);
+      expect(suggestions.classList.contains("nn-theme-suggestions")).toBe(true);
+    } else {
+      expect(getComputedStyle(suggestions.querySelector("button")!).borderRadius).toBe("18px");
+    }
+  });
+
+  it.each([
     ["strawberryStarlight", "strawberry-starlight", "light"],
     ["azureNeon", "azure-neon", "dark"]
   ])("%s 从首页切到聊天页后保留原布局和装饰层", (preset, layout, shell) => {
