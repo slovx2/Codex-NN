@@ -73,6 +73,7 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 22%, 
 
 .navigation { display: flex; flex-direction: column; gap: 7px; margin-top: 34px; }
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -90,6 +91,17 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 22%, 
 .nav-item b { font-size: 13px; font-weight: 760; }
 .nav-item:hover { color: var(--ink); background: rgba(255, 255, 255, .62); transform: translateX(1px); }
 .nav-item.active { color: var(--rose-dark); background: #fff; box-shadow: 0 7px 20px rgba(93, 48, 59, .09); }
+.nav-update-dot {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid rgba(255, 255, 255, .92);
+  border-radius: 50%;
+  background: #d9364f;
+  box-shadow: 0 2px 7px rgba(157, 26, 48, .3);
+}
 
 .sidebar-status {
   display: flex;
@@ -322,6 +334,8 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 22%, 
 .diagnostic-action b { align-self: end; font-size: 10px; }
 .diagnostic-action small { align-self: start; color: var(--muted); font-size: 8px; }
 .diagnostic-results { min-height: 0; flex: 1; overflow: auto; margin-top: 13px; border: 1px solid var(--line); border-radius: 17px; padding: 8px 16px; background: var(--surface); scrollbar-color: color-mix(in srgb, var(--accent) 30%, transparent) transparent; }
+.settings-actions { display: flex; align-items: flex-start; }
+.settings-actions .button { width: auto; min-width: 116px; }
 .empty-state { display: grid; place-items: center; color: var(--muted); font-size: 11px; }
 .check-row { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .check-row:last-child { border-bottom: 0; }

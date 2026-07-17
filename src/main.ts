@@ -23,6 +23,7 @@ let selectedThemeId = "";
 let designerPlugin: ThemeDesignerPluginStatus | null = null;
 let busy = false;
 let appliedAccent = "";
+let checkingForUpdates = false;
 
 const DEFAULT_ACCENT = "#e2556d";
 
@@ -38,6 +39,7 @@ root.innerHTML = `
         <button class="nav-item" data-page="themes"><span>◫</span><b>主题库</b></button>
         <button class="nav-item" data-page="designer"><span>✦</span><b>设计主题</b></button>
         <button class="nav-item" data-page="diagnostics"><span>⌁</span><b>诊断</b></button>
+        <button id="settings-nav-item" class="nav-item" data-page="settings"><span>⚙</span><b>设置</b><i id="settings-update-dot" class="nav-update-dot" hidden></i></button>
       </nav>
       <div class="sidebar-status">
         <div class="sidebar-status-row"><span id="codex-dot" class="state-dot"></span><span>Codex</span><strong id="codex-state">读取中</strong></div>
@@ -134,6 +136,15 @@ root.innerHTML = `
         </div>
         <div id="diagnostic-results" class="diagnostic-results empty-state">还没有诊断结果</div>
       </section>
+
+      <section id="page-settings" class="page">
+        <header class="page-heading compact">
+          <div><span class="eyebrow">SETTINGS</span><h2>设置</h2></div>
+        </header>
+        <div class="settings-actions">
+          <button id="check-update-button" class="button secondary compact-button" data-operation>检查更新</button>
+        </div>
+      </section>
     </main>
   </div>
   <div id="dream-import-dialog" class="modal-backdrop" hidden>
@@ -184,6 +195,7 @@ byId("activate-theme-button").addEventListener("click", () => void activateSelec
 byId("diagnose-button").addEventListener("click", () => void runDiagnostics());
 byId("verify-button").addEventListener("click", () => void runVerification(null));
 byId("screenshot-button").addEventListener("click", () => void chooseScreenshot());
+byId("check-update-button").addEventListener("click", () => void checkForUpdates(true));
 
 async function refresh(preserveSelection = true): Promise<void> {
   const previousSelection = preserveSelection ? selectedThemeId : "";
@@ -208,10 +220,20 @@ async function refresh(preserveSelection = true): Promise<void> {
   renderDesignerPlugin();
 }
 
-async function checkForUpdates(): Promise<void> {
+async function checkForUpdates(manual = false): Promise<void> {
+  if (checkingForUpdates) return;
+  checkingForUpdates = true;
+  const updateButton = byId<HTMLButtonElement>("check-update-button");
+  updateButton.disabled = true;
+  updateButton.textContent = "检查中";
   try {
     const update = await check();
-    if (!update) return;
+    if (!update) {
+      setUpdateAvailable(false);
+      if (manual) showToast("当前已是最新版本");
+      return;
+    }
+    setUpdateAvailable(true);
     const confirmed = await confirmDialog(
       `发现新版本 ${update.version}。是否立即下载并安装？`,
       { title: "Codex 暖暖更新", kind: "info" }
@@ -219,6 +241,7 @@ async function checkForUpdates(): Promise<void> {
     if (!confirmed) return;
     await runOperation("正在下载更新", async () => {
       await update.downloadAndInstall();
+      setUpdateAvailable(false);
       const restart = await confirmDialog("更新已安装。是否立即重启 Codex 暖暖？", {
         title: "更新完成",
         kind: "info"
@@ -227,7 +250,17 @@ async function checkForUpdates(): Promise<void> {
     });
   } catch (error) {
     console.warn("自动检查更新失败", error);
+    if (manual) showToast(`检查更新失败：${errorMessage(error)}`, true);
+  } finally {
+    checkingForUpdates = false;
+    updateButton.textContent = "检查更新";
+    updateButton.disabled = busy;
   }
+}
+
+function setUpdateAvailable(available: boolean): void {
+  byId("settings-update-dot").hidden = !available;
+  byId("settings-nav-item").dataset.updateAvailable = String(available);
 }
 
 function renderSnapshot(): void {
@@ -569,6 +602,7 @@ async function runOperation(label: string, action: () => Promise<void>): Promise
 function setButtonsDisabled(disabled: boolean): void {
   document.querySelectorAll<HTMLButtonElement>("[data-operation], .theme-delete, .theme-select")
     .forEach((button) => { button.disabled = disabled; });
+  byId<HTMLButtonElement>("check-update-button").disabled = disabled || checkingForUpdates;
   if (!disabled) {
     byId<HTMLButtonElement>("launch-button").disabled = !snapshot?.codex.installed;
     byId<HTMLButtonElement>("apply-button").disabled = !snapshot?.activeTheme;

@@ -446,16 +446,33 @@ describe("诊断、更新与事件", () => {
     await vi.waitFor(() => expect(downloadAndInstall).toHaveBeenCalledOnce());
     expect(mocks.confirm).toHaveBeenCalledWith(expect.stringContaining("9.9.9"), expect.anything());
     expect(mocks.relaunch).toHaveBeenCalledOnce();
+    expect(document.getElementById("settings-update-dot")?.hidden).toBe(true);
   });
 
-  it("拒绝更新时不下载，检查失败也不影响初始化", async () => {
+  it("拒绝更新时保留设置红点且不下载", async () => {
     const downloadAndInstall = vi.fn();
     mocks.check.mockResolvedValue({ version: "9.9.9", downloadAndInstall });
     mocks.confirm.mockResolvedValue(false);
     await boot();
     await vi.waitFor(() => expect(mocks.check).toHaveBeenCalled());
     expect(downloadAndInstall).not.toHaveBeenCalled();
+    expect(document.getElementById("settings-update-dot")?.hidden).toBe(false);
+    expect(document.getElementById("settings-nav-item")?.dataset.updateAvailable).toBe("true");
     expect(text("header-status")).toBe("未启用");
+  });
+
+  it("可从设置页手动检查更新", async () => {
+    mocks.check.mockResolvedValue(null);
+    await boot();
+    await vi.waitFor(() => expect(mocks.check).toHaveBeenCalledTimes(1));
+
+    document.querySelector<HTMLButtonElement>('[data-page="settings"]')?.click();
+    expect(document.getElementById("page-settings")?.classList.contains("active")).toBe(true);
+    click("check-update-button");
+
+    await vi.waitFor(() => expect(mocks.check).toHaveBeenCalledTimes(2));
+    expect(text("toast")).toBe("当前已是最新版本");
+    expect(text("check-update-button")).toBe("检查更新");
   });
 
   it("响应后台进度、状态、恢复请求和操作错误事件", async () => {
