@@ -110,3 +110,62 @@ pub(super) fn content_sha256(manifest: &ThemeManifest, image: &[u8]) -> Result<S
         .map(|byte| format!("{byte:02x}"))
         .collect())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn manifest() -> ThemeManifest {
+        serde_json::from_value(serde_json::json!({
+            "schemaVersion": 1,
+            "id": "community-night",
+            "name": "社区夜色",
+            "layoutPreset": "standard",
+            "brandSubtitle": "FOCUS",
+            "tagline": "安静工作",
+            "projectPrefix": "PROJECT",
+            "projectLabel": "工作区",
+            "statusText": "READY",
+            "quote": "保持专注",
+            "image": "background.png"
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn content_fingerprint_is_deterministic_and_tracks_local_changes() {
+        let manifest = manifest();
+        let first = content_sha256(&manifest, b"image-v1").unwrap();
+        let second = content_sha256(&manifest, b"image-v1").unwrap();
+        let changed = content_sha256(&manifest, b"image-v2").unwrap();
+        assert_eq!(first, second);
+        assert_ne!(first, changed);
+    }
+
+    #[test]
+    fn theme_links_are_atomically_upserted_and_reloaded() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("marketplace/theme-links.json");
+        let mut store = ThemeLinkStore::load(path.clone()).unwrap();
+        let mut link = ThemeLink {
+            manifest_id: "community-night".into(),
+            theme_id: "theme-1".into(),
+            version_id: "version-1".into(),
+            version_number: 1,
+            package_sha256: "a".repeat(64),
+            local_content_sha256: "b".repeat(64),
+            role: "consumer".into(),
+        };
+        store.upsert(link.clone()).unwrap();
+        link.version_id = "version-2".into();
+        link.version_number = 2;
+        link.role = "publisher".into();
+        store.upsert(link).unwrap();
+
+        let restored = ThemeLinkStore::load(path).unwrap();
+        let link = restored.get("community-night").unwrap();
+        assert_eq!(restored.all().len(), 1);
+        assert_eq!(link.version_number, 2);
+        assert_eq!(link.role, "publisher");
+    }
+}
