@@ -4,6 +4,7 @@ mod cdp;
 mod cdp_session;
 mod codex;
 mod dream_skin;
+mod marketplace;
 mod models;
 mod paths;
 mod plugin_mcp;
@@ -19,6 +20,11 @@ use std::sync::{
     Arc,
 };
 
+use marketplace::{
+    MarketplaceAuthState, MarketplaceClient, MarketplaceLocalSyncState, MarketplaceLoginResult,
+    MarketplacePage, MarketplaceThemeDetail, MarketplaceUploadOutcome, MarketplaceUploadRecord,
+    MarketplaceUser, UploadSource,
+};
 use models::{
     AppSnapshot, DiagnosticReport, ThemeInstallOutcome, ThemeInstallRequest, ThemeSummary,
     VerificationReport,
@@ -118,6 +124,109 @@ async fn run_diagnostics(
     runtime: State<'_, Arc<ThemeRuntime>>,
 ) -> Result<DiagnosticReport, String> {
     Ok(runtime.diagnostics().await)
+}
+
+#[tauri::command]
+async fn marketplace_list_themes(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    query: String,
+    sort: String,
+    page: i32,
+) -> Result<MarketplacePage, String> {
+    marketplace.list_themes(query, sort, page).await
+}
+
+#[tauri::command]
+async fn marketplace_get_theme(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    theme_id: String,
+) -> Result<MarketplaceThemeDetail, String> {
+    marketplace.get_theme(&theme_id).await
+}
+
+#[tauri::command]
+async fn marketplace_auth_state(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+) -> Result<MarketplaceAuthState, String> {
+    Ok(marketplace.auth_state().await)
+}
+
+#[tauri::command]
+async fn marketplace_start_login(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+) -> Result<MarketplaceLoginResult, String> {
+    marketplace.start_login().await
+}
+
+#[tauri::command]
+async fn marketplace_logout(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+) -> Result<MarketplaceAuthState, String> {
+    marketplace.logout().await
+}
+
+#[tauri::command]
+async fn marketplace_update_profile(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    public_name: String,
+) -> Result<MarketplaceUser, String> {
+    marketplace.update_profile(public_name).await
+}
+
+#[tauri::command]
+async fn marketplace_list_my_uploads(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+) -> Result<Vec<MarketplaceUploadRecord>, String> {
+    marketplace.list_my_uploads().await
+}
+
+#[tauri::command]
+async fn marketplace_local_sync_states(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    runtime: State<'_, Arc<ThemeRuntime>>,
+) -> Result<Vec<MarketplaceLocalSyncState>, String> {
+    marketplace.local_sync_states(runtime.inner().clone()).await
+}
+
+#[tauri::command]
+async fn marketplace_upload_theme(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    runtime: State<'_, Arc<ThemeRuntime>>,
+    source: UploadSource,
+    allow_update: bool,
+) -> Result<MarketplaceUploadOutcome, String> {
+    marketplace
+        .upload_theme(source, allow_update, runtime.inner().clone())
+        .await
+}
+
+#[tauri::command]
+async fn marketplace_install_theme(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    runtime: State<'_, Arc<ThemeRuntime>>,
+    theme_id: String,
+    allow_update: bool,
+) -> Result<ThemeInstallOutcome, String> {
+    marketplace
+        .install_theme(&theme_id, allow_update, runtime.inner().clone())
+        .await
+}
+
+#[tauri::command]
+async fn marketplace_save_theme(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    theme_id: String,
+    destination: String,
+) -> Result<(), String> {
+    marketplace.save_theme(&theme_id, &destination).await
+}
+
+#[tauri::command]
+async fn marketplace_withdraw_theme(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    theme_id: String,
+) -> Result<(), String> {
+    marketplace.withdraw_theme(&theme_id).await
 }
 
 #[tauri::command]
@@ -250,15 +359,19 @@ pub fn run() {
             show_main(app)
         }))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Arc::new(Lifecycle::default()))
         .setup(|app| {
             let runtime = ThemeRuntime::new(app.handle().clone()).map_err(std::io::Error::other)?;
             let paths = paths::AppPaths::resolve(app.handle()).map_err(std::io::Error::other)?;
+            let marketplace = MarketplaceClient::new(app.handle().clone(), &paths)
+                .map_err(std::io::Error::other)?;
             let agent_api = agent_api::AgentApiRuntime::start(runtime.clone(), &paths)
                 .map_err(std::io::Error::other)?;
             app.manage(runtime);
+            app.manage(marketplace);
             app.manage(agent_api);
             if let Err(error) = theme_designer_plugin::update_if_version_changed(app.handle()) {
                 eprintln!("[codex-nn] 更新主题设计插件失败：{error}");
@@ -279,6 +392,18 @@ pub fn run() {
             restore_theme,
             verify_theme,
             run_diagnostics,
+            marketplace_list_themes,
+            marketplace_get_theme,
+            marketplace_auth_state,
+            marketplace_start_login,
+            marketplace_logout,
+            marketplace_update_profile,
+            marketplace_list_my_uploads,
+            marketplace_local_sync_states,
+            marketplace_upload_theme,
+            marketplace_install_theme,
+            marketplace_save_theme,
+            marketplace_withdraw_theme,
             set_app_accent,
             get_theme_designer_plugin_status,
             install_theme_designer_plugin,

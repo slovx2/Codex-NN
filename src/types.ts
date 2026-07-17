@@ -61,3 +61,85 @@ export type VerificationReport = {
   details: unknown;
   message: string;
 };
+
+export type MarketplaceUser = {
+  id: string;
+  publicName: string;
+};
+
+export type MarketplaceAuthState = {
+  loggedIn: boolean;
+  pending: boolean;
+  user: MarketplaceUser | null;
+};
+
+export type MarketplaceLoginResult = {
+  status: "idle" | "pending" | "complete";
+  auth: MarketplaceAuthState;
+};
+
+export type MarketplaceThemeCard = {
+  themeId: string;
+  versionId: string;
+  manifestId: string;
+  name: string;
+  tagline: string;
+  authorName: string;
+  versionNumber: number;
+  downloadCount: number;
+  cardPreviewUrl: string;
+  publishedAt: string;
+  previewDataUrl: string;
+};
+
+export type MarketplaceThemeDetail = MarketplaceThemeCard & {
+  quote: string;
+  manifest: unknown;
+  detailPreviewUrl: string;
+  detailPreviewDataUrl: string;
+  packageSize: number;
+  packageSha256: string;
+};
+
+export type MarketplacePage = {
+  items: MarketplaceThemeCard[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pages: number;
+};
+
+export type MarketplaceUploadRecord = {
+  themeId: string;
+  versionId: string;
+  manifestId: string;
+  versionNumber: number;
+  status: string;
+  name: string;
+  tagline: string;
+  packageSha256: string;
+  packageSize: number;
+  createdAt: string;
+  reviewedAt: string | null;
+};
+
+export type MarketplaceUploadOutcome = {
+  uploaded: boolean;
+  needsConfirmation: boolean;
+  isUpdate: boolean;
+  name: string;
+  previousVersionNumber: number | null;
+  record: MarketplaceUploadRecord | null;
+};
+
+export type MarketplaceLocalSyncState = {
+  localThemeId: string;
+  manifestId: string;
+  linked: boolean;
+  themeId: string | null;
+  versionId: string | null;
+  versionNumber: number | null;
+  packageSha256: string | null;
+  role: "consumer" | "publisher" | null;
+  localChanged: boolean;
+};

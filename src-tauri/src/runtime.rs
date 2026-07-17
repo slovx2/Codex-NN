@@ -109,6 +109,13 @@ impl ThemeRuntime {
         self.themes.list(active.as_deref())
     }
 
+    pub(crate) fn load_theme_for_marketplace(
+        &self,
+        id: &str,
+    ) -> Result<(crate::models::ThemeManifest, Vec<u8>), String> {
+        self.themes.load(id)
+    }
+
     pub fn log_paths(&self) -> Vec<String> {
         vec![
             self.paths.logs.display().to_string(),
