@@ -9,10 +9,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({
-  confirm: mocks.confirm,
   open: mocks.open,
   save: mocks.save
 }));
+vi.mock("../../src/app-dialog", () => ({ confirmDialog: mocks.confirm }));
 
 import { setupMarketplace } from "../../src/marketplace";
 
@@ -180,6 +180,20 @@ test("投稿元数据、不可逆公开、永久分享码和软下架恢复流�
     packageSize: 1024,
     createdAt: "2026-07-17T08:00:00Z",
     reviewedAt: "2026-07-17T08:00:10Z"
+  }, {
+    themeId: "public-theme",
+    versionId: "public-v0-private",
+    manifestId: "public-theme",
+    versionNumber: 0,
+    status: "published",
+    title: "公开前的私密历史版本",
+    description: "",
+    tags: [],
+    visibility: "private",
+    packageSha256: "d".repeat(64),
+    packageSize: 1024,
+    createdAt: "2026-07-16T08:00:00Z",
+    reviewedAt: "2026-07-16T08:00:10Z"
   }];
   mocks.confirm.mockResolvedValue(true);
   mocks.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) => {
@@ -245,6 +259,10 @@ test("投稿元数据、不可逆公开、永久分享码和软下架恢复流�
   (document.getElementById("marketplace-mine-tab") as HTMLButtonElement).click();
   await vi.waitFor(() => expect(document.body.textContent).toContain("3 次领取"));
   expect(document.body.textContent).toContain("已下架公开主题");
+  expect(document.querySelectorAll("[data-create-share-code]")).toHaveLength(1);
+  expect(document.querySelectorAll(".marketplace-upload-item")).toHaveLength(3);
+  expect(document.querySelectorAll(".marketplace-upload-actions")).toHaveLength(3);
+  expect(document.querySelector("[data-create-share-code]")?.closest(".marketplace-upload-actions")).not.toBeNull();
   (document.getElementById("marketplace-upload-installed") as HTMLButtonElement).click();
   await vi.waitFor(() => expect(document.getElementById("marketplace-listing-form")).not.toBeNull());
   const privateOption = document.querySelector<HTMLOptionElement>("#marketplace-listing-visibility option[value=private]");

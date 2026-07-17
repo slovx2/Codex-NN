@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
-import { confirm as confirmDialog, open, save } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { confirmDialog } from "./app-dialog";
 import type {
   MarketplaceAuthState,
   MarketplaceLikeResult,
@@ -490,9 +491,10 @@ export function setupMarketplace(options: MarketplaceOptions): void {
 
   function uploadHtml(record: MarketplaceUploadRecord): string {
     const status = uploadStatus(record.status);
-    const canWithdraw = record.status === "published";
-    const canRestore = record.status === "withdrawn";
-    const canShare = record.status === "published" && record.visibility === "private";
+    const isLatest = latestUpload(record.manifestId)?.versionId === record.versionId;
+    const canWithdraw = isLatest && record.status === "published";
+    const canRestore = isLatest && record.status === "withdrawn";
+    const canShare = isLatest && record.status === "published" && record.visibility === "private";
     const shareCodes = shareCodeStats.get(record.themeId) ?? [];
     const redemptions = shareCodes.reduce((total, item) => total + item.redemptionCount, 0);
     return `
@@ -502,10 +504,12 @@ export function setupMarketplace(options: MarketplaceOptions): void {
           <span><strong>${escapeHtml(record.title)}</strong><em>v${record.versionNumber} · ${record.visibility === "private" ? "私密" : "公开"}</em></span>
           <small>${escapeHtml(record.manifestId)} · ${formatDate(record.createdAt)}${shareCodes.length ? ` · ${shareCodes.length} 个永久码 / ${redemptions} 次领取` : ""}</small>
         </span>
-        <span class="marketplace-review-state ${status.kind}"><i></i>${status.label}</span>
-        ${canShare ? `<button class="button subtle compact-button" data-create-share-code="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>创建分享码</button>` : ""}
-        ${canWithdraw ? `<button class="button subtle danger compact-button" data-withdraw-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>下架</button>` : ""}
-        ${canRestore ? `<button class="button subtle compact-button" data-restore-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>恢复上架</button>` : ""}
+        <span class="marketplace-upload-actions">
+          <span class="marketplace-review-state ${status.kind}"><i></i>${status.label}</span>
+          ${canShare ? `<button class="button subtle compact-button" data-create-share-code="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>创建分享码</button>` : ""}
+          ${canWithdraw ? `<button class="button subtle danger compact-button" data-withdraw-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>下架</button>` : ""}
+          ${canRestore ? `<button class="button subtle compact-button" data-restore-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>恢复上架</button>` : ""}
+        </span>
       </article>`;
   }
 

@@ -395,13 +395,16 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 22%, 
 .marketplace-upload-bar .button.secondary { width: auto; }
 .marketplace-inline-error { flex: 0 0 auto; margin-bottom: 8px; border-radius: 10px; padding: 9px 11px; color: #a3354b; background: #fff0f2; font-size: 9px; }
 .marketplace-upload-list { display: flex; flex-direction: column; gap: 7px; }
-.marketplace-upload-item { display: grid; grid-template-columns: 35px minmax(0, 1fr) auto auto auto; gap: 8px; align-items: center; min-height: 61px; border: 1px solid var(--line); border-radius: 13px; padding: 8px 9px; background: rgba(255,255,255,.58); }
-.marketplace-upload-icon { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 10px; color: var(--rose-dark); background: var(--rose-soft); font-size: 12px; font-weight: 850; }
+.marketplace-upload-item { display: grid; grid-template-columns: 35px minmax(0, 1fr); gap: 6px 9px; align-items: center; min-height: 61px; border: 1px solid var(--line); border-radius: 13px; padding: 8px 9px; background: rgba(255,255,255,.58); }
+.marketplace-upload-icon { display: grid; grid-row: 1 / 3; width: 35px; height: 35px; place-items: center; border-radius: 10px; color: var(--rose-dark); background: var(--rose-soft); font-size: 12px; font-weight: 850; }
 .marketplace-upload-copy { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
-.marketplace-upload-copy > span { display: flex; align-items: center; gap: 7px; }
-.marketplace-upload-copy strong { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.marketplace-upload-copy em { color: var(--muted); font-size: 8px; font-style: normal; }
+.marketplace-upload-copy > span { display: flex; min-width: 0; align-items: center; flex-wrap: wrap; gap: 3px 7px; }
+.marketplace-upload-copy strong { min-width: 0; overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.marketplace-upload-copy em { flex: 0 0 auto; color: var(--muted); font-size: 8px; font-style: normal; }
 .marketplace-upload-copy small { overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.marketplace-upload-actions { display: flex; min-width: 0; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.marketplace-upload-actions .marketplace-review-state { margin-right: auto; }
+.marketplace-upload-actions .button { min-height: 30px; padding: 5px 10px; }
 .marketplace-review-state { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 5px 8px; font-size: 8px; white-space: nowrap; }
 .marketplace-review-state i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .marketplace-review-state.neutral { color: var(--muted); background: rgba(101,73,80,.08); }
@@ -429,6 +432,13 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 22%, 
 .modal-card h3 { margin: 0; font-size: 19px; }
 .modal-card > p { margin: 9px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
 .modal-close { position: absolute; top: 14px; right: 14px; width: 29px; height: 29px; border-radius: 50%; background: rgba(102,62,72,.08); cursor: pointer; font-size: 17px; }
+.app-confirm-backdrop { z-index: 70; }
+.app-confirm-card { width: min(440px, 100%); padding: 25px; }
+.app-confirm-card .eyebrow { margin-bottom: 8px; }
+.app-confirm-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.app-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.app-confirm-actions .button { min-width: 96px; }
+.app-confirm-actions .danger-confirm { background: linear-gradient(135deg, #df6078, #9e2946); box-shadow: 0 8px 20px rgba(158,41,70,.2); }
 .dream-import-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
 .import-option { display: grid; grid-template-columns: 34px 1fr; grid-template-rows: auto auto; gap: 2px 9px; min-height: 82px; border: 1px solid var(--line); border-radius: 15px; padding: 14px; background: rgba(255,246,248,.72); cursor: pointer; text-align: left; }
 .import-option:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 34%, transparent); background: #fff; transform: translateY(-1px); }
