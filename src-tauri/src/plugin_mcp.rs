@@ -536,7 +536,7 @@ mod tests {
             .await
             .unwrap();
         let serialized = serde_json::to_string(&themes).unwrap();
-        assert_eq!(themes["themes"].as_array().unwrap().len(), 2);
+        assert_eq!(themes["themes"].as_array().unwrap().len(), 3);
         assert!(!serialized.contains("previewDataUrl"));
         assert!(!serialized.contains("base64"));
 

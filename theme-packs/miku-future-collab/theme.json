@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "miku-future-collab",
+  "name": "初音未来 · 未来共创",
+  "layoutPreset": "dreamSkin",
+  "brandSubtitle": "CODEX NN · MIKU FUTURE",
+  "tagline": "与初音未来一起，把灵感写成旋律与代码。",
+  "projectPrefix": "开启未来企划 · ",
+  "projectLabel": "♫  选择创作项目",
+  "statusText": "MIKU CREATIVE LINK ONLINE",
+  "quote": "BE TOGETHER · BE FUTURE",
+  "image": "background.webp",
+  "appearance": "light",
+  "art": {
+    "focusX": 0.72,
+    "focusY": 0.48,
+    "safeArea": "left",
+    "taskMode": "ambient"
+  },
+  "colors": {
+    "background": "#EDF8FC",
+    "panel": "#FFFFFF",
+    "panelAlt": "#F6F1FB",
+    "accent": "#086B7A",
+    "accentAlt": "#AD347F",
+    "secondary": "#0D7399",
+    "highlight": "#745AC0",
+    "text": "#173B58",
+    "muted": "#5A6E82",
+    "line": "rgba(8, 107, 122, 0.30)"
+  }
+}

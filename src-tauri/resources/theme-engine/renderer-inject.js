@@ -5,11 +5,13 @@
   const CHROME_ID = "codex-nn-theme-chrome";
   const SHELL_ATTR = "data-nn-theme-shell";
   const LAYOUT_ATTR = "data-nn-theme-layout";
+  const PAGE_ATTR = "data-nn-theme-page";
   const ART_ATTRS = [
     "data-nn-art-wide", "data-nn-art-safe-area", "data-nn-task-mode",
     "data-nn-art-aspect", "data-nn-art-ready",
   ];
   const VERSION = __CODEX_NN_THEME_VERSION_JSON__;
+  const REVISION = __CODEX_NN_THEME_REVISION_JSON__;
   const THEME = themeConfig && typeof themeConfig === "object" ? themeConfig : {};
   const ART = THEME.art && typeof THEME.art === "object" ? THEME.art : {};
   const ART_METADATA = THEME.artMetadata && typeof THEME.artMetadata === "object"
@@ -36,28 +38,31 @@
     ? analysisCache.get(THEME.artKey) ?? null : null;
   let analysisTimer = null;
   const installToken = {};
-  window[DISABLED_KEY] = false;
-
-  const previous = window[STATE_KEY];
-  if (previous?.observer) previous.observer.disconnect();
-  if (previous?.timer) clearInterval(previous.timer);
-  if (previous?.scheduler?.timeout) clearTimeout(previous.scheduler.timeout);
-  if (previous?.scheduler?.frame) cancelAnimationFrame(previous.scheduler.frame);
-  if (previous?.analysisTimer) clearTimeout(previous.analysisTimer);
-  if (previous?.resizeHandler) window.removeEventListener("resize", previous.resizeHandler);
-  if (previous?.mediaHandler && previous?.mediaQuery) {
-    try { previous.mediaQuery.removeEventListener("change", previous.mediaHandler); } catch {}
-  }
-  if (previous?.artUrl) URL.revokeObjectURL(previous.artUrl);
-
   const artUrl = (() => {
     const comma = artDataUrl.indexOf(",");
+    if (comma < 0) throw new Error("Invalid theme art data URL");
     const mime = /^data:([^;,]+)/.exec(artDataUrl)?.[1] || "image/png";
     const binary = atob(artDataUrl.slice(comma + 1));
     const bytes = new Uint8Array(binary.length);
     for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
     return URL.createObjectURL(new Blob([bytes], { type: mime }));
   })();
+
+  const previous = window[STATE_KEY];
+  try { previous?.cleanup?.(); } catch {}
+  if (window[STATE_KEY] === previous) {
+    if (previous?.observer) previous.observer.disconnect();
+    if (previous?.timer) clearInterval(previous.timer);
+    if (previous?.scheduler?.timeout) clearTimeout(previous.scheduler.timeout);
+    if (previous?.scheduler?.frame) cancelAnimationFrame(previous.scheduler.frame);
+    if (previous?.analysisTimer) clearTimeout(previous.analysisTimer);
+    if (previous?.resizeHandler) window.removeEventListener("resize", previous.resizeHandler);
+    if (previous?.mediaHandler && previous?.mediaQuery) {
+      try { previous.mediaQuery.removeEventListener("change", previous.mediaHandler); } catch {}
+    }
+    if (previous?.artUrl) URL.revokeObjectURL(previous.artUrl);
+  }
+  window[DISABLED_KEY] = false;
 
   const cssString = (value) => JSON.stringify(String(value ?? ""));
 
@@ -71,6 +76,16 @@
 
   const setText = (node, value) => {
     if (node && node.textContent !== value) node.textContent = value;
+  };
+
+  const sharedAncestor = (first, second, boundary) => {
+    if (!first || !second) return null;
+    let candidate = first;
+    while (candidate && candidate !== boundary) {
+      if (candidate.contains(second)) return candidate;
+      candidate = candidate.parentElement;
+    }
+    return null;
   };
 
   const parseRgb = (value) => {
@@ -453,20 +468,32 @@
     }
 
     const shellMain = document.querySelector("main.main-surface") || document.querySelector("main");
-    const homeIndicator = document.querySelector('[data-testid="home-icon"]');
-    const home = homeIndicator?.closest('[role="main"]') ||
-      [...document.querySelectorAll('[role="main"]')].find((candidate) =>
-        candidate.querySelector('[data-feature="game-source"]') &&
-        candidate.querySelector('.group\\\\/home-suggestions')) || null;
-    for (const candidate of document.querySelectorAll('[role="main"].nn-theme-home')) {
-      if (candidate !== home) candidate.classList.remove("nn-theme-home");
-    }
-    if (home) home.classList.add("nn-theme-home");
-
     if (!shellMain || !document.body) return;
-    shellMain.classList.toggle("nn-theme-home-shell", Boolean(home));
+    const homeIndicator = shellMain.querySelector('[data-testid="home-icon"]');
+    const gameSource = shellMain.querySelector('[data-feature="game-source"]');
+    const composer = shellMain.querySelector(".composer-surface-chrome");
+    const thread = shellMain.querySelector(".thread-scroll-container");
+    const isHome = Boolean(gameSource && !thread);
+    const home = isHome
+      ? homeIndicator?.closest('[role="main"]') || gameSource?.closest('[role="main"]') ||
+        sharedAncestor(gameSource, composer, shellMain)
+      : null;
+    for (const candidate of document.querySelectorAll(".nn-theme-home")) {
+      if (LAYOUT === "dream-skin" || candidate !== home) {
+        candidate.classList.remove("nn-theme-home");
+      }
+    }
+    if (LAYOUT !== "dream-skin" && home) home.classList.add("nn-theme-home");
+
+    const composedHome = Boolean(home && LAYOUT !== "dream-skin");
+    setAttribute(root, PAGE_ATTR, isHome ? "home" : "thread");
+    shellMain.classList.toggle("nn-theme-home-shell", composedHome);
     let chrome = document.getElementById(CHROME_ID);
-    if (!chrome || chrome.parentElement !== document.body || !chrome.querySelector(".nn-dream-brand")) {
+    if (LAYOUT === "dream-skin") {
+      chrome?.remove();
+      return;
+    }
+    if (!chrome || chrome.parentElement !== document.body || !chrome.querySelector(".nn-theme-brand")) {
       chrome?.remove();
       chrome = document.createElement("div");
       chrome.id = CHROME_ID;
@@ -479,12 +506,7 @@
         <div class="nn-theme-status"><i></i><span></span></div>
         <div class="nn-theme-quote"></div>
         <div class="nn-theme-particles"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="nn-theme-orbit"></div>
-        <div class="nn-dream-brand"><span class="nn-dream-note">♫</span><span><b></b><small></small></span></div>
-        <div class="nn-dream-signature"></div>
-        <div class="nn-dream-sparkles"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="nn-dream-ribbon"><span>♡</span>🎀<span>✦</span></div>
-        <div class="nn-dream-polaroid"></div>`;
+        <div class="nn-theme-orbit"></div>`;
       document.body.appendChild(chrome);
     }
     setText(chrome.querySelector(".nn-theme-brand b"), THEME.name || "Codex 暖暖");
@@ -492,15 +514,12 @@
     setText(chrome.querySelector(".nn-theme-portal-mark"), LAYOUT === "strawberry-starlight" ? "♡" : "◈");
     setText(chrome.querySelector(".nn-theme-status span"), THEME.statusText || "CODEX NN ONLINE");
     setText(chrome.querySelector(".nn-theme-quote"), THEME.quote || "MAKE SOMETHING WONDERFUL");
-    setText(chrome.querySelector(".nn-dream-brand b"), THEME.name || "Codex Dream Skin");
-    setText(chrome.querySelector(".nn-dream-brand small"), THEME.brandSubtitle || "Codex App 限定版 ✦");
-    setText(chrome.querySelector(".nn-dream-signature"), THEME.quote || "Dream Skin ♡");
     const shellBox = shellMain.getBoundingClientRect();
     setProperty(chrome, "left", `${Math.round(shellBox.left)}px`);
     setProperty(chrome, "top", `${Math.round(shellBox.top)}px`);
     setProperty(chrome, "width", `${Math.round(shellBox.width)}px`);
     setProperty(chrome, "height", `${Math.round(shellBox.height)}px`);
-    chrome.classList.toggle("nn-theme-home-shell", Boolean(home));
+    chrome.classList.toggle("nn-theme-home-shell", composedHome);
     setAttribute(chrome, "data-nn-theme-shell", shell);
   };
 
@@ -511,6 +530,7 @@
     document.documentElement?.classList.remove("codex-nn-theme");
     document.documentElement?.removeAttribute(SHELL_ATTR);
     document.documentElement?.removeAttribute(LAYOUT_ATTR);
+    document.documentElement?.removeAttribute(PAGE_ATTR);
     for (const name of ART_ATTRS) document.documentElement?.removeAttribute(name);
     document.documentElement?.style.removeProperty("--nn-theme-art");
     for (const name of THEME_VARIABLES) document.documentElement?.style.removeProperty(name);
@@ -601,6 +621,7 @@
     installToken,
     version: VERSION,
     themeId: THEME.id || "custom",
+    revision: REVISION,
     layout: LAYOUT,
     detectShellMode,
   };
@@ -624,6 +645,7 @@
     installed: true,
     version: VERSION,
     themeId: THEME.id || "custom",
+    revision: REVISION,
     shell: resolvedShell(),
     layout: LAYOUT,
   };

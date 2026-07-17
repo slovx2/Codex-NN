@@ -9,7 +9,16 @@ import { inflateRawSync } from "node:zlib";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PLUGIN_ROOT = join(ROOT, "plugin", "codex-nn-theme-designer");
 const SKILL_ROOT = join(PLUGIN_ROOT, "skills", "design-codex-nn-theme");
-const EXPECTED_THEME_IDS = new Set(["azure-neon-frontier", "strawberry-starlight"]);
+const EXPECTED_THEME_IDS = new Set([
+  "azure-neon-frontier",
+  "miku-future-collab",
+  "strawberry-starlight"
+]);
+const EXPECTED_THEME_APPEARANCE = {
+  "azure-neon-frontier": "dark",
+  "miku-future-collab": "light",
+  "strawberry-starlight": "light"
+};
 
 function fail(message) {
   throw new Error(message);
@@ -204,7 +213,7 @@ function validateThemePacks() {
     const directory = join(root, id);
     const manifest = json(join(directory, "theme.json"));
     if (manifest.schemaVersion !== 1 || manifest.id !== id) fail(`内置主题 ${id} 的 schemaVersion 或 id 错误`);
-    const expectedAppearance = id === "strawberry-starlight" ? "light" : "dark";
+    const expectedAppearance = EXPECTED_THEME_APPEARANCE[id];
     if (manifest.appearance !== expectedAppearance) fail(`内置主题 ${id} 的 appearance 错误`);
     if (
       typeof manifest.art?.focusX !== "number" || manifest.art.focusX < 0 || manifest.art.focusX > 1

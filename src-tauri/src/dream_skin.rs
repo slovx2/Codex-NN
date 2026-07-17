@@ -15,7 +15,11 @@ const MAX_PACKAGE_BYTES: u64 = 20 * 1024 * 1024;
 const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
 const MAX_IMAGE_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_UNPACKED_BYTES: u64 = 20 * 1024 * 1024;
-const BUILT_IN_IDS: &[&str] = &["strawberry-starlight", "azure-neon-frontier"];
+const BUILT_IN_IDS: &[&str] = &[
+    "strawberry-starlight",
+    "azure-neon-frontier",
+    "miku-future-collab",
+];
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -583,9 +587,11 @@ mod tests {
         assert!(first.starts_with("dream-skin-my-theme-"));
         assert!(valid_id(&first));
 
-        let built_in = convert_id("strawberry-starlight", "名称");
-        assert_ne!(built_in, "strawberry-starlight");
-        assert!(built_in.starts_with("dream-skin-strawberry-starlight-"));
+        for id in BUILT_IN_IDS {
+            let built_in = convert_id(id, "名称");
+            assert_ne!(built_in, *id);
+            assert!(built_in.starts_with(&format!("dream-skin-{id}-")));
+        }
     }
 
     #[test]
