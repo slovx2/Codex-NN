@@ -44,7 +44,7 @@
 ## 布局预设
 
 - `standard`：通用布局，跟随 Codex 明暗外观，适合大多数自定义主题。
-- `dreamSkin`：浅色梦幻布局，突出头图、行动卡和装饰。
+- `dreamSkin`：浅色沉浸式整窗壁纸，保留 Codex 原生布局，并以玻璃表面保证可读性。
 - `strawberryStarlight`：珍珠玻璃、水晶心和粉紫星光视觉。
 - `azureNeon`：深色烟熏玻璃、传送门环和青蓝霓虹视觉。
 
