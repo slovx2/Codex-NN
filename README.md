@@ -97,7 +97,7 @@ my-theme.zip
 
 主题包仅包含声明文件和本地图片，不支持脚本、CSS、远程资源或加密文件。完整字段、图片规格和打包方法请查看 [主题包 v1 规范](./docs/theme-package-v1.md)。
 
-从 Dream Skin macOS 迁移主题时，点击「导入 Dream Skin」，可以直接选择它的主题目录或双文件 ZIP。Codex NN 会转换为 schema v1 并安装，不会执行其中的脚本或 CSS。
+从 Dream Skin macOS 迁移主题时，点击「导入 Dream Skin」，可以直接选择它的主题目录或双文件 ZIP。Codex NN 会保留 schema v1 的同名字段和缺省语义，并使用同步的 Dream Skin 1.2.0 渲染器；不会执行主题包中的脚本或 CSS。
 
 ## 使用 Codex 设计主题
 

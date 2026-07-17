@@ -16,6 +16,7 @@ const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
 const MAX_IMAGE_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_UNPACKED_BYTES: u64 = 20 * 1024 * 1024;
 const BUILT_IN_IDS: &[&str] = &[
+    "adventure-atlas",
     "strawberry-starlight",
     "azure-neon-frontier",
     "miku-future-collab",
@@ -236,7 +237,7 @@ fn convert_manifest(raw: DreamSkinManifest) -> ThemeManifest {
     ThemeManifest {
         schema_version: 1,
         id,
-        name: text(&raw.name, "Codex Dream Skin", 80),
+        name: text(&raw.name, "ChatGPT Dream Skin", 80),
         layout_preset: "dreamSkin".into(),
         brand_subtitle: text(&raw.brand_subtitle, "CODEX DREAM SKIN", 80),
         tagline: text(&raw.tagline, "Make something wonderful.", 160),
@@ -537,6 +538,60 @@ mod tests {
         assert_eq!(converted.art.task_mode.as_deref(), Some("ambient"));
         assert_eq!(converted.colors.accent.as_deref(), Some("#e25563"));
         assert_eq!(converted.colors.panel, None);
+    }
+
+    #[test]
+    fn preserves_latest_gothic_void_manifest_semantics() {
+        let raw = parse_manifest(
+            br##"{
+              "schemaVersion": 1,
+              "id": "preset-gothic-void-crusade",
+              "name": "Gothic Void Crusade",
+              "brandSubtitle": "CODEX DREAM SKIN",
+              "tagline": "A solemn cathedral-world horizon for focused work.",
+              "projectPrefix": "Select project \u00b7 ",
+              "projectLabel": "\u25c9  Select project",
+              "statusText": "VOID CRUSADE ONLINE",
+              "quote": "MAKE SOMETHING WONDERFUL",
+              "image": "background.jpg",
+              "appearance": "auto",
+              "art": {
+                "focusX": 0.76,
+                "focusY": 0.45,
+                "safeArea": "left",
+                "taskMode": "ambient"
+              },
+              "colors": {
+                "background": "#0d0d0e",
+                "panel": "#171513",
+                "panelAlt": "#211d18",
+                "accent": "#c8a55a",
+                "accentAlt": "#e3c27a",
+                "secondary": "#74352e",
+                "highlight": "#8a2f27",
+                "text": "#f3ead7",
+                "muted": "#b5a386",
+                "line": "rgba(200, 165, 90, .28)"
+              },
+              "promoTitle": "Codex Dream Skin"
+            }"##,
+        )
+        .unwrap();
+
+        let converted = convert_manifest(raw);
+
+        assert_eq!(converted.id, "preset-gothic-void-crusade");
+        assert_eq!(converted.layout_preset, "dreamSkin");
+        assert_eq!(converted.name, "Gothic Void Crusade");
+        assert_eq!(converted.project_prefix, "Select project ·");
+        assert_eq!(converted.appearance.as_deref(), Some("auto"));
+        assert_eq!(converted.art.focus_x, Some(0.76));
+        assert_eq!(converted.art.task_mode.as_deref(), Some("ambient"));
+        assert_eq!(converted.colors.panel_alt.as_deref(), Some("#211d18"));
+        assert_eq!(
+            converted.colors.line.as_deref(),
+            Some("rgba(200, 165, 90, .28)")
+        );
     }
 
     #[test]

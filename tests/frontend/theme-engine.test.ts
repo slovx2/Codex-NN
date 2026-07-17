@@ -162,6 +162,11 @@ describe("主题注入引擎", () => {
     expect(engineCss).toContain('.thread-scroll-container .bg-gradient-to-t.from-token-main-surface-primary');
     expect(engineCss).toContain('[class~="group/application-menu-top-bar"]');
     expect(engineCss).toContain('> :not(header.app-header-tint)');
+    expect(engineCss).toContain('[data-nn-art-wide="true"][data-nn-theme-page="home"] body');
+    expect(engineCss).toContain(".nn-theme-home-utility");
+    expect(engineCss).toContain("background-image: none !important");
+    expect(engineCss).toContain('data-nn-theme-layout="strawberry-starlight"][data-nn-art-wide="true"]');
+    expect(engineCss).toContain("rgba(255, 245, 250, .88)");
   });
 
   it.each([
@@ -364,19 +369,26 @@ describe("主题注入引擎", () => {
     expect(document.querySelectorAll("#codex-nn-theme-style")).toHaveLength(1);
   });
 
-  it("只有主题显式声明 taskMode 才在聊天页使用主题图", () => {
-    const theme = manifest("dreamSkin", "task-mode-opt-in");
+  it("taskMode 缺省与 auto 自动选型，只有 off 关闭聊天页主题图", () => {
+    const theme = manifest("standard", "task-mode-default");
     delete (theme.art as { taskMode?: string }).taskMode;
-    window.eval(renderScript("dreamSkin", "task-mode-opt-in", theme));
+    window.eval(renderScript("standard", "task-mode-default", theme));
 
-    expect(document.documentElement.dataset.nnTaskMode).toBe("off");
+    expect(document.documentElement.dataset.nnTaskMode).toBe("ambient");
 
-    window.eval(renderScript("dreamSkin", "task-mode-auto", {
+    window.eval(renderScript("standard", "task-mode-auto", {
       ...theme,
       id: "task-mode-auto",
       art: { ...theme.art, taskMode: "auto" }
     }));
     expect(document.documentElement.dataset.nnTaskMode).toBe("ambient");
+
+    window.eval(renderScript("standard", "task-mode-off", {
+      ...theme,
+      id: "task-mode-off",
+      art: { ...theme.art, taskMode: "off" }
+    }));
+    expect(document.documentElement.dataset.nnTaskMode).toBe("off");
   });
 
   it("Dream Skin 自动跟随原生外观并完整清理", () => {
@@ -527,7 +539,7 @@ describe("主题注入引擎", () => {
     );
   });
 
-  it("Dream Skin 聊天页缺省关闭主题图", () => {
+  it("旧 Dream Skin fallback 的聊天页缺省使用自动主题图", () => {
     const route = document.querySelector('[role="main"]')!;
     route.innerHTML = `
       <div class="thread-scroll-container"></div>
@@ -539,10 +551,10 @@ describe("主题注入引擎", () => {
     window.eval(renderScript("dreamSkin", "dream-task-off", theme));
 
     expect(document.documentElement.dataset.nnThemePage).toBe("thread");
-    expect(document.documentElement.dataset.nnTaskMode).toBe("off");
+    expect(document.documentElement.dataset.nnTaskMode).toBe("ambient");
     expect(document.querySelector(".nn-theme-home")).toBeNull();
     expect(document.getElementById("codex-nn-theme-chrome")).toBeNull();
-    expect(themeCss).toContain('[data-nn-theme-page="thread"][data-nn-task-mode="off"]');
+    expect(themeCss).toContain('[data-nn-theme-page="thread"][data-nn-task-mode="ambient"]');
     expect(themeCss).toMatch(
       /\[data-nn-theme-layout="dream-skin"\] body::before \{\s*content: none !important;/
     );
@@ -643,6 +655,34 @@ describe("主题注入引擎", () => {
     route.appendChild(Object.assign(document.createElement("div"), { className: "thread-scroll-container" }));
     document.documentElement.dataset.nnThemePage = "thread";
     expect((window.eval(verifyScript) as { pass: boolean }).pass).toBe(false);
+  });
+
+  it("CDP 验证允许非任务工具页没有输入框", () => {
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      right: 100,
+      bottom: 50,
+      left: 0,
+      width: 100,
+      height: 50,
+      toJSON: () => ({})
+    } as DOMRect);
+    document.querySelector('[role="main"]')!.innerHTML = "<div>工具页</div>";
+    const config = manifest("standard", "verify-tool-route");
+    config.art.taskMode = "off";
+    window.eval(renderScript("standard", "verify-tool-route", config));
+    document.getElementById("codex-nn-theme-chrome")!.style.pointerEvents = "none";
+
+    const result = window.eval(verifyScript) as {
+      pass: boolean;
+      composer: boolean;
+      composerRequired: boolean;
+    };
+    expect(result.composer).toBe(false);
+    expect(result.composerRequired).toBe(false);
+    expect(result.pass).toBe(true);
   });
 
   it("稳定 DOM 上重复 ensure 不会触发观察器回环", async () => {

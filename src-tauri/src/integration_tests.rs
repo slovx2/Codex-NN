@@ -280,7 +280,7 @@ async fn agent_api_enforces_auth_and_runs_theme_lifecycle() {
 #[tokio::test]
 async fn theme_runtime_runs_the_complete_local_lifecycle() {
     let (root, paths, runtime) = test_runtime();
-    assert_eq!(runtime.list_themes().await.unwrap().len(), 3);
+    assert_eq!(runtime.list_themes().await.unwrap().len(), 4);
 
     let first = root.path().join("first.zip");
     package(&first, &manifest("runtime-theme", "运行时主题"));
@@ -331,7 +331,7 @@ async fn theme_runtime_runs_the_complete_local_lifecycle() {
 
     let deleted = runtime.delete_theme("runtime-theme".into()).await.unwrap();
     assert_eq!(deleted.active_theme.unwrap().id, "strawberry-starlight");
-    assert_eq!(runtime.list_themes().await.unwrap().len(), 3);
+    assert_eq!(runtime.list_themes().await.unwrap().len(), 4);
     let state: serde_json::Value =
         serde_json::from_slice(&std::fs::read(paths.state).unwrap()).unwrap();
     assert_eq!(state["activeThemeId"], "strawberry-starlight");

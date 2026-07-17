@@ -12,9 +12,13 @@ use crate::{
     models::{ThemeManifest, VerificationReport},
 };
 
-const THEME_ENGINE_VERSION: &str = "0.4.4";
+const THEME_ENGINE_VERSION: &str = "0.5.0";
 const CSS: &str = include_str!("../resources/theme-engine/nn-theme.css");
 const RENDERER: &str = include_str!("../resources/theme-engine/renderer-inject.js");
+const DREAM_SKIN_ENGINE_VERSION: &str = "1.2.0";
+const DREAM_SKIN_CSS: &str = include_str!("../resources/theme-engine/dream-skin.css");
+const DREAM_SKIN_RENDERER: &str =
+    include_str!("../resources/theme-engine/dream-skin-renderer-inject.js");
 
 #[derive(Debug, Clone)]
 pub struct ThemePayload {
@@ -66,8 +70,14 @@ pub fn build_payload(manifest: &ThemeManifest, image: &[u8]) -> Result<ThemePayl
         "portrait"
     };
     let image_url = format!("data:{mime};base64,{}", STANDARD.encode(image));
+    let dream_skin = manifest.layout_preset == "dreamSkin";
+    let image_digest = format!("{:x}", Sha256::digest(image));
     let mut theme = serde_json::to_value(manifest).map_err(|error| error.to_string())?;
-    theme["artKey"] = Value::String(format!("{:x}", Sha256::digest(image)));
+    theme["artKey"] = Value::String(if dream_skin {
+        image_digest[..20].to_string()
+    } else {
+        image_digest
+    });
     theme["artMetadata"] = json!({
         "width": width,
         "height": height,
@@ -76,7 +86,33 @@ pub fn build_payload(manifest: &ThemeManifest, image: &[u8]) -> Result<ThemePayl
         "aspect": aspect,
         "taskMode": if ratio >= 2.25 { "banner" } else { "ambient" },
     });
+    if dream_skin {
+        let explicit_color_keys = [
+            ("background", manifest.colors.background.is_some()),
+            ("panel", manifest.colors.panel.is_some()),
+            ("panelAlt", manifest.colors.panel_alt.is_some()),
+            ("accent", manifest.colors.accent.is_some()),
+            ("accentAlt", manifest.colors.accent_alt.is_some()),
+            ("secondary", manifest.colors.secondary.is_some()),
+            ("highlight", manifest.colors.highlight.is_some()),
+            ("text", manifest.colors.text.is_some()),
+            ("muted", manifest.colors.muted.is_some()),
+            ("line", manifest.colors.line.is_some()),
+        ]
+        .into_iter()
+        .filter_map(|(name, present)| present.then_some(Value::String(name.into())))
+        .collect::<Vec<_>>();
+        theme["colorMode"] = Value::String(if explicit_color_keys.is_empty() {
+            "auto".into()
+        } else {
+            "explicit".into()
+        });
+        theme["explicitColorKeys"] = Value::Array(explicit_color_keys);
+    }
     let theme = serde_json::to_string(&theme).map_err(|error| error.to_string())?;
+    if dream_skin {
+        return build_dream_skin_payload(manifest, &image_url, &theme);
+    }
     let revision = theme_revision(&theme, image);
     let script = RENDERER
         .replace(
@@ -101,6 +137,80 @@ pub fn build_payload(manifest: &ThemeManifest, image: &[u8]) -> Result<ThemePayl
         revision,
         script,
     })
+}
+
+fn build_dream_skin_payload(
+    manifest: &ThemeManifest,
+    image_url: &str,
+    theme: &str,
+) -> Result<ThemePayload, String> {
+    let style_revision = digest_prefix(DREAM_SKIN_CSS.as_bytes(), 20);
+    let mut revision_hasher = Sha256::new();
+    revision_hasher.update(DREAM_SKIN_ENGINE_VERSION.as_bytes());
+    revision_hasher.update(DREAM_SKIN_CSS.as_bytes());
+    revision_hasher.update(DREAM_SKIN_RENDERER.as_bytes());
+    revision_hasher.update(theme.as_bytes());
+    let revision = format!("{:x}", revision_hasher.finalize())[..20].to_string();
+    let upstream = DREAM_SKIN_RENDERER
+        .replace(
+            "__DREAM_SKIN_CSS_JSON__",
+            &serde_json::to_string(DREAM_SKIN_CSS).unwrap(),
+        )
+        .replace(
+            "__DREAM_SKIN_ART_JSON__",
+            &serde_json::to_string(image_url).unwrap(),
+        )
+        .replace("__DREAM_SKIN_THEME_JSON__", theme)
+        .replace(
+            "__DREAM_SKIN_VERSION_JSON__",
+            &serde_json::to_string(DREAM_SKIN_ENGINE_VERSION).unwrap(),
+        )
+        .replace(
+            "__DREAM_SKIN_STYLE_REVISION_JSON__",
+            &serde_json::to_string(&style_revision).unwrap(),
+        )
+        .replace(
+            "__DREAM_SKIN_PAYLOAD_REVISION_JSON__",
+            &serde_json::to_string(&revision).unwrap(),
+        );
+    let nn_version = serde_json::to_string(THEME_ENGINE_VERSION).unwrap();
+    let theme_id = serde_json::to_string(&manifest.id).unwrap();
+    let revision_json = serde_json::to_string(&revision).unwrap();
+    let script = format!(
+        r#"(() => {{
+  const previousNn = window.__CODEX_NN_THEME_STATE__;
+  if (previousNn && previousNn !== window.__CODEX_DREAM_SKIN_STATE__) {{
+    try {{ previousNn.cleanup?.(); }} catch {{}}
+  }}
+  const result = ({upstream});
+  const dreamState = window.__CODEX_DREAM_SKIN_STATE__;
+  if (!dreamState) return result;
+  const cleanupDreamSkin = dreamState.cleanup;
+  const bridge = Object.create(dreamState);
+  bridge.engine = "dream-skin";
+  bridge.layout = "dream-skin";
+  bridge.version = {nn_version};
+  bridge.themeId = {theme_id};
+  bridge.revision = {revision_json};
+  bridge.cleanup = () => {{
+    const cleaned = Reflect.apply(cleanupDreamSkin, dreamState, []);
+    if (window.__CODEX_NN_THEME_STATE__ === bridge) delete window.__CODEX_NN_THEME_STATE__;
+    return cleaned;
+  }};
+  window.__CODEX_NN_THEME_STATE__ = bridge;
+  return {{ ...result, engine: "dream-skin", layout: "dream-skin", version: {nn_version}, revision: {revision_json} }};
+}})()"#
+    );
+    Ok(ThemePayload {
+        theme_id: manifest.id.clone(),
+        revision,
+        script,
+    })
+}
+
+fn digest_prefix(bytes: &[u8], length: usize) -> String {
+    let digest = format!("{:x}", Sha256::digest(bytes));
+    digest[..length.min(digest.len())].to_string()
 }
 
 fn theme_revision(theme: &str, image: &[u8]) -> String {
@@ -301,7 +411,7 @@ async fn capture(session: &mut CdpSession, path: &Path) -> Result<(), String> {
 }
 
 const PROBE_SCRIPT: &str = r#"(() => { const shell = !!document.querySelector('main.main-surface'); const sidebar = !!document.querySelector('aside.app-shell-left-panel'); const composer = !!document.querySelector('.composer-surface-chrome'); const main = !!document.querySelector('[role="main"]'); return { codex: shell && sidebar && (composer || main) }; })()"#;
-const REMOVE_SCRIPT: &str = r#"(() => { const state = window.__CODEX_NN_THEME_STATE__; if (state?.cleanup) return state.cleanup(); const root = document.documentElement; root?.classList.remove('codex-nn-theme'); for (const name of ['data-nn-theme-shell', 'data-nn-theme-layout', 'data-nn-theme-page', 'data-nn-art-wide', 'data-nn-art-safe-area', 'data-nn-task-mode', 'data-nn-art-aspect', 'data-nn-art-ready']) root?.removeAttribute(name); for (const name of ['--nn-theme-art', '--nn-art-focus-x', '--nn-art-focus-y', '--nn-art-position']) root?.style.removeProperty(name); document.getElementById('codex-nn-theme-style')?.remove(); document.getElementById('codex-nn-theme-chrome')?.remove(); delete window.__CODEX_NN_THEME_STATE__; return true; })()"#;
+const REMOVE_SCRIPT: &str = r#"(() => { const state = window.__CODEX_NN_THEME_STATE__ || window.__CODEX_DREAM_SKIN_STATE__; if (state?.cleanup) return state.cleanup(); const root = document.documentElement; root?.classList.remove('codex-nn-theme', 'codex-dream-skin'); for (const name of ['data-nn-theme-shell', 'data-nn-theme-layout', 'data-nn-theme-page', 'data-nn-art-wide', 'data-nn-art-safe-area', 'data-nn-task-mode', 'data-nn-art-aspect', 'data-nn-art-ready', 'data-dream-shell', 'data-dream-art-wide', 'data-dream-art-safe', 'data-dream-task-mode', 'data-dream-art-safe-area', 'data-dream-art-task-mode', 'data-dream-art-aspect', 'data-dream-art-ready']) root?.removeAttribute(name); for (const name of ['--nn-theme-art', '--nn-art-focus-x', '--nn-art-focus-y', '--nn-art-position', '--dream-skin-art', '--dream-art-focus-x', '--dream-art-focus-y', '--dream-art-position']) root?.style.removeProperty(name); document.getElementById('codex-nn-theme-style')?.remove(); document.getElementById('codex-nn-theme-chrome')?.remove(); document.getElementById('codex-dream-skin-style')?.remove(); document.getElementById('codex-dream-skin-chrome')?.remove(); delete window.__CODEX_NN_THEME_STATE__; delete window.__CODEX_DREAM_SKIN_STATE__; return true; })()"#;
 const VERIFY_SCRIPT: &str = r#"(() => {
   const visible = node => {
     if (!node) return false;
@@ -315,35 +425,41 @@ const VERIFY_SCRIPT: &str = r#"(() => {
     return { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) };
   };
   const root = document.documentElement;
-  const chrome = document.getElementById('codex-nn-theme-chrome');
+  const state = window.__CODEX_NN_THEME_STATE__;
+  const dreamEngine = state?.engine === 'dream-skin';
+  const chrome = document.getElementById(dreamEngine ? 'codex-dream-skin-chrome' : 'codex-nn-theme-chrome');
   const shellMain = document.querySelector('main.main-surface') || document.querySelector('main');
-  const home = document.querySelector('.nn-theme-home');
-  const layout = window.__CODEX_NN_THEME_STATE__?.layout || null;
+  const home = document.querySelector(dreamEngine ? '.dream-skin-home' : '.nn-theme-home');
+  const layout = state?.layout || null;
   const thread = shellMain?.querySelector('.thread-scroll-container') || null;
   const gameSource = shellMain?.querySelector('[data-feature="game-source"]') || null;
   const actualPage = gameSource && !thread ? 'home' : 'thread';
-  const page = root.dataset.nnThemePage || null;
+  const composerRequired = actualPage === 'home' || !!thread;
+  const page = dreamEngine ? actualPage : root.dataset.nnThemePage || null;
   const suggestions = home?.querySelector('.group\\/home-suggestions') || null;
   const cards = suggestions ? [...suggestions.querySelectorAll('button')].map(box) : [];
-  const artWide = root.getAttribute('data-nn-art-wide') === 'true';
-  const taskMode = root.getAttribute('data-nn-task-mode');
+  const artWide = root.getAttribute(dreamEngine ? 'data-dream-art-wide' : 'data-nn-art-wide') === 'true';
+  const taskMode = root.getAttribute(dreamEngine ? 'data-dream-task-mode' : 'data-nn-task-mode');
   const immersiveExpected = actualPage === 'thread' && (taskMode === 'ambient' || taskMode === 'banner');
-  const wallpaperBackground = !immersiveExpected ? 'none' : layout === 'dream-skin'
-    ? getComputedStyle(document.body, '::before').backgroundImage
+  const immersiveHomeExpected = dreamEngine && actualPage === 'home' && artWide;
+  const wallpaperBackground = !(immersiveExpected || immersiveHomeExpected) ? 'none' : dreamEngine
+    ? getComputedStyle(document.body).backgroundImage
     : artWide
       ? getComputedStyle(document.body).backgroundImage
       : getComputedStyle(shellMain, '::before').backgroundImage;
   const result = {
-    installed: document.documentElement.classList.contains('codex-nn-theme'),
-    version: window.__CODEX_NN_THEME_STATE__?.version || null,
-    themeId: window.__CODEX_NN_THEME_STATE__?.themeId || null,
-    revision: window.__CODEX_NN_THEME_STATE__?.revision || null,
+    installed: document.documentElement.classList.contains(dreamEngine ? 'codex-dream-skin' : 'codex-nn-theme'),
+    version: state?.version || null,
+    themeId: state?.themeId || null,
+    revision: state?.revision || null,
+    engine: state?.engine || 'codex-nn',
     layout,
-    stylePresent: !!document.getElementById('codex-nn-theme-style'),
+    stylePresent: !!document.getElementById(dreamEngine ? 'codex-dream-skin-style' : 'codex-nn-theme-style'),
     chromePresent: !!chrome,
     pointerEvents: chrome ? getComputedStyle(chrome).pointerEvents : null,
     sidebar: visible(document.querySelector('aside.app-shell-left-panel')),
     composer: visible(document.querySelector('.composer-surface-chrome')),
+    composerRequired,
     page,
     actualPage,
     pageStateMatches: page === actualPage,
@@ -352,19 +468,27 @@ const VERIFY_SCRIPT: &str = r#"(() => {
     artWide,
     taskMode,
     immersiveTask: !immersiveExpected || (wallpaperBackground !== 'none' && wallpaperBackground.includes('blob:')),
+    immersiveHome: !immersiveHomeExpected || (wallpaperBackground !== 'none' && wallpaperBackground.includes('blob:')),
     hero: box(home?.firstElementChild?.firstElementChild?.firstElementChild),
     cards,
     overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
   };
   const nativeLayout = layout === 'dream-skin';
-  const nativeLayoutPass = !nativeLayout || (!shellMain?.classList.contains('nn-theme-home-shell') && !home);
+  const nativeLayoutPass = !nativeLayout || (dreamEngine
+    ? (actualPage === 'home'
+      ? (!!home && !!shellMain?.classList.contains('dream-skin-home-shell'))
+      : (!home && !shellMain?.classList.contains('dream-skin-home-shell')))
+    : (!shellMain?.classList.contains('nn-theme-home-shell') && !home));
   const composedLayoutPass = nativeLayout || (actualPage === 'home'
     ? (!!home && !!shellMain?.classList.contains('nn-theme-home-shell') && !!chrome?.classList.contains('nn-theme-home-shell'))
     : (!home && !shellMain?.classList.contains('nn-theme-home-shell') && !chrome?.classList.contains('nn-theme-home-shell')));
   const composedHomePass = !result.homePresent || result.nativeHome || (!!result.hero && (!suggestions || (cards.length >= 2 && cards.length <= 4)));
-  const chromePass = nativeLayout ? !result.chromePresent : (result.chromePresent && result.pointerEvents === 'none');
+  const chromePass = dreamEngine
+    ? (result.chromePresent && result.pointerEvents === 'none')
+    : nativeLayout ? !result.chromePresent : (result.chromePresent && result.pointerEvents === 'none');
   result.pass = result.installed && result.stylePresent && chromePass && result.sidebar &&
-    result.composer && result.immersiveTask && !result.overflowX && result.pageStateMatches && nativeLayoutPass &&
+    (!result.composerRequired || result.composer) && result.immersiveTask && result.immersiveHome &&
+    !result.overflowX && result.pageStateMatches && nativeLayoutPass &&
     composedLayoutPass && composedHomePass;
   return result;
 })()"#;
@@ -410,6 +534,41 @@ mod tests {
 
         assert_eq!(first.revision, repeated.revision);
         assert_ne!(first.revision, changed.revision);
+    }
+
+    #[test]
+    fn builds_dream_skin_payload_with_upstream_engine_and_nn_bridge() {
+        let mut manifest: ThemeManifest = serde_json::from_str(include_str!(
+            "../../theme-packs/strawberry-starlight/theme.json"
+        ))
+        .unwrap();
+        manifest.id = "dream-skin-test".into();
+        manifest.layout_preset = "dreamSkin".into();
+        let image = include_bytes!("../../theme-packs/strawberry-starlight/background.webp");
+
+        let payload = build_payload(&manifest, image).unwrap();
+
+        assert_eq!(payload.theme_id, "dream-skin-test");
+        assert_eq!(payload.revision.len(), 20);
+        assert!(payload.script.contains("codex-dream-skin"));
+        assert!(payload.script.contains("__CODEX_DREAM_SKIN_STATE__"));
+        assert!(payload.script.contains("engine: \"dream-skin\""));
+        assert!(payload.script.contains("layout: \"dream-skin\""));
+        assert!(payload.script.contains(DREAM_SKIN_ENGINE_VERSION));
+        assert!(payload.script.contains(THEME_ENGINE_VERSION));
+        assert!(payload.script.contains("\"colorMode\":\"explicit\""));
+        assert!(payload.script.contains("\"explicitColorKeys\""));
+        assert!(!payload.script.contains("__DREAM_SKIN_CSS_JSON__"));
+        assert!(!payload.script.contains("__DREAM_SKIN_ART_JSON__"));
+        assert!(!payload.script.contains("__DREAM_SKIN_THEME_JSON__"));
+        assert!(!payload.script.contains("__DREAM_SKIN_VERSION_JSON__"));
+        assert!(!payload
+            .script
+            .contains("__DREAM_SKIN_STYLE_REVISION_JSON__"));
+        assert!(!payload
+            .script
+            .contains("__DREAM_SKIN_PAYLOAD_REVISION_JSON__"));
+        assert!(!payload.script.contains("__CODEX_NN_THEME_CSS_JSON__"));
     }
 
     #[test]

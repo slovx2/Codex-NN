@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,6 +21,10 @@ const EXPECTED_THEME_APPEARANCE = {
   "azure-neon-frontier": "dark",
   "miku-future-collab": "light",
   "strawberry-starlight": "light"
+};
+const DREAM_SKIN_ENGINE_ASSETS = {
+  "dream-skin.css": "ec3c3bc5f6e10e20a3f2307796bd1e1350e80e5d23d37318ee5468833c95a6df",
+  "dream-skin-renderer-inject.js": "9adab4655c54740c2fcbbd5b2555aacdb659982b855706399b0f5367914511b3"
 };
 
 function fail(message) {
@@ -242,10 +247,21 @@ function validateThemePacks() {
   }
 }
 
+function validateDreamSkinEngine() {
+  const root = join(ROOT, "src-tauri", "resources", "theme-engine");
+  for (const [name, expected] of Object.entries(DREAM_SKIN_ENGINE_ASSETS)) {
+    const path = join(root, name);
+    if (!existsSync(path)) fail(`缺少 Dream Skin 兼容引擎资源：${name}`);
+    const actual = createHash("sha256").update(readFileSync(path)).digest("hex");
+    if (actual !== expected) fail(`Dream Skin 兼容引擎资源发生未同步修改：${name}`);
+  }
+}
+
 try {
   validateVersionsAndDependencies();
   validatePlugin();
   validateThemePacks();
+  validateDreamSkinEngine();
   console.log("发布资产校验通过");
 } catch (error) {
   console.error(`发布资产校验失败：${error instanceof Error ? error.message : String(error)}`);

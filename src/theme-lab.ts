@@ -27,14 +27,34 @@ interface PreviewSize {
   height: number;
 }
 
+interface ImageMetadata {
+  width: number;
+  height: number;
+  ratio: number;
+  wide: boolean;
+  aspect: string;
+  taskMode: "ambient" | "banner";
+}
+
+interface ThemeConfig {
+  id: string;
+  image: string;
+  layoutPreset?: string;
+  artMetadata?: ImageMetadata;
+  artKey?: string;
+  colorMode?: "auto" | "explicit";
+  explicitColorKeys?: string[];
+  colors?: Record<string, string>;
+  [key: string]: unknown;
+}
+
 type HistoryMode = "push" | "replace" | "none";
 
 const fixtureBase = "/__codex_fixture__/";
-const themeCssUrl = "/__theme_source__/nn-theme.css";
-const rendererUrl = "/__theme_source__/renderer-inject.js";
 const query = new URLSearchParams(window.location.search);
 const defaultTheme = query.get("theme") || "miku-future-collab";
 const defaultRoute = query.get("route") || "home";
+const injectionSource = query.get("engine") === "upstream" ? "upstream" : "codex-nn";
 const fixtureRouteLabels: Record<string, string> = {
   "新建任务": "home",
   "New task": "home",
@@ -63,6 +83,7 @@ app.innerHTML = `
     <nav class="lab-routes" id="lab-routes" aria-label="页面状态"></nav>
     <div class="lab-actions" role="group" aria-label="预览尺寸">
       <select id="theme-select" aria-label="预览主题">
+        <option value="dream-skin-gothic">Dream Skin · Gothic Void Crusade</option>
         <option value="adventure-atlas">云海远行图鉴</option>
         <option value="miku-future-collab">初音未来</option>
         <option value="strawberry-starlight">星莓绮梦</option>
@@ -153,33 +174,109 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
+async function imageMetadata(dataUrl: string): Promise<ImageMetadata> {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const candidate = new Image();
+    candidate.addEventListener("load", () => resolve(candidate), { once: true });
+    candidate.addEventListener("error", () => reject(new Error("无法解析主题图片")), { once: true });
+    candidate.src = dataUrl;
+  });
+  const ratio = image.naturalWidth / image.naturalHeight;
+  const aspect = ratio >= 2.25 ? "ultrawide" : ratio >= 1.45 ? "wide"
+    : ratio >= 1.08 ? "landscape" : ratio >= 0.9 ? "square" : "portrait";
+  return {
+    width: image.naturalWidth,
+    height: image.naturalHeight,
+    ratio,
+    wide: ratio >= 1.75,
+    aspect,
+    taskMode: ratio >= 2.25 ? "banner" : "ambient",
+  };
+}
+
+function dreamSkinPayload(renderer: string, css: string, artDataUrl: string, theme: ThemeConfig): string {
+  const explicitColorKeys = [
+    "background", "panel", "panelAlt", "accent", "accentAlt",
+    "secondary", "highlight", "text", "muted", "line",
+  ].filter((key) => Object.hasOwn(theme.colors ?? {}, key));
+  const config = { ...theme };
+  delete config.layoutPreset;
+  config.colorMode = explicitColorKeys.length ? "explicit" : "auto";
+  config.explicitColorKeys = explicitColorKeys;
+  const revision = `${theme.id}-theme-lab`;
+  const upstream = renderer
+    .replace("__DREAM_SKIN_CSS_JSON__", JSON.stringify(css))
+    .replace("__DREAM_SKIN_ART_JSON__", JSON.stringify(artDataUrl))
+    .replace("__DREAM_SKIN_THEME_JSON__", JSON.stringify(config))
+    .replace("__DREAM_SKIN_VERSION_JSON__", JSON.stringify("1.2.0"))
+    .replace("__DREAM_SKIN_STYLE_REVISION_JSON__", JSON.stringify("theme-lab"))
+    .replace("__DREAM_SKIN_PAYLOAD_REVISION_JSON__", JSON.stringify(revision));
+  return `(() => {
+    const previousNn = window.__CODEX_NN_THEME_STATE__;
+    if (previousNn && previousNn !== window.__CODEX_DREAM_SKIN_STATE__) {
+      try { previousNn.cleanup?.(); } catch {}
+    }
+    const result = (${upstream});
+    const dreamState = window.__CODEX_DREAM_SKIN_STATE__;
+    if (!dreamState) return result;
+    const cleanupDreamSkin = dreamState.cleanup;
+    const bridge = Object.create(dreamState);
+    bridge.engine = "dream-skin";
+    bridge.layout = "dream-skin";
+    bridge.version = "theme-lab";
+    bridge.themeId = ${JSON.stringify(theme.id)};
+    bridge.revision = ${JSON.stringify(revision)};
+    bridge.cleanup = () => {
+      const cleaned = Reflect.apply(cleanupDreamSkin, dreamState, []);
+      if (window.__CODEX_NN_THEME_STATE__ === bridge) delete window.__CODEX_NN_THEME_STATE__;
+      return cleaned;
+    };
+    window.__CODEX_NN_THEME_STATE__ = bridge;
+    return { ...result, engine: "dream-skin", layout: "dream-skin" };
+  })()`;
+}
+
 async function applyTheme(): Promise<void> {
   const document = frame.contentDocument;
   if (!document?.documentElement) return;
   const themeId = themeSelect.value || defaultTheme;
-  const base = `/theme-packs/${themeId}/`;
-  const [cssResponse, rendererResponse, themeResponse] = await Promise.all([
-    fetch(`${themeCssUrl}?t=${Date.now()}`, { cache: "no-store" }),
-    fetch(`${rendererUrl}?t=${Date.now()}`, { cache: "no-store" }),
-    fetch(`${base}theme.json?t=${Date.now()}`, { cache: "no-store" }),
+  const externalDreamSkin = themeId === "dream-skin-gothic";
+  const base = externalDreamSkin ? "/__dream_skin_theme__/" : `/theme-packs/${themeId}/`;
+  const themeResponse = await fetch(`${base}theme.json?t=${Date.now()}`, { cache: "no-store" });
+  if (!themeResponse.ok) throw new Error("读取主题清单失败");
+  const theme = await themeResponse.json() as ThemeConfig;
+  if (externalDreamSkin) theme.layoutPreset = "dreamSkin";
+  const useDreamSkin = theme.layoutPreset === "dreamSkin";
+  const engineBase = useDreamSkin && injectionSource === "upstream"
+    ? "/__dream_skin_upstream__/"
+    : "/__theme_source__/";
+  const cssName = useDreamSkin ? "dream-skin.css" : "nn-theme.css";
+  const rendererName = useDreamSkin
+    ? injectionSource === "upstream" ? "renderer-inject.js" : "dream-skin-renderer-inject.js"
+    : "renderer-inject.js";
+  const [cssResponse, rendererResponse, artResponse] = await Promise.all([
+    fetch(`${engineBase}${cssName}?t=${Date.now()}`, { cache: "no-store" }),
+    fetch(`${engineBase}${rendererName}?t=${Date.now()}`, { cache: "no-store" }),
+    fetch(`${base}${theme.image}?t=${Date.now()}`, { cache: "no-store" }),
   ]);
-  if (!cssResponse.ok || !rendererResponse.ok || !themeResponse.ok) {
-    throw new Error("读取本地主题引擎失败");
-  }
-  const [css, renderer, theme] = await Promise.all([
+  if (!cssResponse.ok || !rendererResponse.ok) throw new Error("读取本地主题引擎失败");
+  if (!artResponse.ok) throw new Error("读取主题背景失败");
+  const [css, renderer, artDataUrl] = await Promise.all([
     cssResponse.text(),
     rendererResponse.text(),
-    themeResponse.json() as Promise<{ id: string; image: string }>,
+    artResponse.blob().then(blobToDataUrl),
   ]);
-  const artResponse = await fetch(`${base}${theme.image}?t=${Date.now()}`, { cache: "no-store" });
-  if (!artResponse.ok) throw new Error("读取主题背景失败");
-  const artDataUrl = await blobToDataUrl(await artResponse.blob());
-  const payload = renderer
-    .replace("__CODEX_NN_THEME_CSS_JSON__", JSON.stringify(css))
-    .replace("__CODEX_NN_THEME_ART_JSON__", JSON.stringify(artDataUrl))
-    .replace("__CODEX_NN_THEME_CONFIG_JSON__", JSON.stringify(theme))
-    .replace("__CODEX_NN_THEME_VERSION_JSON__", JSON.stringify("theme-lab"))
-    .replace("__CODEX_NN_THEME_REVISION_JSON__", JSON.stringify(`${theme.id}-${Date.now()}`));
+  const metadata = await imageMetadata(artDataUrl);
+  theme.artMetadata = metadata;
+  theme.artKey = `${theme.id}-${metadata.width}x${metadata.height}`;
+  const payload = useDreamSkin
+    ? dreamSkinPayload(renderer, css, artDataUrl, theme)
+    : renderer
+      .replace("__CODEX_NN_THEME_CSS_JSON__", JSON.stringify(css))
+      .replace("__CODEX_NN_THEME_ART_JSON__", JSON.stringify(artDataUrl))
+      .replace("__CODEX_NN_THEME_CONFIG_JSON__", JSON.stringify(theme))
+      .replace("__CODEX_NN_THEME_VERSION_JSON__", JSON.stringify("theme-lab"))
+      .replace("__CODEX_NN_THEME_REVISION_JSON__", JSON.stringify(`${theme.id}-${Date.now()}`));
   document.defaultView?.eval(payload);
   setStatus(`${theme.id} · ${activeSize.width} × ${activeSize.height}`, "ready");
   renderNavigationOverlay();

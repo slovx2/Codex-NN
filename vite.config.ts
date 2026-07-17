@@ -4,6 +4,8 @@ import { extname, resolve, sep } from "node:path";
 
 const fixtureRoot = resolve("../codex-fixture/current");
 const themeSourceRoot = resolve("src-tauri/resources/theme-engine");
+const dreamSkinSourceRoot = resolve("../Codex-Dream-Skin/macos/assets");
+const dreamSkinThemeRoot = resolve("../Codex-Dream-Skin/macos/presets/preset-gothic-void-crusade");
 const fixtureMimeTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -27,6 +29,8 @@ export default defineConfig({
         const url = new URL(request.url ?? "/", "http://127.0.0.1");
         const fixturePrefix = "/__codex_fixture__/";
         const sourcePrefix = "/__theme_source__/";
+        const dreamSkinSourcePrefix = "/__dream_skin_upstream__/";
+        const dreamSkinThemePrefix = "/__dream_skin_theme__/";
         let root: string;
         let relative: string;
         if (url.pathname.startsWith(fixturePrefix)) {
@@ -35,6 +39,12 @@ export default defineConfig({
         } else if (url.pathname.startsWith(sourcePrefix)) {
           root = themeSourceRoot;
           relative = decodeURIComponent(url.pathname.slice(sourcePrefix.length));
+        } else if (url.pathname.startsWith(dreamSkinSourcePrefix)) {
+          root = dreamSkinSourceRoot;
+          relative = decodeURIComponent(url.pathname.slice(dreamSkinSourcePrefix.length));
+        } else if (url.pathname.startsWith(dreamSkinThemePrefix)) {
+          root = dreamSkinThemeRoot;
+          relative = decodeURIComponent(url.pathname.slice(dreamSkinThemePrefix.length));
         } else {
           return next();
         }

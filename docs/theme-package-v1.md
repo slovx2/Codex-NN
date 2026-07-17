@@ -12,7 +12,7 @@ example-theme.zip
 
 ## theme.json
 
-v1 沿用 Codex Dream Skin 的运行时主题字段：
+v1 以 Codex Dream Skin schema v1 的同名字段和缺省行为为准；`layoutPreset` 是 Codex NN 保留的扩展字段：
 
 ```json
 {
@@ -56,8 +56,8 @@ v1 沿用 Codex Dream Skin 的运行时主题字段：
 - `appearance` 可选 `auto`、`light` 或 `dark`。`auto` 跟随 Codex/系统外观，图片亮度不会擅自改变明暗模式。
 - `art.focusX` / `art.focusY` 是 `0..1` 的归一化焦点坐标。
 - `art.safeArea` 可选 `auto`、`left`、`right`、`center` 或 `none`，表示适合放置文字和控件的低信息区域。
-- `art.taskMode` 是聊天页主题图的显式开关，可选 `auto`、`ambient`、`banner` 或 `off`。缺省或 `off` 时聊天页不使用主题图；`auto` 按图片比例选择模式，`ambient` 使用低干扰整窗背景，`banner` 适合超宽图。
-- `dreamSkin` 使用跟随 `appearance` 的沉浸式整窗壁纸并保留 Codex 原生布局；首页显示完整主题图，聊天页是否显示由 `art.taskMode` 控制。
+- `art.taskMode` 可选 `auto`、`ambient`、`banner` 或 `off`。缺省与 `auto` 都按图片比例选择：普通横图使用 `ambient`，超宽图使用 `banner`；只有显式 `off` 才关闭聊天页主题图。
+- `dreamSkin` 直接使用同步自 Dream Skin 1.2.0 的原生渲染器，保留 Codex 原生布局和字段缺省语义。
 - `mikuFuture` 使用浅色薄荷工作台、音乐装饰和居中的大尺寸行动卡，适合初音未来主题。
 - `adventureAtlas` 使用浅色羊皮纸表面、航海罗盘和水彩冒险装饰，适合明亮的横向风景图。
 - `id` 只能使用小写字母、数字和连字符，不能为空，最长 80 字符；后续更新同一主题时保持 ID 不变。
@@ -65,7 +65,7 @@ v1 沿用 Codex Dream Skin 的运行时主题字段：
 - `colors` 可以省略或只提供需要覆盖的字段；缺省颜色由图片在本地分析生成。显式颜色使用 `#RRGGBB`、`rgb(...)` 或 `rgba(...)`。
 - `image` 只能是 ZIP 根目录中的文件名，不允许目录或相对路径。
 
-Codex NN 会在本地分析图片的主色、焦点、安全区和宽高比，不会上传图片。主题显式启用 `art.taskMode` 后，16:9 及更宽的图片会在聊天页铺成侧栏与主内容连续的单张整窗背景，同时通过半透明侧栏、消息和输入框表面保证文字可读。
+Codex NN 会在本地分析图片的主色、焦点、安全区和宽高比，不会上传图片。16:9 及更宽的图片会在新对话页只绘制一次整窗背景，并在侧栏、行动卡和输入框上叠加可读性表面；聊天页默认按比例使用连续背景，主题可用 `art.taskMode: "off"` 显式关闭。
 
 ## 图片与压缩限制
 
@@ -90,4 +90,4 @@ Codex NN 会在安装时校验整个主题包并生成本地预览图。相同 I
 
 ## Dream Skin macOS 主题
 
-Codex NN 的“导入 Dream Skin”入口支持选择 Dream Skin 的 `themes/<id>` 目录，或选择根目录/单层包装目录中只含 `theme.json` 与图片的 ZIP。导入时会忽略 `.DS_Store`、`__MACOSX` 和推广字段，保留 `appearance`、`art` 与部分颜色覆盖，并转换为 `layoutPreset: "dreamSkin"` 的 Codex NN schema v1 主题后直接安装。
+Codex NN 的“导入 Dream Skin”入口支持选择 Dream Skin 的 `themes/<id>` 目录，或选择根目录/单层包装目录中只含 `theme.json` 与图片的 ZIP。导入时会忽略 `.DS_Store`、`__MACOSX` 和推广字段，原样保留同名主题语义，并只补充 Codex NN 扩展字段 `layoutPreset: "dreamSkin"`。运行时使用同步的 Dream Skin 1.2.0 CSS/renderer，保证同一主题在两套程序中的效果一致。

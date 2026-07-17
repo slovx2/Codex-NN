@@ -1,6 +1,6 @@
 # Codex NN schema v1
 
-主题 ZIP 根目录只能包含 `theme.json` 和一张本地图片。禁止目录、CSS、JavaScript、远程资源和加密文件。
+主题 ZIP 根目录只能包含 `theme.json` 和一张本地图片。禁止目录、CSS、JavaScript、远程资源和加密文件。同名字段和缺省行为以 Dream Skin schema v1 为准，`layoutPreset` 是 Codex NN 扩展。
 
 ## 清单
 
@@ -45,17 +45,17 @@
 - `id` 最长 80 字符，以小写字母开头，只能包含小写字母、数字和连字符。
 - `name` 必填且最长 80 字符；`tagline` 最长 160 字符；其他文字字段最长 80 字符。
 - `appearance` 使用 `auto | light | dark`；通常选 `auto`，只有布局明确限定明暗外观时才固定。
-- `art.focusX` / `art.focusY` 使用 `0..1`；`safeArea` 使用 `auto | left | right | center | none`；`taskMode` 使用 `auto | ambient | banner | off`。只有显式设置 `taskMode` 才会把主题图用于聊天页，缺省等同于 `off`。
+- `art.focusX` / `art.focusY` 使用 `0..1`；`safeArea` 使用 `auto | left | right | center | none`；`taskMode` 使用 `auto | ambient | banner | off`。缺省与 `auto` 都按图片比例自动选择，只有显式 `off` 才关闭聊天页主题图。
 - `colors` 可以省略或只覆盖少量颜色，其余颜色由背景图在本地分析生成；显式颜色只使用 `#RRGGBB`、`rgb(...)` 或 `rgba(...)`。
 - 图片仅支持 PNG、JPEG、WebP，最大 16 MB，任一边不得超过 16384 像素，总像素不得超过 5000 万。
 - 完整 ZIP 最大 20 MB，使用 Stored 或 Deflate 压缩。
 
-优先使用 16:9 纯背景，把主体放在一侧并为文字保留低信息安全区。启用 `taskMode` 后，聊天页会把宽屏图连续铺到侧栏和主内容下方，再叠加可读性表面；不要把文字、输入框或其他 UI 烘焙进图片。
+优先使用 16:9 纯背景，把主体放在一侧并为文字保留低信息安全区。宽图会在新对话页只绘制一次整窗背景，聊天页也会按比例自动铺到侧栏和主内容下方，再叠加可读性表面；不要把文字、输入框或其他 UI 烘焙进图片。
 
 ## 布局预设
 
 - `standard`：通用布局，跟随 Codex 明暗外观，适合大多数自定义主题。
-- `dreamSkin`：跟随 `appearance` 的沉浸式整窗壁纸，保留 Codex 原生布局，并以玻璃表面保证可读性。
+- `dreamSkin`：直接使用同步自 Dream Skin 1.2.0 的原生渲染器；同名字段和缺省语义以 Dream Skin schema v1 为准，`layoutPreset` 是 Codex NN 扩展。
 - `strawberryStarlight`：珍珠玻璃、水晶心和粉紫星光视觉。
 - `azureNeon`：深色烟熏玻璃、传送门环和青蓝霓虹视觉。
 - `mikuFuture`：浅色薄荷工作台、音乐装饰和居中的大尺寸行动卡。

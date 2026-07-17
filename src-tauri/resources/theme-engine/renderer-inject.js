@@ -352,12 +352,8 @@
     const focusX = typeof ART.focusX === "number" ? ART.focusX
       : profile?.focusX ?? (safeArea === "left" ? 0.72 : safeArea === "right" ? 0.28 : 0.5);
     const focusY = typeof ART.focusY === "number" ? ART.focusY : profile?.focusY ?? 0.5;
-    const declaresTaskMode = Object.prototype.hasOwnProperty.call(ART, "taskMode");
-    const requestedMode = !declaresTaskMode
-      ? "off"
-      : ART.taskMode === "auto"
-        ? profile?.taskMode || "ambient"
-        : ART.taskMode;
+    const requestedMode = ART.taskMode && ART.taskMode !== "auto"
+      ? ART.taskMode : profile?.taskMode || "ambient";
     const taskMode = ["ambient", "banner", "off"].includes(requestedMode)
       ? requestedMode : "ambient";
     const focusXValue = `${(clamp(focusX, 0, 1) * 100).toFixed(2)}%`;
@@ -579,6 +575,13 @@
     if (initialSuggestionsSlot && initialSuggestionsSlot !== home) {
       initialSuggestionsSlot.classList.add("nn-theme-suggestions-slot");
     }
+    const homeUtilityBars = new Set(home
+      ? home.querySelectorAll('[class*="_homeUtilityBar_"]')
+      : []);
+    for (const candidate of document.querySelectorAll(".nn-theme-home-utility")) {
+      if (!homeUtilityBars.has(candidate)) candidate.classList.remove("nn-theme-home-utility");
+    }
+    for (const candidate of homeUtilityBars) candidate.classList.add("nn-theme-home-utility");
 
     const composedHome = Boolean(home && LAYOUT !== "dream-skin");
     setAttribute(root, PAGE_ATTR, isHome ? "home" : "thread");
@@ -643,6 +646,7 @@
     document.querySelectorAll(".nn-theme-home-shell").forEach((node) => node.classList.remove("nn-theme-home-shell"));
     document.querySelectorAll(".nn-theme-suggestions").forEach((node) => node.classList.remove("nn-theme-suggestions"));
     document.querySelectorAll(".nn-theme-suggestions-slot").forEach((node) => node.classList.remove("nn-theme-suggestions-slot"));
+    document.querySelectorAll(".nn-theme-home-utility").forEach((node) => node.classList.remove("nn-theme-home-utility"));
     document.querySelectorAll("[data-nn-sidebar-item]").forEach((node) => node.removeAttribute("data-nn-sidebar-item"));
     document.querySelectorAll("[data-nn-sidebar-section]").forEach((node) => node.removeAttribute("data-nn-sidebar-section"));
     document.querySelectorAll(".nn-adventure-sidebar").forEach((node) => node.classList.remove("nn-adventure-sidebar"));
