@@ -97,7 +97,7 @@ html.codex-nn-theme main.main-surface {
   overflow: hidden !important;
 }
 
-/* 对话页只保留主题渐变，主题图片仅用于新对话页的头图和装饰裁切。 */
+/* 任务页先提供主题渐变回退；文件末尾的自适应规则会按图片比例和 taskMode 覆盖。 */
 html.codex-nn-theme main.main-surface:not(.nn-theme-home-shell) {
   background:
     radial-gradient(circle at 78% 8%, color-mix(in srgb, var(--ds-purple) 24%, transparent), transparent 31%),
@@ -256,7 +256,7 @@ html.codex-nn-theme .nn-theme-home {
     var(--nn-theme-art) !important;
   background-repeat: no-repeat !important;
   background-size: 100% 100%, cover !important;
-  background-position: center, right center !important;
+  background-position: center, var(--nn-art-position) !important;
   box-shadow: 0 16px 38px rgba(0, 0, 0, .38), 0 0 22px rgba(124, 255, 70, .10), inset 0 0 0 3px rgba(54, 215, 232, .06) !important;
 }
 
@@ -1145,7 +1145,7 @@ html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home 
     linear-gradient(90deg, rgba(45, 7, 27, .10), transparent 54%),
     var(--nn-theme-art) !important;
   background-size: 100% 100%, cover !important;
-  background-position: center, center !important;
+  background-position: center, var(--nn-art-position) !important;
   box-shadow: 0 15px 36px rgba(110, 24, 63, .20), inset 0 0 0 4px rgba(255, 255, 255, .15) !important;
 }
 
@@ -1389,7 +1389,7 @@ html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home > div:firs
     linear-gradient(90deg, rgba(0, 3, 10, .16), transparent 55%),
     var(--nn-theme-art) !important;
   background-size: 100% 100%, cover !important;
-  background-position: center, center !important;
+  background-position: center, var(--nn-art-position) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, .42), 0 0 24px rgba(50, 214, 255, .08), inset 0 0 0 2px rgba(105, 246, 229, .04) !important;
 }
 
@@ -1639,4 +1639,282 @@ html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home div:has(> 
 
 html.codex-nn-theme[data-nn-theme-layout="azure-neon"] button[class~="bg-token-foreground"] {
   color: #020611 !important;
+}
+
+/* 自适应任务页：宽屏图只在窗口底层绘制一次，其他表面作为可读性遮罩。 */
+html.codex-nn-theme {
+  --nn-art-position: 50% 50%;
+  --nn-task-shade: linear-gradient(90deg,
+    rgb(var(--ds-bg-rgb) / .58),
+    rgb(var(--ds-bg-rgb) / .34) 52%,
+    rgb(var(--ds-bg-rgb) / .14));
+  --nn-task-fade: linear-gradient(180deg,
+    rgb(var(--ds-bg-rgb) / .08),
+    rgb(var(--ds-bg-rgb) / .18) 38%,
+    rgb(var(--ds-bg-rgb) / .72) 76%,
+    rgb(var(--ds-bg-rgb) / .92));
+  --nn-task-sidebar: rgb(var(--ds-panel-rgb) / .76);
+  --nn-task-edge: rgb(var(--ds-bg-rgb) / .84);
+  --nn-task-mid: rgb(var(--ds-bg-rgb) / .76);
+  --nn-task-far: rgb(var(--ds-bg-rgb) / .64);
+  --nn-immersive-composer: rgb(var(--ds-panel-2-rgb) / .90);
+  --nn-immersive-line: rgb(var(--ds-muted-rgb) / .42);
+}
+
+html.codex-nn-theme[data-nn-theme-shell="light"] {
+  --nn-task-shade: linear-gradient(90deg,
+    rgb(var(--ds-panel-rgb) / .72),
+    rgb(var(--ds-panel-rgb) / .44) 52%,
+    rgb(var(--ds-panel-rgb) / .16));
+  --nn-task-fade: linear-gradient(180deg,
+    rgb(var(--ds-panel-rgb) / .10),
+    rgb(var(--ds-panel-rgb) / .24) 38%,
+    rgb(var(--ds-panel-rgb) / .76) 76%,
+    rgb(var(--ds-panel-rgb) / .94));
+  --nn-task-sidebar: rgb(var(--ds-panel-rgb) / .80);
+  --nn-task-edge: rgb(var(--ds-panel-rgb) / .86);
+  --nn-task-mid: rgb(var(--ds-panel-rgb) / .78);
+  --nn-task-far: rgb(var(--ds-panel-rgb) / .66);
+  --nn-immersive-composer: rgb(var(--ds-panel-2-rgb) / .92);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"][data-nn-theme-shell="light"] {
+  --nn-task-sidebar: rgba(255, 248, 252, .84);
+  --nn-task-edge: rgba(255, 249, 252, .88);
+  --nn-task-mid: rgba(255, 244, 249, .80);
+  --nn-task-far: rgba(255, 236, 246, .68);
+  --nn-immersive-composer: rgba(255, 249, 252, .94);
+  --nn-immersive-line: rgba(201, 61, 120, .30);
+}
+
+html.codex-nn-theme main.main-surface:not(.nn-theme-home-shell) {
+  position: relative !important;
+  isolation: isolate;
+}
+
+html.codex-nn-theme main.main-surface:not(.nn-theme-home-shell)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--nn-task-fade), var(--nn-task-shade), var(--nn-theme-art);
+  background-position: center, center, var(--nn-art-position);
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 100% 100%, cover;
+  opacity: .78;
+}
+
+html.codex-nn-theme main.main-surface:not(.nn-theme-home-shell) > :not(header.app-header-tint) {
+  position: relative;
+  z-index: 1;
+}
+
+html.codex-nn-theme[data-nn-task-mode="banner"] main.main-surface:not(.nn-theme-home-shell)::before {
+  inset: 0 0 auto;
+  height: clamp(280px, 46vh, 520px);
+}
+
+html.codex-nn-theme[data-nn-task-mode="off"] main.main-surface:not(.nn-theme-home-shell)::before {
+  content: none;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+):has(main.main-surface:not(.nn-theme-home-shell)) body {
+  background-color: var(--ds-bg) !important;
+  background-image: var(--nn-theme-art) !important;
+  background-position: var(--nn-art-position) !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+):has(main.main-surface:not(.nn-theme-home-shell)) body::before {
+  content: none !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+):has(main.main-surface:not(.nn-theme-home-shell)) aside.app-shell-left-panel {
+  background: linear-gradient(90deg, var(--nn-task-sidebar), var(--nn-task-edge)) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+):has(main.main-surface:not(.nn-theme-home-shell)) aside.app-shell-left-panel::after {
+  background: transparent !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) {
+  background: linear-gradient(90deg,
+    var(--nn-task-edge),
+    var(--nn-task-mid) 64%,
+    var(--nn-task-far)) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell)::before {
+  content: none !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface > header.app-header-tint {
+  background: transparent !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  text-shadow:
+    0 1px 2px rgb(var(--ds-bg-rgb) / .84),
+    0 0 8px rgb(var(--ds-bg-rgb) / .56) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-shell="light"][data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface > header.app-header-tint {
+  text-shadow:
+    0 1px 2px rgb(var(--ds-panel-rgb) / .92),
+    0 0 8px rgb(var(--ds-panel-rgb) / .72) !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface [role="main"] {
+  background: transparent !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) article,
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) [data-message-author-role] {
+  background: rgb(var(--ds-panel-rgb) / .66) !important;
+  border-color: rgb(var(--ds-muted-rgb) / .16) !important;
+  box-shadow: 0 8px 24px rgb(var(--ds-bg-rgb) / .12) !important;
+  backdrop-filter: blur(7px) saturate(105%) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-shell="light"][data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) article,
+html.codex-nn-theme[data-nn-theme-shell="light"][data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) [data-message-author-role] {
+  background: rgb(var(--ds-panel-rgb) / .76) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"][data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) article,
+html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"][data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) [data-message-author-role] {
+  color: #3d1830 !important;
+  background: rgba(255, 249, 252, .84) !important;
+  border-color: rgba(201, 61, 120, .18) !important;
+  box-shadow: 0 8px 24px rgba(110, 24, 63, .10) !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+):has(main.main-surface:not(.nn-theme-home-shell)) .composer-surface-chrome {
+  color: var(--ds-text) !important;
+  background: var(--nn-immersive-composer) !important;
+  border: 0 !important;
+  box-shadow:
+    0 10px 30px rgb(var(--ds-bg-rgb) / .20),
+    inset 0 0 0 1px var(--nn-immersive-line) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+):has(main.main-surface:not(.nn-theme-home-shell)) .composer-surface-chrome::before {
+  content: none !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) div.sticky:has(input[type="text"]),
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) div.sticky:has(input[type="text"])::after,
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell)
+  [class~="bg-token-main-surface-primary"][class~="h-full"][class~="w-full"] {
+  background: transparent !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"]:is(
+  [data-nn-task-mode="ambient"],
+  [data-nn-task-mode="banner"]
+) main.main-surface:not(.nn-theme-home-shell) div.no-drag:has(> input[type="text"]) {
+  background: var(--nn-immersive-composer) !important;
+  border: 0 !important;
+  box-shadow: inset 0 0 0 1px var(--nn-immersive-line) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"] main.main-surface .app-shell-main-content-frame {
+  border-top: 0 !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"] main.main-surface .app-shell-main-content-top-fade {
+  display: none !important;
+  background: transparent !important;
+}
+
+html.codex-nn-theme[data-nn-art-wide="true"] main.main-surface
+  .thread-scroll-container .bg-gradient-to-t.from-token-main-surface-primary {
+  background: transparent !important;
+}
+
+/* Windows 原生应用菜单位于 main 外，深色主题需要独立的可读层。 */
+html.codex-nn-theme[data-nn-theme-shell="dark"] [class~="group/application-menu-top-bar"] {
+  color: var(--ds-text) !important;
+  background: rgb(var(--ds-panel-rgb) / .90) !important;
+  border-bottom: 1px solid var(--ds-line) !important;
+  box-shadow: 0 1px 12px rgb(var(--ds-bg-rgb) / .72) !important;
+  backdrop-filter: blur(16px) saturate(90%) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-shell="dark"] [class~="group/application-menu-top-bar"] button,
+html.codex-nn-theme[data-nn-theme-shell="dark"] [class~="group/application-menu-top-bar"] svg {
+  color: var(--ds-text) !important;
+  text-shadow: 0 1px 2px rgb(var(--ds-bg-rgb) / .82) !important;
 }

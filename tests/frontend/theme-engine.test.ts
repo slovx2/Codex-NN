@@ -22,6 +22,10 @@ const template = readFileSync(
   resolve("src-tauri/resources/theme-engine/renderer-inject.js"),
   "utf-8"
 );
+const engineCss = readFileSync(
+  resolve("src-tauri/resources/theme-engine/nn-theme.css"),
+  "utf-8"
+);
 
 function manifest(layoutPreset = "standard", id = "engine-test") {
   return {
@@ -36,6 +40,22 @@ function manifest(layoutPreset = "standard", id = "engine-test") {
     statusText: "ONLINE",
     quote: "TEST THE ENGINE",
     image: "background.png",
+    appearance: layoutPreset === "azureNeon" ? "dark" :
+      layoutPreset === "strawberryStarlight" ? "light" : "auto",
+    art: {
+      focusX: 0.74,
+      focusY: 0.48,
+      safeArea: "left",
+      taskMode: "ambient"
+    },
+    artMetadata: {
+      width: 1600,
+      height: 900,
+      ratio: 1600 / 900,
+      wide: true,
+      aspect: "wide",
+      taskMode: "ambient"
+    },
     colors: {
       background: "#071116",
       panel: "#0b1a20",
@@ -51,11 +71,15 @@ function manifest(layoutPreset = "standard", id = "engine-test") {
   };
 }
 
-function renderScript(layoutPreset = "standard", id = "engine-test"): string {
+function renderScript(
+  layoutPreset = "standard",
+  id = "engine-test",
+  theme = manifest(layoutPreset, id)
+): string {
   return template
     .replace("__CODEX_NN_THEME_CSS_JSON__", JSON.stringify(".codex-nn-theme { color: red; }"))
     .replace("__CODEX_NN_THEME_ART_JSON__", JSON.stringify("data:image/png;base64,aW1hZ2U="))
-    .replace("__CODEX_NN_THEME_CONFIG_JSON__", JSON.stringify(manifest(layoutPreset, id)))
+    .replace("__CODEX_NN_THEME_CONFIG_JSON__", JSON.stringify(theme))
     .replace("__CODEX_NN_THEME_VERSION_JSON__", JSON.stringify("test-version"));
 }
 
@@ -116,6 +140,18 @@ afterEach(() => {
 });
 
 describe("主题注入引擎", () => {
+  it("为宽屏聊天页提供整窗背景和分层可读性表面", () => {
+    expect(engineCss).toContain('[data-nn-art-wide="true"]');
+    expect(engineCss).toContain("background-image: var(--nn-theme-art) !important");
+    expect(engineCss).toContain("--nn-task-sidebar");
+    expect(engineCss).toContain("--nn-immersive-composer");
+    expect(engineCss).toContain(":has(main.main-surface:not(.nn-theme-home-shell)) .composer-surface-chrome");
+    expect(engineCss).toContain('[data-nn-theme-layout="strawberry-starlight"][data-nn-art-wide="true"]');
+    expect(engineCss).toContain('.thread-scroll-container .bg-gradient-to-t.from-token-main-surface-primary');
+    expect(engineCss).toContain('[class~="group/application-menu-top-bar"]');
+    expect(engineCss).toContain('> :not(header.app-header-tint)');
+  });
+
   it.each([
     ["standard", "standard", "light"],
     ["dreamSkin", "dream-skin", "light"],
@@ -136,6 +172,10 @@ describe("主题注入引擎", () => {
     expect(result).toMatchObject({ installed: true, themeId: "engine-test", layout: "standard" });
     expect(document.documentElement.classList.contains("codex-nn-theme")).toBe(true);
     expect(document.documentElement.dataset.nnThemeShell).toBe("light");
+    expect(document.documentElement.dataset.nnArtWide).toBe("true");
+    expect(document.documentElement.dataset.nnArtSafeArea).toBe("left");
+    expect(document.documentElement.dataset.nnTaskMode).toBe("ambient");
+    expect(document.documentElement.style.getPropertyValue("--nn-art-position")).toBe("74.00% 48.00%");
     expect(document.getElementById("codex-nn-theme-style")?.textContent).toContain("color: red");
     expect(document.querySelector('[role="main"]')?.classList.contains("nn-theme-home")).toBe(true);
     expect(document.querySelector(".nn-theme-brand b")?.textContent).toBe("引擎测试主题");
@@ -146,18 +186,35 @@ describe("主题注入引擎", () => {
     expect(document.querySelectorAll("#codex-nn-theme-style")).toHaveLength(1);
   });
 
-  it("强制 Dream Skin 使用浅色 Shell 并完整清理", () => {
+  it("只有主题显式声明 taskMode 才在聊天页使用主题图", () => {
+    const theme = manifest("dreamSkin", "task-mode-opt-in");
+    delete (theme.art as { taskMode?: string }).taskMode;
+    window.eval(renderScript("dreamSkin", "task-mode-opt-in", theme));
+
+    expect(document.documentElement.dataset.nnTaskMode).toBe("off");
+
+    window.eval(renderScript("dreamSkin", "task-mode-auto", {
+      ...theme,
+      id: "task-mode-auto",
+      art: { ...theme.art, taskMode: "auto" }
+    }));
+    expect(document.documentElement.dataset.nnTaskMode).toBe("ambient");
+  });
+
+  it("Dream Skin 自动跟随原生外观并完整清理", () => {
     document.documentElement.className = "dark";
     install("dreamSkin", "dream-test");
     const state = window.__CODEX_NN_THEME_STATE__;
 
     expect(state?.layout).toBe("dream-skin");
-    expect(document.documentElement.dataset.nnThemeShell).toBe("light");
+    expect(document.documentElement.dataset.nnThemeShell).toBe("dark");
     expect(state?.cleanup()).toBe(true);
     expect(document.documentElement.classList.contains("codex-nn-theme")).toBe(false);
     expect(document.getElementById("codex-nn-theme-style")).toBeNull();
     expect(document.getElementById("codex-nn-theme-chrome")).toBeNull();
     expect(document.querySelector(".nn-theme-home")).toBeNull();
+    expect(document.documentElement.hasAttribute("data-nn-art-wide")).toBe(false);
+    expect(document.documentElement.style.getPropertyValue("--nn-art-position")).toBe("");
   });
 
   it("重新注入时断开旧观察器并撤销旧图片 URL", () => {
@@ -171,6 +228,7 @@ describe("主题注入引擎", () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:theme-art");
     expect(window.__CODEX_NN_THEME_STATE__?.themeId).toBe("second-theme");
     expect(document.querySelectorAll("#codex-nn-theme-chrome")).toHaveLength(1);
+    expect(previous?.cleanup()).toBe(false);
   });
 
   it("关键路由节点变化时不等待动画帧就更新布局", async () => {

@@ -22,35 +22,65 @@ pub struct CodexStatus {
     pub message: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThemeColors {
-    pub background: String,
-    pub panel: String,
-    pub panel_alt: String,
-    pub accent: String,
-    pub accent_alt: String,
-    pub secondary: String,
-    pub highlight: String,
-    pub text: String,
-    pub muted: String,
-    pub line: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub panel: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub panel_alt: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub accent: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub accent_alt: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub secondary: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub highlight: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub muted: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line: Option<String>,
 }
 
-impl Default for ThemeColors {
-    fn default() -> Self {
-        Self {
-            background: "#071116".into(),
-            panel: "#0b1a20".into(),
-            panel_alt: "#10272c".into(),
-            accent: "#e25563".into(),
-            accent_alt: "#f07a86".into(),
-            secondary: "#f3a8af".into(),
-            highlight: "#c93d4c".into(),
-            text: "#f2fff7".into(),
-            muted: "#a7c2ba".into(),
-            line: "rgba(226, 85, 99, 0.32)".into(),
-        }
+impl ThemeColors {
+    pub fn is_empty(&self) -> bool {
+        self.background.is_none()
+            && self.panel.is_none()
+            && self.panel_alt.is_none()
+            && self.accent.is_none()
+            && self.accent_alt.is_none()
+            && self.secondary.is_none()
+            && self.highlight.is_none()
+            && self.text.is_none()
+            && self.muted.is_none()
+            && self.line.is_none()
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThemeArt {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub focus_x: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub focus_y: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub safe_area: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_mode: Option<String>,
+}
+
+impl ThemeArt {
+    pub fn is_empty(&self) -> bool {
+        self.focus_x.is_none()
+            && self.focus_y.is_none()
+            && self.safe_area.is_none()
+            && self.task_mode.is_none()
     }
 }
 
@@ -69,6 +99,11 @@ pub struct ThemeManifest {
     pub status_text: String,
     pub quote: String,
     pub image: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub appearance: Option<String>,
+    #[serde(default, skip_serializing_if = "ThemeArt::is_empty")]
+    pub art: ThemeArt,
+    #[serde(default, skip_serializing_if = "ThemeColors::is_empty")]
     pub colors: ThemeColors,
 }
 

@@ -1,4 +1,7 @@
-use std::{path::PathBuf, process::Command, time::Duration};
+use std::{path::PathBuf, time::Duration};
+
+#[cfg(target_os = "macos")]
+use std::process::Command;
 
 use serde::Serialize;
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
@@ -171,6 +174,7 @@ async fn wait_stopped(installation: &CodexInstallation, timeout: Duration) -> bo
     !is_running(installation)
 }
 
+#[cfg(target_os = "macos")]
 pub(crate) fn spawn(mut command: Command) -> Result<(), String> {
     command
         .spawn()

@@ -10,6 +10,13 @@
   "statusText": "DREAM MODE ONLINE",
   "quote": "MAKE TODAY SPARKLE",
   "image": "background.webp",
+  "appearance": "light",
+  "art": {
+    "focusX": 0.74,
+    "focusY": 0.48,
+    "safeArea": "left",
+    "taskMode": "ambient"
+  },
   "colors": {
     "background": "#210D1B",
     "panel": "#351426",

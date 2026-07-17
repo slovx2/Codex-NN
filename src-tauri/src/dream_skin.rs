@@ -9,7 +9,7 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use zip::{result::ZipError, write::SimpleFileOptions, CompressionMethod, ZipArchive, ZipWriter};
 
-use crate::models::{ThemeColors, ThemeManifest};
+use crate::models::{ThemeArt, ThemeColors, ThemeManifest};
 
 const MAX_PACKAGE_BYTES: u64 = 20 * 1024 * 1024;
 const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
@@ -46,6 +46,10 @@ struct DreamSkinManifest {
     #[serde(default)]
     quote: String,
     image: String,
+    #[serde(default)]
+    appearance: Option<String>,
+    #[serde(default)]
+    art: ThemeArt,
     #[serde(default)]
     colors: DreamSkinColors,
 }
@@ -237,6 +241,8 @@ fn convert_manifest(raw: DreamSkinManifest) -> ThemeManifest {
         status_text: text(&raw.status_text, "DREAM SKIN ONLINE", 80),
         quote: text(&raw.quote, "MAKE SOMETHING WONDERFUL", 80),
         image: raw.image,
+        appearance: raw.appearance,
+        art: raw.art,
         colors: ThemeColors {
             background: color(raw.colors.background, "#071116"),
             panel: color(raw.colors.panel, "#0b1a20"),
@@ -258,11 +264,15 @@ fn text(value: &str, fallback: &str, max: usize) -> String {
     selected.chars().take(max).collect()
 }
 
-fn color(value: Option<String>, fallback: &str) -> String {
-    value
-        .map(|value| value.trim().to_string())
-        .filter(|value| is_color(value))
-        .unwrap_or_else(|| fallback.to_string())
+fn color(value: Option<String>, fallback: &str) -> Option<String> {
+    value.map(|value| {
+        let value = value.trim().to_string();
+        if is_color(&value) {
+            value
+        } else {
+            fallback.to_string()
+        }
+    })
 }
 
 fn is_color(value: &str) -> bool {
@@ -453,6 +463,13 @@ mod tests {
             "id": id,
             "name": "Dream 测试",
             "image": "background.png",
+            "appearance": "auto",
+            "art": {
+                "focusX": 0.72,
+                "focusY": 0.45,
+                "safeArea": "left",
+                "taskMode": "ambient"
+            },
             "colors": { "accent": "#e25563" },
             "promoTitle": "额外推广字段"
         }))
@@ -510,8 +527,12 @@ mod tests {
         assert_eq!(converted.id, "custom-theme");
         assert_eq!(converted.layout_preset, "dreamSkin");
         assert_eq!(converted.brand_subtitle, "CODEX DREAM SKIN");
-        assert_eq!(converted.colors.accent, "#e25563");
-        assert_eq!(converted.colors.panel, "#0b1a20");
+        assert_eq!(converted.appearance.as_deref(), Some("auto"));
+        assert_eq!(converted.art.focus_x, Some(0.72));
+        assert_eq!(converted.art.safe_area.as_deref(), Some("left"));
+        assert_eq!(converted.art.task_mode.as_deref(), Some("ambient"));
+        assert_eq!(converted.colors.accent.as_deref(), Some("#e25563"));
+        assert_eq!(converted.colors.panel, None);
     }
 
     #[test]

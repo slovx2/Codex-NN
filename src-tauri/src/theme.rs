@@ -21,7 +21,8 @@ const MAX_PACKAGE_BYTES: u64 = 20 * 1024 * 1024;
 const MAX_UNPACKED_BYTES: u64 = 20 * 1024 * 1024;
 const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
 const MAX_IMAGE_BYTES: u64 = 16 * 1024 * 1024;
-const MAX_IMAGE_EDGE: u32 = 3200;
+const MAX_IMAGE_EDGE: u32 = 16_384;
+const MAX_IMAGE_PIXELS: u64 = 50_000_000;
 const DEFAULT_THEME_ID: &str = "strawberry-starlight";
 const LEGACY_DEFAULT_THEME_ID: &str = "codex-nn-default";
 const STRAWBERRY_STARLIGHT_THEME: &str =
@@ -505,13 +506,7 @@ pub(crate) fn inspect_package(path: &Path) -> Result<PreparedTheme, String> {
         .map_err(|error| format!("无法识别主题图片：{error}"))?
         .into_dimensions()
         .map_err(|error| format!("无法读取主题图片尺寸：{error}"))?;
-    if dimensions.0 == 0
-        || dimensions.1 == 0
-        || dimensions.0 > MAX_IMAGE_EDGE
-        || dimensions.1 > MAX_IMAGE_EDGE
-    {
-        return Err("主题图片最长边不可超过 3200 像素".into());
-    }
+    validate_image_dimensions(dimensions)?;
     let image = image::load_from_memory_with_format(&image_bytes, expected_format)
         .map_err(|error| format!("无法解码主题图片：{error}"))?;
     let preview = encode_preview(&image)?;
@@ -558,6 +553,37 @@ fn validate_manifest(manifest: &ThemeManifest) -> Result<(), String> {
     validate_text("项目标题", &manifest.project_label, 80, false)?;
     validate_text("状态文字", &manifest.status_text, 80, false)?;
     validate_text("装饰引语", &manifest.quote, 80, false)?;
+    if manifest
+        .appearance
+        .as_deref()
+        .is_some_and(|value| !matches!(value, "auto" | "light" | "dark"))
+    {
+        return Err("主题外观只能是 auto、light 或 dark".into());
+    }
+    for (name, value) in [
+        ("art.focusX", manifest.art.focus_x),
+        ("art.focusY", manifest.art.focus_y),
+    ] {
+        if value.is_some_and(|value| !value.is_finite() || !(0.0..=1.0).contains(&value)) {
+            return Err(format!("主题字段 {name} 必须是 0 到 1 之间的数字"));
+        }
+    }
+    if manifest
+        .art
+        .safe_area
+        .as_deref()
+        .is_some_and(|value| !matches!(value, "auto" | "left" | "right" | "center" | "none"))
+    {
+        return Err("主题安全区只能是 auto、left、right、center 或 none".into());
+    }
+    if manifest
+        .art
+        .task_mode
+        .as_deref()
+        .is_some_and(|value| !matches!(value, "auto" | "ambient" | "banner" | "off"))
+    {
+        return Err("主题任务页模式只能是 auto、ambient、banner 或 off".into());
+    }
     if Path::new(&manifest.image)
         .file_name()
         .and_then(|value| value.to_str())
@@ -567,20 +593,33 @@ fn validate_manifest(manifest: &ThemeManifest) -> Result<(), String> {
     }
     image_format(&manifest.image)?;
     for (name, value) in [
-        ("background", &manifest.colors.background),
-        ("panel", &manifest.colors.panel),
-        ("panelAlt", &manifest.colors.panel_alt),
-        ("accent", &manifest.colors.accent),
-        ("accentAlt", &manifest.colors.accent_alt),
-        ("secondary", &manifest.colors.secondary),
-        ("highlight", &manifest.colors.highlight),
-        ("text", &manifest.colors.text),
-        ("muted", &manifest.colors.muted),
-        ("line", &manifest.colors.line),
+        ("background", manifest.colors.background.as_deref()),
+        ("panel", manifest.colors.panel.as_deref()),
+        ("panelAlt", manifest.colors.panel_alt.as_deref()),
+        ("accent", manifest.colors.accent.as_deref()),
+        ("accentAlt", manifest.colors.accent_alt.as_deref()),
+        ("secondary", manifest.colors.secondary.as_deref()),
+        ("highlight", manifest.colors.highlight.as_deref()),
+        ("text", manifest.colors.text.as_deref()),
+        ("muted", manifest.colors.muted.as_deref()),
+        ("line", manifest.colors.line.as_deref()),
     ] {
-        if !is_color(value) {
+        if value.is_some_and(|value| !is_color(value)) {
             return Err(format!("主题颜色 {name} 格式错误"));
         }
+    }
+    Ok(())
+}
+
+fn validate_image_dimensions((width, height): (u32, u32)) -> Result<(), String> {
+    if width == 0 || height == 0 {
+        return Err("主题图片宽高必须大于 0".into());
+    }
+    if width > MAX_IMAGE_EDGE || height > MAX_IMAGE_EDGE {
+        return Err("主题图片任一边不可超过 16384 像素".into());
+    }
+    if u64::from(width) * u64::from(height) > MAX_IMAGE_PIXELS {
+        return Err("主题图片总像素不可超过 5000 万".into());
     }
     Ok(())
 }
@@ -667,7 +706,7 @@ fn summary_from(
         name: manifest.name,
         tagline: manifest.tagline,
         quote: manifest.quote,
-        accent: manifest.colors.accent,
+        accent: manifest.colors.accent.unwrap_or_else(|| "#8298a3".into()),
     }
 }
 
@@ -830,6 +869,30 @@ mod tests {
     }
 
     #[test]
+    fn accepts_adaptive_contract_with_partial_or_missing_colors() {
+        let mut value: serde_json::Value =
+            serde_json::from_str(STRAWBERRY_STARLIGHT_THEME).unwrap();
+        value.as_object_mut().unwrap().remove("colors");
+        value["appearance"] = serde_json::json!("auto");
+        value["art"] = serde_json::json!({
+            "focusX": 0.72,
+            "focusY": 0.45,
+            "safeArea": "left",
+            "taskMode": "ambient"
+        });
+
+        let manifest: ThemeManifest = serde_json::from_value(value).unwrap();
+        validate_manifest(&manifest).unwrap();
+        assert!(manifest.colors.is_empty());
+        assert_eq!(manifest.appearance.as_deref(), Some("auto"));
+        assert_eq!(manifest.art.focus_x, Some(0.72));
+        assert!(serde_json::to_value(&manifest)
+            .unwrap()
+            .get("colors")
+            .is_none());
+    }
+
+    #[test]
     fn duplicate_requires_confirmation_then_updates() {
         let (root, store) = test_store();
         let first = root.path().join("first.zip");
@@ -902,7 +965,19 @@ mod tests {
     }
 
     #[test]
-    fn rejects_traversal_unknown_schema_invalid_color_and_oversized_image() {
+    fn enforces_image_edge_and_total_pixel_limits() {
+        assert!(validate_image_dimensions((MAX_IMAGE_EDGE, 1)).is_ok());
+        assert!(validate_image_dimensions((10_000, 5_000)).is_ok());
+        assert!(validate_image_dimensions((MAX_IMAGE_EDGE + 1, 1))
+            .unwrap_err()
+            .contains("16384"));
+        assert!(validate_image_dimensions((10_000, 5_001))
+            .unwrap_err()
+            .contains("5000 万"));
+    }
+
+    #[test]
+    fn rejects_traversal_unknown_schema_invalid_contract_and_oversized_image() {
         let (root, store) = test_store();
         let traversal = root.path().join("traversal.zip");
         let value = manifest("bad-path", "background.png");
@@ -923,7 +998,7 @@ mod tests {
 
         let color = root.path().join("color.zip");
         let mut value = manifest("bad-color", "background.png");
-        value.colors.accent = "url(evil)".into();
+        value.colors.accent = Some("url(evil)".into());
         package(&color, &value, png(10, 10));
         assert!(store.install(color, false).is_err());
 
@@ -932,6 +1007,19 @@ mod tests {
         value.layout_preset = "arbitraryScript".into();
         package(&layout, &value, png(10, 10));
         assert!(store.install(layout, false).is_err());
+
+        let appearance = root.path().join("appearance.zip");
+        let mut value = manifest("bad-appearance", "background.png");
+        value.appearance = Some("neon".into());
+        package(&appearance, &value, png(10, 10));
+        assert!(store.install(appearance, false).is_err());
+
+        let art = root.path().join("art.zip");
+        let mut value = manifest("bad-art", "background.png");
+        value.art.focus_x = Some(1.2);
+        value.art.task_mode = Some("fullscreen".into());
+        package(&art, &value, png(10, 10));
+        assert!(store.install(art, false).is_err());
 
         let dimensions = root.path().join("dimensions.zip");
         package(
