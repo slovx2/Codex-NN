@@ -82,18 +82,21 @@ export type MarketplaceThemeCard = {
   themeId: string;
   versionId: string;
   manifestId: string;
-  name: string;
-  tagline: string;
+  title: string;
+  tags: string[];
   authorName: string;
   versionNumber: number;
   downloadCount: number;
+  likeCount: number;
+  viewerLiked: boolean;
   cardPreviewUrl: string;
   publishedAt: string;
   previewDataUrl: string;
 };
 
 export type MarketplaceThemeDetail = MarketplaceThemeCard & {
-  quote: string;
+  description: string;
+  visibility: "public" | "private";
   manifest: unknown;
   detailPreviewUrl: string;
   detailPreviewDataUrl: string;
@@ -115,8 +118,10 @@ export type MarketplaceUploadRecord = {
   manifestId: string;
   versionNumber: number;
   status: string;
-  name: string;
-  tagline: string;
+  title: string;
+  description: string;
+  tags: string[];
+  visibility: "public" | "private";
   packageSha256: string;
   packageSize: number;
   createdAt: string;
@@ -127,9 +132,37 @@ export type MarketplaceUploadOutcome = {
   uploaded: boolean;
   needsConfirmation: boolean;
   isUpdate: boolean;
-  name: string;
+  title: string;
   previousVersionNumber: number | null;
   record: MarketplaceUploadRecord | null;
+};
+
+export type MarketplaceListingInput = {
+  title: string;
+  description: string;
+  tags: string[];
+  visibility: "public" | "private";
+};
+
+export type MarketplaceUploadPreparation = {
+  manifestId: string;
+  defaultTitle: string;
+  defaultDescription: string;
+  listing: MarketplaceListingInput;
+  existingVisibility: "public" | "private" | null;
+};
+
+export type MarketplaceLikeResult = {
+  liked: boolean;
+  likeCount: number;
+};
+
+export type MarketplaceShareCode = {
+  shareCodeId: string;
+  code: string;
+  createdAt: string;
+  redemptionCount: number;
+  lastRedeemedAt: string | null;
 };
 
 export type MarketplaceLocalSyncState = {

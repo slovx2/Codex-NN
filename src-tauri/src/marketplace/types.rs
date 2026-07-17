@@ -33,11 +33,13 @@ pub struct MarketplaceThemeCard {
     pub theme_id: String,
     pub version_id: String,
     pub manifest_id: String,
-    pub name: String,
-    pub tagline: String,
+    pub title: String,
+    pub tags: Vec<String>,
     pub author_name: String,
     pub version_number: i32,
     pub download_count: i64,
+    pub like_count: i64,
+    pub viewer_liked: bool,
     pub card_preview_url: String,
     pub published_at: String,
     #[serde(default)]
@@ -49,7 +51,8 @@ pub struct MarketplaceThemeCard {
 pub struct MarketplaceThemeDetail {
     #[serde(flatten)]
     pub card: MarketplaceThemeCard,
-    pub quote: String,
+    pub description: String,
+    pub visibility: String,
     pub manifest: serde_json::Value,
     pub detail_preview_url: String,
     pub package_size: i64,
@@ -76,8 +79,10 @@ pub struct MarketplaceUploadRecord {
     pub manifest_id: String,
     pub version_number: i32,
     pub status: String,
-    pub name: String,
-    pub tagline: String,
+    pub title: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub visibility: String,
     pub package_sha256: String,
     pub package_size: i64,
     pub created_at: String,
@@ -91,9 +96,28 @@ pub struct MarketplaceUploadOutcome {
     pub uploaded: bool,
     pub needs_confirmation: bool,
     pub is_update: bool,
-    pub name: String,
+    pub title: String,
     pub previous_version_number: Option<i32>,
     pub record: Option<MarketplaceUploadRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarketplaceListingInput {
+    pub title: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub visibility: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarketplaceUploadPreparation {
+    pub manifest_id: String,
+    pub default_title: String,
+    pub default_description: String,
+    pub listing: MarketplaceListingInput,
+    pub existing_visibility: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -151,4 +175,37 @@ pub(super) struct DownloadInfo {
     pub manifest_id: String,
     pub sha256: String,
     pub size: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(super) struct ShareRedeemResult {
+    pub theme_id: String,
+    pub grant_type: String,
+    #[serde(default)]
+    pub grant_token: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all(serialize = "camelCase", deserialize = "snake_case"))]
+pub struct MarketplaceShareCode {
+    pub share_code_id: String,
+    #[serde(default)]
+    pub code: String,
+    pub created_at: String,
+    pub redemption_count: i64,
+    pub last_redeemed_at: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(super) struct ShareCodeList {
+    pub items: Vec<MarketplaceShareCode>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all(serialize = "camelCase", deserialize = "snake_case"))]
+pub struct MarketplaceLikeResult {
+    pub liked: bool,
+    pub like_count: i64,
 }

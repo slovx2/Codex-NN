@@ -35,13 +35,15 @@ use crate::{
 };
 
 use super::{
+    grants::GuestGrantStore,
     preview::{self, PreparedUpload},
     sync::{content_sha256, MarketplaceLocalSyncState, ThemeLink, ThemeLinkStore},
     types::{
-        ApiEnvelope, DownloadInfo, MarketplaceAuthState, MarketplaceLoginResult, MarketplacePage,
+        ApiEnvelope, DownloadInfo, MarketplaceAuthState, MarketplaceLikeResult,
+        MarketplaceListingInput, MarketplaceLoginResult, MarketplacePage, MarketplaceShareCode,
         MarketplaceThemeCard, MarketplaceThemeDetail, MarketplaceUploadOutcome,
-        MarketplaceUploadRecord, MarketplaceUser, MineResponse, TokenPair, UploadSource,
-        UploadTarget,
+        MarketplaceUploadPreparation, MarketplaceUploadRecord, MarketplaceUser, MineResponse,
+        ShareCodeList, ShareRedeemResult, TokenPair, UploadSource, UploadTarget,
     },
 };
 
@@ -78,6 +80,7 @@ pub struct MarketplaceClient {
     session_path: PathBuf,
     auth: Mutex<AuthMemory>,
     links: Mutex<ThemeLinkStore>,
+    grants: Mutex<GuestGrantStore>,
 }
 
 impl MarketplaceClient {
@@ -100,6 +103,7 @@ impl MarketplaceClient {
             .build()
             .map_err(|error| format!("无法创建主题广场网络客户端：{error}"))?;
         let links = ThemeLinkStore::load(root.join("theme-links.json"))?;
+        let grants = GuestGrantStore::load(root.join("share-grants.json"))?;
         Ok(Arc::new(Self {
             app,
             http,
@@ -110,24 +114,16 @@ impl MarketplaceClient {
             session_path: root.join("marketplace-session.json"),
             auth: Mutex::new(AuthMemory::default()),
             links: Mutex::new(links),
+            grants: Mutex::new(grants),
         }))
     }
 
-    pub async fn list_themes(
-        &self,
-        query: String,
-        sort: String,
-        page: i32,
-    ) -> Result<MarketplacePage, String> {
-        let url = format!("{}/api/v1/themes", self.api_base);
-        let mut result: MarketplacePage = self
-            .public_json(self.http.get(url).query(&[
-                ("q", query),
-                ("sort", sort),
-                ("page", page.max(1).to_string()),
-                ("page_size", "20".to_string()),
-            ]))
-            .await?;
+    pub async fn list_themes(&self, query: String, page: i32) -> Result<MarketplacePage, String> {
+        let request = self
+            .viewer_request(Method::GET, "/api/v1/themes", None)
+            .await?
+            .query(&[("q", query), ("page", page.max(1).to_string())]);
+        let mut result: MarketplacePage = self.public_json(request).await?;
         let previews = join_all(result.items.iter().map(|card| self.card_preview(card))).await;
         for (card, preview) in result.items.iter_mut().zip(previews) {
             card.preview_data_url = preview.unwrap_or_default();
@@ -136,8 +132,14 @@ impl MarketplaceClient {
     }
 
     pub async fn get_theme(&self, theme_id: &str) -> Result<MarketplaceThemeDetail, String> {
-        let url = format!("{}/api/v1/themes/{}", self.api_base, theme_id);
-        let mut result: MarketplaceThemeDetail = self.public_json(self.http.get(url)).await?;
+        let request = self
+            .viewer_request(
+                Method::GET,
+                &format!("/api/v1/themes/{theme_id}"),
+                Some(theme_id),
+            )
+            .await?;
+        let mut result: MarketplaceThemeDetail = self.public_json(request).await?;
         result.detail_preview_data_url = self
             .remote_preview(
                 &result.detail_preview_url,
@@ -159,11 +161,9 @@ impl MarketplaceClient {
             let auth = self.auth.lock().await;
             auth.access_token.is_none() && auth.user.is_none()
         };
-        if should_restore {
-            if self.refresh_access().await.is_err() {
-                if let Ok(session) = self.read_session() {
-                    self.auth.lock().await.user = Some(session.user);
-                }
+        if should_restore && self.refresh_access().await.is_err() {
+            if let Ok(session) = self.read_session() {
+                self.auth.lock().await.user = Some(session.user);
             }
         }
         self.auth_snapshot().await
@@ -274,9 +274,56 @@ impl MarketplaceClient {
         Ok(states)
     }
 
+    pub async fn prepare_upload(
+        &self,
+        source: UploadSource,
+        runtime: Arc<ThemeRuntime>,
+    ) -> Result<MarketplaceUploadPreparation, String> {
+        let manifest = match source {
+            UploadSource::Installed { theme_id } => {
+                runtime.load_theme_for_marketplace(&theme_id)?.0
+            }
+            UploadSource::Package { path } => {
+                let path = PathBuf::from(path);
+                tokio::task::spawn_blocking(move || theme::inspect_package(&path))
+                    .await
+                    .map_err(|error| format!("主题包校验任务异常结束：{error}"))??
+                    .manifest
+            }
+        };
+        let previous = self
+            .list_my_uploads()
+            .await?
+            .into_iter()
+            .filter(|record| record.manifest_id == manifest.id)
+            .max_by_key(|record| record.version_number);
+        let listing = previous
+            .as_ref()
+            .map(|record| MarketplaceListingInput {
+                title: record.title.clone(),
+                description: record.description.clone(),
+                tags: record.tags.clone(),
+                visibility: record.visibility.clone(),
+            })
+            .unwrap_or_else(|| MarketplaceListingInput {
+                title: manifest.name.clone(),
+                description: manifest.tagline.clone(),
+                tags: Vec::new(),
+                visibility: "public".into(),
+            });
+        Ok(MarketplaceUploadPreparation {
+            manifest_id: manifest.id,
+            default_title: manifest.name,
+            default_description: manifest.tagline,
+            existing_visibility: previous.map(|record| record.visibility),
+            listing,
+        })
+    }
+
     pub async fn upload_theme(
         &self,
         source: UploadSource,
+        listing: MarketplaceListingInput,
         allow_update: bool,
         runtime: Arc<ThemeRuntime>,
     ) -> Result<MarketplaceUploadOutcome, String> {
@@ -292,7 +339,7 @@ impl MarketplaceClient {
             .await
             .map_err(|error| format!("主题投稿准备任务异常结束：{error}"))?;
         let result = match prepared {
-            Ok(prepared) => self.resolve_upload(prepared, allow_update).await,
+            Ok(prepared) => self.resolve_upload(prepared, listing, allow_update).await,
             Err(error) => Err(error),
         };
         if let Some(path) = temporary {
@@ -304,6 +351,7 @@ impl MarketplaceClient {
     async fn resolve_upload(
         &self,
         prepared: PreparedUpload,
+        listing: MarketplaceListingInput,
         allow_update: bool,
     ) -> Result<MarketplaceUploadOutcome, String> {
         if prepared.package.len() > MAX_PACKAGE_BYTES {
@@ -316,23 +364,27 @@ impl MarketplaceClient {
             .filter(|record| record.manifest_id == prepared.manifest.id)
             .max_by_key(|record| record.version_number);
         let is_update = previous.is_some();
-        let same_package = previous
-            .as_ref()
-            .is_some_and(|record| record.package_sha256 == prepared.package_sha256);
-        if is_update && !same_package && !allow_update {
+        let same_submission = previous.as_ref().is_some_and(|record| {
+            record.package_sha256 == prepared.package_sha256
+                && record.title == listing.title
+                && record.description == listing.description
+                && record.tags == listing.tags
+                && record.visibility == listing.visibility
+        });
+        if is_update && !same_submission && !allow_update {
             return Ok(MarketplaceUploadOutcome {
                 uploaded: false,
                 needs_confirmation: true,
                 is_update: true,
-                name: prepared.manifest.name,
+                title: listing.title,
                 previous_version_number: previous.map(|record| record.version_number),
                 record: None,
             });
         }
 
         let local_content_sha256 = prepared.local_content_sha256.clone();
-        let name = prepared.manifest.name.clone();
-        let record = self.upload_prepared(prepared).await?;
+        let title = listing.title.clone();
+        let record = self.upload_prepared(prepared, listing).await?;
         self.links.lock().await.upsert(ThemeLink {
             manifest_id: record.manifest_id.clone(),
             theme_id: record.theme_id.clone(),
@@ -343,10 +395,10 @@ impl MarketplaceClient {
             role: "publisher".into(),
         })?;
         Ok(MarketplaceUploadOutcome {
-            uploaded: !same_package,
+            uploaded: !same_submission,
             needs_confirmation: false,
             is_update,
-            name,
+            title,
             previous_version_number: previous.map(|item| item.version_number),
             record: Some(record),
         })
@@ -361,6 +413,72 @@ impl MarketplaceClient {
             .await?;
         let _: serde_json::Value = self.authorized_json(request).await?;
         Ok(())
+    }
+
+    pub async fn restore_theme(&self, theme_id: &str) -> Result<(), String> {
+        let request = self
+            .authorized_request(
+                Method::POST,
+                &format!("/api/v1/me/themes/{theme_id}/restore"),
+            )
+            .await?;
+        let _: serde_json::Value = self.authorized_json(request).await?;
+        Ok(())
+    }
+
+    pub async fn set_like(
+        &self,
+        theme_id: &str,
+        liked: bool,
+    ) -> Result<MarketplaceLikeResult, String> {
+        let method = if liked { Method::PUT } else { Method::DELETE };
+        let request = self
+            .with_guest_grant(
+                self.authorized_request(method, &format!("/api/v1/themes/{theme_id}/like"))
+                    .await?,
+                theme_id,
+            )
+            .await;
+        self.authorized_json(request).await
+    }
+
+    pub async fn create_share_code(&self, theme_id: &str) -> Result<MarketplaceShareCode, String> {
+        let request = self
+            .authorized_request(
+                Method::POST,
+                &format!("/api/v1/me/themes/{theme_id}/share-codes"),
+            )
+            .await?;
+        self.authorized_json(request).await
+    }
+
+    pub async fn list_share_codes(
+        &self,
+        theme_id: &str,
+    ) -> Result<Vec<MarketplaceShareCode>, String> {
+        let request = self
+            .authorized_request(
+                Method::GET,
+                &format!("/api/v1/me/themes/{theme_id}/share-codes"),
+            )
+            .await?;
+        let result: ShareCodeList = self.authorized_json(request).await?;
+        Ok(result.items)
+    }
+
+    pub async fn redeem_share_code(&self, code: String) -> Result<String, String> {
+        let request = self
+            .viewer_request(Method::POST, "/api/v1/theme-share/redeem", None)
+            .await?
+            .json(&serde_json::json!({"code": code}));
+        let result: ShareRedeemResult = self.public_json(request).await?;
+        if result.grant_type == "guest" {
+            self.grants
+                .lock()
+                .await
+                .upsert(result.theme_id.clone(), result.grant_token)?;
+        }
+        Ok(result.theme_id)
     }
 
     pub async fn install_theme(
@@ -428,12 +546,14 @@ impl MarketplaceClient {
     async fn upload_prepared(
         &self,
         prepared: PreparedUpload,
+        listing: MarketplaceListingInput,
     ) -> Result<MarketplaceUploadRecord, String> {
         let request = self
             .authorized_request(Method::POST, "/api/v1/me/theme-uploads")
             .await?
             .json(&serde_json::json!({
                 "manifest": prepared.manifest,
+                "listing": listing,
                 "package": {"sha256": prepared.package_sha256, "size": prepared.package.len()},
                 "card_preview": {"sha256": prepared.card_sha256, "size": prepared.card.len()},
                 "detail_preview": {"sha256": prepared.detail_sha256, "size": prepared.detail.len()}
@@ -513,12 +633,14 @@ impl MarketplaceClient {
     }
 
     async fn download_validated(&self, theme_id: &str) -> Result<DownloadedTheme, String> {
-        let info: DownloadInfo = self
-            .public_json(self.http.post(format!(
-                "{}/api/v1/themes/{theme_id}/download",
-                self.api_base
-            )))
+        let request = self
+            .viewer_request(
+                Method::POST,
+                &format!("/api/v1/themes/{theme_id}/download"),
+                Some(theme_id),
+            )
             .await?;
+        let info: DownloadInfo = self.public_json(request).await?;
         if info.size <= 0 || info.size as usize > MAX_PACKAGE_BYTES || info.version_number < 1 {
             return Err("远程主题包大小不符合要求".into());
         }
@@ -651,6 +773,35 @@ impl MarketplaceClient {
             .http
             .request(method, format!("{}{}", self.api_base, path))
             .bearer_auth(token))
+    }
+
+    async fn viewer_request(
+        &self,
+        method: Method,
+        path: &str,
+        theme_id: Option<&str>,
+    ) -> Result<RequestBuilder, String> {
+        let mut request = self
+            .http
+            .request(method, format!("{}{}", self.api_base, path));
+        let has_login = {
+            let auth = self.auth.lock().await;
+            auth.access_token.is_some() || self.refresh_token_path.is_file()
+        };
+        if has_login {
+            request = request.bearer_auth(self.ensure_access().await?);
+        }
+        if let Some(theme_id) = theme_id {
+            request = self.with_guest_grant(request, theme_id).await;
+        }
+        Ok(request)
+    }
+
+    async fn with_guest_grant(&self, request: RequestBuilder, theme_id: &str) -> RequestBuilder {
+        match self.grants.lock().await.get(theme_id) {
+            Some(token) => request.header("X-Codex-NN-Theme-Grant", token),
+            None => request,
+        }
     }
 
     async fn ensure_access(&self) -> Result<String, String> {
@@ -823,9 +974,11 @@ fn network_error(error: reqwest::Error) -> String {
 #[derive(Clone)]
 struct CallbackState {
     expected_state: String,
-    sender: Arc<StdMutex<Option<oneshot::Sender<Result<String, String>>>>>,
+    sender: Arc<StdMutex<Option<CallbackSender>>>,
     shutdown: Arc<StdMutex<Option<oneshot::Sender<()>>>>,
 }
+
+type CallbackSender = oneshot::Sender<Result<String, String>>;
 
 #[derive(Deserialize)]
 struct CallbackQuery {

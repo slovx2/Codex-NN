@@ -1,4 +1,5 @@
 mod client;
+mod grants;
 mod preview;
 mod sync;
 mod types;
@@ -6,6 +7,7 @@ mod types;
 pub use client::MarketplaceClient;
 pub use sync::MarketplaceLocalSyncState;
 pub use types::{
-    MarketplaceAuthState, MarketplaceLoginResult, MarketplacePage, MarketplaceThemeDetail,
-    MarketplaceUploadOutcome, MarketplaceUploadRecord, MarketplaceUser, UploadSource,
+    MarketplaceAuthState, MarketplaceLikeResult, MarketplaceListingInput, MarketplaceLoginResult,
+    MarketplacePage, MarketplaceShareCode, MarketplaceThemeDetail, MarketplaceUploadOutcome,
+    MarketplaceUploadPreparation, MarketplaceUploadRecord, MarketplaceUser, UploadSource,
 };

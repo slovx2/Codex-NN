@@ -21,9 +21,10 @@ use std::sync::{
 };
 
 use marketplace::{
-    MarketplaceAuthState, MarketplaceClient, MarketplaceLocalSyncState, MarketplaceLoginResult,
-    MarketplacePage, MarketplaceThemeDetail, MarketplaceUploadOutcome, MarketplaceUploadRecord,
-    MarketplaceUser, UploadSource,
+    MarketplaceAuthState, MarketplaceClient, MarketplaceLikeResult, MarketplaceListingInput,
+    MarketplaceLocalSyncState, MarketplaceLoginResult, MarketplacePage, MarketplaceShareCode,
+    MarketplaceThemeDetail, MarketplaceUploadOutcome, MarketplaceUploadPreparation,
+    MarketplaceUploadRecord, MarketplaceUser, UploadSource,
 };
 use models::{
     AppSnapshot, DiagnosticReport, ThemeInstallOutcome, ThemeInstallRequest, ThemeSummary,
@@ -130,10 +131,9 @@ async fn run_diagnostics(
 async fn marketplace_list_themes(
     marketplace: State<'_, Arc<MarketplaceClient>>,
     query: String,
-    sort: String,
     page: i32,
 ) -> Result<MarketplacePage, String> {
-    marketplace.list_themes(query, sort, page).await
+    marketplace.list_themes(query, page).await
 }
 
 #[tauri::command]
@@ -189,14 +189,26 @@ async fn marketplace_local_sync_states(
 }
 
 #[tauri::command]
+async fn marketplace_prepare_upload(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    runtime: State<'_, Arc<ThemeRuntime>>,
+    source: UploadSource,
+) -> Result<MarketplaceUploadPreparation, String> {
+    marketplace
+        .prepare_upload(source, runtime.inner().clone())
+        .await
+}
+
+#[tauri::command]
 async fn marketplace_upload_theme(
     marketplace: State<'_, Arc<MarketplaceClient>>,
     runtime: State<'_, Arc<ThemeRuntime>>,
     source: UploadSource,
+    listing: MarketplaceListingInput,
     allow_update: bool,
 ) -> Result<MarketplaceUploadOutcome, String> {
     marketplace
-        .upload_theme(source, allow_update, runtime.inner().clone())
+        .upload_theme(source, listing, allow_update, runtime.inner().clone())
         .await
 }
 
@@ -227,6 +239,47 @@ async fn marketplace_withdraw_theme(
     theme_id: String,
 ) -> Result<(), String> {
     marketplace.withdraw_theme(&theme_id).await
+}
+
+#[tauri::command]
+async fn marketplace_restore_theme(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    theme_id: String,
+) -> Result<(), String> {
+    marketplace.restore_theme(&theme_id).await
+}
+
+#[tauri::command]
+async fn marketplace_set_like(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    theme_id: String,
+    liked: bool,
+) -> Result<MarketplaceLikeResult, String> {
+    marketplace.set_like(&theme_id, liked).await
+}
+
+#[tauri::command]
+async fn marketplace_create_share_code(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    theme_id: String,
+) -> Result<MarketplaceShareCode, String> {
+    marketplace.create_share_code(&theme_id).await
+}
+
+#[tauri::command]
+async fn marketplace_list_share_codes(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    theme_id: String,
+) -> Result<Vec<MarketplaceShareCode>, String> {
+    marketplace.list_share_codes(&theme_id).await
+}
+
+#[tauri::command]
+async fn marketplace_redeem_share_code(
+    marketplace: State<'_, Arc<MarketplaceClient>>,
+    code: String,
+) -> Result<String, String> {
+    marketplace.redeem_share_code(code).await
 }
 
 #[tauri::command]
@@ -400,10 +453,16 @@ pub fn run() {
             marketplace_update_profile,
             marketplace_list_my_uploads,
             marketplace_local_sync_states,
+            marketplace_prepare_upload,
             marketplace_upload_theme,
             marketplace_install_theme,
             marketplace_save_theme,
             marketplace_withdraw_theme,
+            marketplace_restore_theme,
+            marketplace_set_like,
+            marketplace_create_share_code,
+            marketplace_list_share_codes,
+            marketplace_redeem_share_code,
             set_app_accent,
             get_theme_designer_plugin_status,
             install_theme_designer_plugin,

@@ -2,12 +2,16 @@ import { invoke } from "@tauri-apps/api/core";
 import { confirm as confirmDialog, open, save } from "@tauri-apps/plugin-dialog";
 import type {
   MarketplaceAuthState,
+  MarketplaceLikeResult,
+  MarketplaceListingInput,
   MarketplaceLocalSyncState,
   MarketplaceLoginResult,
   MarketplacePage,
+  MarketplaceShareCode,
   MarketplaceThemeCard,
   MarketplaceThemeDetail,
   MarketplaceUploadOutcome,
+  MarketplaceUploadPreparation,
   MarketplaceUploadRecord,
   MarketplaceUser,
   ThemeInstallOutcome,
@@ -33,7 +37,6 @@ export function setupMarketplace(options: MarketplaceOptions): void {
   let activeTab: MarketplaceTab = "discover";
   let activePage = false;
   let query = "";
-  let sort = "latest";
   let page = 1;
   let themesPage: MarketplacePage | null = null;
   let discoverError = "";
@@ -46,6 +49,8 @@ export function setupMarketplace(options: MarketplaceOptions): void {
   let mineLoading = false;
   let mineBusy = false;
   let pollingTimer = 0;
+  let cancelActiveDialog: (() => void) | null = null;
+  const shareCodeStats = new Map<string, MarketplaceShareCode[]>();
 
   discoverTab.addEventListener("click", () => switchTab("discover"));
   mineTab.addEventListener("click", () => switchTab("mine"));
@@ -97,7 +102,6 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     try {
       const result = await invoke<MarketplacePage>("marketplace_list_themes", {
         query,
-        sort,
         page
       });
       if (requestId !== discoverRequest) return;
@@ -118,13 +122,10 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     content.innerHTML = `
       <div class="marketplace-toolbar">
         <form id="marketplace-search-form" class="marketplace-search">
-          <input id="marketplace-search-input" value="${escapeHtml(query)}" maxlength="80" placeholder="搜索名称、ID、作者或简介" aria-label="搜索主题">
+          <input id="marketplace-search-input" value="${escapeHtml(query)}" maxlength="80" placeholder="搜索标题、简介、标签、ID 或作者" aria-label="搜索主题">
           <button class="button primary compact-button" type="submit">搜索</button>
         </form>
-        <select id="marketplace-sort" class="marketplace-select" aria-label="主题排序">
-          <option value="latest" ${sort === "latest" ? "selected" : ""}>最新发布</option>
-          <option value="popular" ${sort === "popular" ? "selected" : ""}>下载最多</option>
-        </select>
+        <button id="marketplace-redeem" class="button subtle compact-button">输入分享码</button>
       </div>
       <div class="marketplace-results">
         ${discoverBody()}
@@ -144,11 +145,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       page = 1;
       void loadDiscover();
     });
-    byId<HTMLSelectElement>("marketplace-sort").addEventListener("change", (event) => {
-      sort = (event.currentTarget as HTMLSelectElement).value;
-      page = 1;
-      void loadDiscover();
-    });
+    byId("marketplace-redeem").addEventListener("click", showRedeemDialog);
     content.querySelectorAll<HTMLButtonElement>("[data-marketplace-theme]").forEach((button) => {
       button.addEventListener("click", () => void showDetail(button.dataset.marketplaceTheme ?? ""));
     });
@@ -182,10 +179,10 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       <button class="marketplace-theme-card" data-marketplace-theme="${escapeHtml(theme.themeId)}">
         <span class="marketplace-theme-preview">${preview}</span>
         <span class="marketplace-theme-copy">
-          <span><em>v${theme.versionNumber}</em><i>↓ ${theme.downloadCount}</i></span>
-          <strong>${escapeHtml(theme.name)}</strong>
-          <small>${escapeHtml(theme.tagline || theme.manifestId)}</small>
           <b>${escapeHtml(theme.authorName)}</b>
+          <strong>${escapeHtml(theme.title)}</strong>
+          <span class="marketplace-card-tags">${theme.tags.slice(0, 3).map(tagHtml).join("")}</span>
+          <span class="marketplace-card-stats"><em>v${theme.versionNumber}</em><i>♥ ${theme.likeCount}</i></span>
         </span>
       </button>`;
   }
@@ -206,25 +203,28 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       detailCard.innerHTML = `
         <button class="modal-close" data-close-marketplace aria-label="关闭">×</button>
         <div class="marketplace-detail-preview">
-          ${detail.detailPreviewDataUrl ? `<img src="${detail.detailPreviewDataUrl}" alt="${escapeHtml(detail.name)} 预览">` : ""}
+          ${detail.detailPreviewDataUrl ? `<img src="${detail.detailPreviewDataUrl}" alt="${escapeHtml(detail.title)} 预览">` : ""}
         </div>
         <div class="marketplace-detail-body">
           <span class="eyebrow">${escapeHtml(detail.manifestId)} · V${detail.versionNumber}</span>
-          <h3 id="marketplace-detail-title">${escapeHtml(detail.name)}</h3>
-          <p>${escapeHtml(detail.tagline)}</p>
-          ${detail.quote ? `<blockquote>${escapeHtml(detail.quote)}</blockquote>` : ""}
+          <h3 id="marketplace-detail-title">${escapeHtml(detail.title)}</h3>
+          <p>${escapeHtml(detail.description || "作者暂未填写简介")}</p>
+          <div class="marketplace-tags">${detail.tags.map(tagHtml).join("")}</div>
           <div class="marketplace-detail-meta">
             <span>作者<strong>${escapeHtml(detail.authorName)}</strong></span>
+            <span>点赞<strong id="marketplace-like-count">${detail.likeCount}</strong></span>
             <span>下载<strong>${detail.downloadCount}</strong></span>
             <span>大小<strong>${formatBytes(detail.packageSize)}</strong></span>
           </div>
           ${syncView ? `<div class="marketplace-sync-note ${syncView.kind}"><strong>${syncView.label}</strong><span>${syncView.detail}</span></div>` : ""}
           <div class="marketplace-detail-actions">
+            <button id="marketplace-like" class="button subtle">${detail.viewerLiked ? "取消点赞" : "♡ 点赞"}</button>
             <button id="marketplace-install" class="button primary">${syncView?.action ?? "下载并安装"}</button>
             <button id="marketplace-save" class="button subtle">另存 ZIP</button>
           </div>
         </div>`;
       bindCloseDetail();
+      byId("marketplace-like").addEventListener("click", () => void toggleLike(detail));
       byId("marketplace-install").addEventListener("click", () => void installTheme(detail, sync));
       byId("marketplace-save").addEventListener("click", () => void saveTheme(detail));
     } catch (error) {
@@ -241,8 +241,94 @@ export function setupMarketplace(options: MarketplaceOptions): void {
   }
 
   function closeDetail(): void {
+    const cancel = cancelActiveDialog;
+    cancelActiveDialog = null;
     detailDialog.hidden = true;
     detailCard.innerHTML = "";
+    cancel?.();
+  }
+
+  function showRedeemDialog(): void {
+    detailDialog.hidden = false;
+    detailCard.innerHTML = `
+      <button class="modal-close" data-close-marketplace aria-label="关闭">×</button>
+      <form id="marketplace-redeem-form" class="marketplace-form-card">
+        <span class="eyebrow">PRIVATE THEME</span>
+        <h3 id="marketplace-detail-title">输入永久分享码</h3>
+        <p>分享码只会安全地提交给服务端，不会出现在地址或搜索记录中。</p>
+        <label>分享码<input id="marketplace-share-code" autocomplete="off" spellcheck="false" placeholder="CNN-XXXX-XXXX-XXXX-XXXX-XXXX" required></label>
+        <div class="marketplace-detail-actions">
+          <button type="button" class="button subtle" data-close-marketplace>取消</button>
+          <button id="marketplace-redeem-submit" class="button primary">查看主题</button>
+        </div>
+      </form>`;
+    detailCard.querySelectorAll<HTMLElement>("[data-close-marketplace]").forEach((button) => {
+      button.addEventListener("click", closeDetail);
+    });
+    byId<HTMLFormElement>("marketplace-redeem-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      void redeemShareCode();
+    });
+    byId<HTMLInputElement>("marketplace-share-code").focus();
+  }
+
+  async function redeemShareCode(): Promise<void> {
+    const code = byId<HTMLInputElement>("marketplace-share-code").value.trim();
+    const button = byId<HTMLButtonElement>("marketplace-redeem-submit");
+    if (!code || button.disabled) return;
+    button.disabled = true;
+    try {
+      auth = auth ?? await invoke<MarketplaceAuthState>("marketplace_auth_state");
+      if (!auth.loggedIn) {
+        const continueAnonymously = await confirmDialog(
+          "登录后，私密主题权限会跟随账号并可跨设备使用。匿名继续也可以，但授权只保存在当前这台机器。",
+          { title: "建议先登录", kind: "warning" }
+        );
+        if (!continueAnonymously) {
+          closeDetail();
+          switchTab("mine");
+          return;
+        }
+      }
+      const themeId = await invoke<string>("marketplace_redeem_share_code", { code });
+      closeDetail();
+      await showDetail(themeId);
+    } catch (error) {
+      options.showToast(options.errorMessage(error), true);
+      button.disabled = false;
+    }
+  }
+
+  async function toggleLike(detail: MarketplaceThemeDetail): Promise<void> {
+    const button = byId<HTMLButtonElement>("marketplace-like");
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      auth = auth ?? await invoke<MarketplaceAuthState>("marketplace_auth_state");
+      if (!auth.loggedIn) {
+        button.textContent = "等待 Google 登录";
+        const login = await invoke<MarketplaceLoginResult>("marketplace_start_login");
+        auth = login.auth;
+        if (!auth.loggedIn) throw new Error("登录未完成，暂时不能点赞");
+      }
+      const result = await invoke<MarketplaceLikeResult>("marketplace_set_like", {
+        themeId: detail.themeId,
+        liked: !detail.viewerLiked
+      });
+      detail.viewerLiked = result.liked;
+      detail.likeCount = result.likeCount;
+      button.textContent = result.liked ? "取消点赞" : "♡ 点赞";
+      byId("marketplace-like-count").textContent = String(result.likeCount);
+      const card = themesPage?.items.find((item) => item.themeId === detail.themeId);
+      if (card) {
+        card.viewerLiked = result.liked;
+        card.likeCount = result.likeCount;
+      }
+    } catch (error) {
+      options.showToast(options.errorMessage(error), true);
+    } finally {
+      if (document.body.contains(button)) button.disabled = false;
+    }
   }
 
   async function installTheme(
@@ -316,6 +402,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
           invoke<MarketplaceUploadRecord[]>("marketplace_list_my_uploads"),
           invoke<MarketplaceLocalSyncState[]>("marketplace_local_sync_states")
         ]);
+        await refreshShareCodeStats();
       } else {
         uploads = [];
         localSyncStates = await invoke<MarketplaceLocalSyncState[]>("marketplace_local_sync_states");
@@ -392,21 +479,33 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     content.querySelectorAll<HTMLButtonElement>("[data-withdraw-theme]").forEach((button) => {
       button.addEventListener("click", () => void withdrawTheme(button.dataset.withdrawTheme ?? ""));
     });
+    content.querySelectorAll<HTMLButtonElement>("[data-restore-theme]").forEach((button) => {
+      button.addEventListener("click", () => void restoreTheme(button.dataset.restoreTheme ?? ""));
+    });
+    content.querySelectorAll<HTMLButtonElement>("[data-create-share-code]").forEach((button) => {
+      button.addEventListener("click", () => void createShareCode(button.dataset.createShareCode ?? ""));
+    });
     updateLocalPublishControl();
   }
 
   function uploadHtml(record: MarketplaceUploadRecord): string {
     const status = uploadStatus(record.status);
     const canWithdraw = record.status === "published";
+    const canRestore = record.status === "withdrawn";
+    const canShare = record.status === "published" && record.visibility === "private";
+    const shareCodes = shareCodeStats.get(record.themeId) ?? [];
+    const redemptions = shareCodes.reduce((total, item) => total + item.redemptionCount, 0);
     return `
       <article class="marketplace-upload-item">
-        <span class="marketplace-upload-icon">${escapeHtml(record.name.slice(0, 1).toUpperCase() || "N")}</span>
+        <span class="marketplace-upload-icon">${escapeHtml(record.title.slice(0, 1).toUpperCase() || "N")}</span>
         <span class="marketplace-upload-copy">
-          <span><strong>${escapeHtml(record.name)}</strong><em>v${record.versionNumber}</em></span>
-          <small>${escapeHtml(record.manifestId)} · ${formatDate(record.createdAt)}</small>
+          <span><strong>${escapeHtml(record.title)}</strong><em>v${record.versionNumber} · ${record.visibility === "private" ? "私密" : "公开"}</em></span>
+          <small>${escapeHtml(record.manifestId)} · ${formatDate(record.createdAt)}${shareCodes.length ? ` · ${shareCodes.length} 个永久码 / ${redemptions} 次领取` : ""}</small>
         </span>
         <span class="marketplace-review-state ${status.kind}"><i></i>${status.label}</span>
+        ${canShare ? `<button class="button subtle compact-button" data-create-share-code="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>创建分享码</button>` : ""}
         ${canWithdraw ? `<button class="button subtle danger compact-button" data-withdraw-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>下架</button>` : ""}
+        ${canRestore ? `<button class="button subtle compact-button" data-restore-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>恢复上架</button>` : ""}
       </article>`;
   }
 
@@ -535,18 +634,23 @@ export function setupMarketplace(options: MarketplaceOptions): void {
   }
 
   async function submitUpload(source: { kind: "installed"; themeId: string } | { kind: "package"; path: string }): Promise<void> {
+    const preparation = await invoke<MarketplaceUploadPreparation>("marketplace_prepare_upload", { source });
+    const listing = await collectUploadListing(preparation);
+    if (!listing) return;
     let outcome = await invoke<MarketplaceUploadOutcome>("marketplace_upload_theme", {
       source,
+      listing,
       allowUpdate: false
     });
     if (outcome.needsConfirmation) {
       const confirmed = await confirmDialog(
-        `“${outcome.name}”与云端 v${outcome.previousVersionNumber ?? "?"} 不一致。是否发布为下一版本？`,
+        `“${outcome.title}”与云端 v${outcome.previousVersionNumber ?? "?"} 不一致。是否发布为下一版本？`,
         { title: "发布主题更新", kind: "warning" }
       );
       if (!confirmed) return;
       outcome = await invoke<MarketplaceUploadOutcome>("marketplace_upload_theme", {
         source,
+        listing,
         allowUpdate: true
       });
     }
@@ -561,15 +665,173 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     const record = uploads.find((item) => item.themeId === themeId && item.status === "published");
     if (!record) return;
     const confirmed = await confirmDialog(
-      `下架“${record.name}”后会立即从广场移除，但主题 ID 会永久保留。继续吗？`,
+      `下架“${record.title}”后会立即从广场和 API 隐藏。历史版本、R2 资源、分享码和已有授权都会保留，之后可以直接恢复。继续吗？`,
       { title: "下架主题", kind: "warning" }
     );
     if (!confirmed) return;
     await runMineAction(async () => {
       await invoke("marketplace_withdraw_theme", { themeId });
-      options.showToast(`已下架“${record.name}”`);
+      options.showToast(`已下架“${record.title}”`);
       await refreshUploadsOnly();
     });
+  }
+
+  async function restoreTheme(themeId: string): Promise<void> {
+    const record = uploads.find((item) => item.themeId === themeId && item.status === "withdrawn");
+    if (!record) return;
+    await runMineAction(async () => {
+      await invoke("marketplace_restore_theme", { themeId });
+      options.showToast(`已恢复“${record.title}”，版本和分享授权保持不变`);
+      await refreshUploadsOnly();
+    });
+  }
+
+  async function createShareCode(themeId: string): Promise<void> {
+    const confirmed = await confirmDialog(
+      "永久分享码可以被多人反复领取，创建后永不过期，也不能撤销或删除。确定继续创建吗？",
+      { title: "创建不可撤销的永久分享码", kind: "warning" }
+    );
+    if (!confirmed) return;
+    await runMineAction(async () => {
+      const created = await invoke<MarketplaceShareCode>("marketplace_create_share_code", { themeId });
+      shareCodeStats.set(themeId, [created, ...(shareCodeStats.get(themeId) ?? [])]);
+      showCreatedShareCode(created.code);
+    });
+  }
+
+  function showCreatedShareCode(code: string): void {
+    detailDialog.hidden = false;
+    detailCard.innerHTML = `
+      <button class="modal-close" data-close-marketplace aria-label="关闭">×</button>
+      <div class="marketplace-form-card">
+        <span class="eyebrow">SHARE CODE</span>
+        <h3 id="marketplace-detail-title">永久分享码已创建</h3>
+        <p>这是唯一一次显示完整明文。关闭后无法再次查看，但可以继续创建新的永久码。</p>
+        <code class="marketplace-share-code-result">${escapeHtml(code)}</code>
+        <button class="button primary" data-close-marketplace>我已保存，关闭</button>
+      </div>`;
+    detailCard.querySelectorAll<HTMLElement>("[data-close-marketplace]").forEach((button) => {
+      button.addEventListener("click", closeDetail);
+    });
+  }
+
+  function collectUploadListing(
+    preparation: MarketplaceUploadPreparation
+  ): Promise<MarketplaceListingInput | null> {
+    return new Promise((resolve) => {
+      let tags = [...preparation.listing.tags];
+      let settled = false;
+      const finish = (value: MarketplaceListingInput | null): void => {
+        if (settled) return;
+        settled = true;
+        cancelActiveDialog = null;
+        detailDialog.hidden = true;
+        detailCard.innerHTML = "";
+        resolve(value);
+      };
+      cancelActiveDialog = () => finish(null);
+      detailDialog.hidden = false;
+      detailCard.innerHTML = `
+        <button class="modal-close" data-close-marketplace aria-label="关闭">×</button>
+        <form id="marketplace-listing-form" class="marketplace-form-card marketplace-listing-form">
+          <span class="eyebrow">PUBLISH THEME</span>
+          <h3 id="marketplace-detail-title">填写广场信息</h3>
+          <p>这些是广场展示信息，不会写回主题 ZIP。资源或展示信息发生变化时，会自动创建下一版本。</p>
+          <label>标题 <small>必填，最多 80 字</small>
+            <input id="marketplace-listing-title" maxlength="80" required value="${escapeHtml(preparation.listing.title)}">
+          </label>
+          <label>简介 <small>可选，最多 1000 字</small>
+            <textarea id="marketplace-listing-description" maxlength="1000" rows="5">${escapeHtml(preparation.listing.description)}</textarea>
+          </label>
+          <label>标签 <small>可选，最多 10 个；输入后按回车或逗号</small>
+            <div id="marketplace-tag-editor" class="marketplace-tag-editor">
+              <div id="marketplace-tag-chips" class="marketplace-tags"></div>
+              <input id="marketplace-tag-input" maxlength="24" placeholder="添加标签">
+            </div>
+          </label>
+          <label>可见性
+            <select id="marketplace-listing-visibility" class="marketplace-select">
+              <option value="public" ${preparation.listing.visibility === "public" ? "selected" : ""}>公开 · 出现在主题广场</option>
+              <option value="private" ${preparation.listing.visibility === "private" ? "selected" : ""} ${preparation.existingVisibility === "public" ? "disabled" : ""}>私密 · 仅通过永久分享码访问</option>
+            </select>
+          </label>
+          ${preparation.existingVisibility === "public" ? `<div class="marketplace-inline-note">这个主题已经公开，公开状态不可逆，不能再转为私密。</div>` : `<div class="marketplace-inline-note">私密主题以后可以转为公开；一旦公开，就不能改回私密。</div>`}
+          <div id="marketplace-listing-error" class="marketplace-inline-error" hidden></div>
+          <div class="marketplace-detail-actions">
+            <button type="button" class="button subtle" data-close-marketplace>取消</button>
+            <button class="button primary">继续发布</button>
+          </div>
+        </form>`;
+      const chips = byId("marketplace-tag-chips");
+      const tagInput = byId<HTMLInputElement>("marketplace-tag-input");
+      const renderTags = (): void => {
+        chips.innerHTML = tags.map((tag, index) => `<button type="button" class="marketplace-tag" data-remove-tag="${index}">${escapeHtml(tag)} ×</button>`).join("");
+        chips.querySelectorAll<HTMLButtonElement>("[data-remove-tag]").forEach((button) => {
+          button.addEventListener("click", () => {
+            tags.splice(Number(button.dataset.removeTag), 1);
+            renderTags();
+          });
+        });
+      };
+      const addTag = (): void => {
+        const tag = tagInput.value.trim();
+        tagInput.value = "";
+        if (!tag) return;
+        if ([...tag].length > 24 || /[\p{C}]/u.test(tag)) {
+          showListingError("单个标签需为 1–24 字，且不能包含控制字符");
+          return;
+        }
+        if (tags.some((item) => item.toLocaleLowerCase() === tag.toLocaleLowerCase())) return;
+        if (tags.length >= 10) {
+          showListingError("最多只能填写 10 个标签");
+          return;
+        }
+        tags.push(tag);
+        renderTags();
+      };
+      const showListingError = (message: string): void => {
+        const error = byId("marketplace-listing-error");
+        error.textContent = message;
+        error.hidden = false;
+      };
+      renderTags();
+      tagInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === ",") {
+          event.preventDefault();
+          addTag();
+        }
+      });
+      tagInput.addEventListener("blur", addTag);
+      detailCard.querySelectorAll<HTMLElement>("[data-close-marketplace]").forEach((button) => {
+        button.addEventListener("click", () => finish(null));
+      });
+      byId<HTMLFormElement>("marketplace-listing-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        addTag();
+        const title = byId<HTMLInputElement>("marketplace-listing-title").value.trim();
+        const description = byId<HTMLTextAreaElement>("marketplace-listing-description").value.trim();
+        if (![...title].length || [...title].length > 80) {
+          showListingError("标题需为 1–80 字");
+          return;
+        }
+        if ([...description].length > 1000) {
+          showListingError("简介最多 1000 字");
+          return;
+        }
+        const visibility = byId<HTMLSelectElement>("marketplace-listing-visibility").value;
+        finish({ title, description, tags, visibility: visibility as "public" | "private" });
+      });
+    });
+  }
+
+  async function refreshShareCodeStats(): Promise<void> {
+    const themeIds = [...new Set(uploads
+      .filter((record) => record.visibility === "private")
+      .map((record) => record.themeId))];
+    await Promise.all(themeIds.map(async (themeId) => {
+      const codes = await invoke<MarketplaceShareCode[]>("marketplace_list_share_codes", { themeId });
+      shareCodeStats.set(themeId, codes);
+    }));
   }
 
   async function refreshUploadsOnly(): Promise<void> {
@@ -577,6 +839,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       invoke<MarketplaceUploadRecord[]>("marketplace_list_my_uploads"),
       invoke<MarketplaceLocalSyncState[]>("marketplace_local_sync_states")
     ]);
+    await refreshShareCodeStats();
   }
 
   async function runMineAction(action: () => Promise<void>): Promise<void> {
@@ -699,6 +962,10 @@ function escapeHtml(value: string): string {
   const element = document.createElement("span");
   element.textContent = value;
   return element.innerHTML;
+}
+
+function tagHtml(value: string): string {
+  return `<span class="marketplace-tag">${escapeHtml(value)}</span>`;
 }
 
 function formatBytes(bytes: number): string {
