@@ -1,2 +1,4 @@
 theme-packs/*/theme.json text eol=lf
 theme-packs/*.zip binary
+src-tauri/resources/theme-engine/dream-skin.css text eol=lf
+src-tauri/resources/theme-engine/dream-skin-renderer-inject.js text eol=lf
