@@ -157,12 +157,12 @@ jobs:
           tagName: v__VERSION__
           releaseName: Codex NN v__VERSION__
           releaseBody: |
-            Codex 暖暖主题广场能力更新。
+            Codex 暖暖主题引擎与内置主题更新。
 
-            - 新增主题广场客户端与本地、云端主题同步能力
-            - 新增主题投稿、私密分享、点赞、下载与更新发布流程
-            - 新增主题 Fixture 调试实验室
-            - 统一应用弹窗样式并修复主题投稿布局
+            - 原生兼容 Codex Dream Skin 1.2.0 主题格式与渲染语义
+            - 新任务页支持整窗主题背景，完整呈现主题概念图
+            - 内置云海远行、初音未来、星莓绮梦、苍蓝矩阵、瑞克与莫蒂五套主题
+            - 优化行动卡图标、侧栏装饰与文字可读性
           releaseDraft: false
           prerelease: false
           uploadUpdaterJson: true

@@ -46,13 +46,31 @@
 
 ![Codex 暖暖主题设计](./docs/images/codex-nn-designer.jpg)
 
+## 内置主题预览
+
+以下截图均为 Codex 新任务页的整窗效果。
+
+<table>
+  <tr>
+    <td align="center"><strong>云海远行图鉴</strong><br><img src="./docs/images/themes/adventure-atlas.jpg" alt="云海远行图鉴新任务页" width="100%"></td>
+    <td align="center"><strong>初音未来 · 未来共创</strong><br><img src="./docs/images/themes/miku-future-collab.jpg" alt="初音未来主题新任务页" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>星莓绮梦</strong><br><img src="./docs/images/themes/strawberry-starlight.jpg" alt="星莓绮梦新任务页" width="100%"></td>
+    <td align="center"><strong>苍蓝矩阵</strong><br><img src="./docs/images/themes/azure-neon-frontier.jpg" alt="苍蓝矩阵新任务页" width="100%"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><strong>瑞克与莫蒂 · 多元宇宙开发站</strong><br><img src="./docs/images/themes/portal-dimension-lab.jpg" alt="瑞克与莫蒂主题新任务页" width="50%"></td>
+  </tr>
+</table>
+
 ## 功能亮点
 
 - **可视化操作**：主题预览、安装、切换、恢复都在桌面界面中完成
 - **零门槛主题设计**：只需描述想要的风格或提供概念稿，不懂配色、schema 和打包也能制作主题
 - **内置主题设计 Skill**：一键安装随应用提供的主题设计插件，让 Codex 自动完成概念稿、背景、配色、文案和主题包
 - **边设计边看效果**：Codex 可通过本地 MCP 安装、切换和诊断主题，在真实 Codex 界面中预览后继续对话调整
-- **开箱即用**：内置「云海远行图鉴」「星莓绮梦」「苍蓝矩阵」和「初音未来 · 未来共创」四个主题，安装后即可开始使用
+- **开箱即用**：内置「云海远行图鉴」「初音未来 · 未来共创」「星莓绮梦」「苍蓝矩阵」和「瑞克与莫蒂 · 多元宇宙开发站」五个主题，安装后即可开始使用
 - **一键切换**：主题会话运行时支持热切换，不用重复配置
 - **本地主题库**：通过 ZIP 安装、更新和管理自己的主题包
 - **完整控制**：支持启动或重启 Codex、暂停主题和一键恢复官方外观

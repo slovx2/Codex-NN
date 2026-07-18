@@ -46,13 +46,31 @@ No manual file editing or repeated scripts are required. Open Codex NN, choose a
 
 ![Codex NN theme designer](./docs/images/codex-nn-designer.jpg)
 
+## Built-in Theme Preview
+
+Every screenshot below shows the full Codex new-task page.
+
+<table>
+  <tr>
+    <td align="center"><strong>Adventure Atlas</strong><br><img src="./docs/images/themes/adventure-atlas.jpg" alt="Adventure Atlas new-task page" width="100%"></td>
+    <td align="center"><strong>Miku Future Collab</strong><br><img src="./docs/images/themes/miku-future-collab.jpg" alt="Miku Future Collab new-task page" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Strawberry Starlight</strong><br><img src="./docs/images/themes/strawberry-starlight.jpg" alt="Strawberry Starlight new-task page" width="100%"></td>
+    <td align="center"><strong>Azure Neon Frontier</strong><br><img src="./docs/images/themes/azure-neon-frontier.jpg" alt="Azure Neon Frontier new-task page" width="100%"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><strong>Rick and Morty Multiverse Lab</strong><br><img src="./docs/images/themes/portal-dimension-lab.jpg" alt="Rick and Morty theme new-task page" width="50%"></td>
+  </tr>
+</table>
+
 ## Highlights
 
 - **Visual workflow**: preview, install, switch, and restore themes from a desktop interface
 - **No-code theme design**: describe a visual style or provide a concept image; no knowledge of color systems, schemas, or packaging is required
 - **Built-in theme design Skill**: install the bundled designer plugin with one click and let Codex create the concept, background, palette, copy, and theme package
 - **Design with live feedback**: Codex installs, switches, and diagnoses themes through the local MCP so you can review the real interface and keep refining it in the same conversation
-- **Ready to use**: includes Strawberry Starlight, Azure Neon Frontier, and Miku Future Collab
+- **Ready to use**: includes Adventure Atlas, Miku Future Collab, Strawberry Starlight, Azure Neon Frontier, and Rick and Morty Multiverse Lab
 - **Instant switching**: hot-swap themes while a managed theme session is running
 - **Local theme library**: install, update, and manage your own ZIP theme packages
 - **Full control**: launch or restart Codex, pause theming, or restore the official appearance
