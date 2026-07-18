@@ -257,6 +257,9 @@ describe("主题注入引擎", () => {
         <button>新建任务</button>
         <button>拉取请求</button>
         <button data-app-action-sidebar-section-toggle>项目</button>
+        <div data-app-action-sidebar-thread-row>
+          <span data-thread-title>验证主题任务</span>
+        </div>
       </aside>
       <main class="main-surface">
         <section role="main">
@@ -280,6 +283,14 @@ describe("主题注入引擎", () => {
     expect(document.querySelectorAll("button")[1]?.dataset.nnSidebarItem).toBe("pull-requests");
     expect(document.querySelectorAll("button")[2]?.dataset.nnSidebarSection).toBe("projects");
     expect(document.querySelector(".nn-miku-header-decor")).not.toBeNull();
+    const threadRow = document.querySelector<HTMLElement>("[data-app-action-sidebar-thread-row]")!;
+    expect(getComputedStyle(threadRow).paddingLeft).toBe("29px");
+    const markerRule = [...style.sheet!.cssRules].find((rule) =>
+      (rule as CSSStyleRule).selectorText?.endsWith("[data-app-action-sidebar-thread-row]::before")
+    ) as CSSStyleRule;
+    expect(markerRule.style.position).toBe("absolute");
+    expect(markerRule.style.top).toBe("50%");
+    expect(markerRule.style.transform).toBe("translateY(-50%)");
     const icon = document.querySelector<SVGElement>("#miku-action-icon > svg")!;
     expect(getComputedStyle(icon).position).toBe("absolute");
     expect(getComputedStyle(icon).left).toBe("50%");

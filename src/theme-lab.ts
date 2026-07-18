@@ -91,7 +91,7 @@ app.innerHTML = `
         <option value="portal-dimension-lab">瑞克与莫蒂</option>
       </select>
       <button type="button" data-size="capture">抓取尺寸</button>
-      <button type="button" data-size="desktop">1440 × 900</button>
+      <button type="button" class="is-active" data-size="desktop">1440 × 900</button>
       <button type="button" data-size="compact">1024 × 768</button>
       <button type="button" data-size="wide">1728 × 1000</button>
       <button type="button" id="refresh-theme">刷新主题</button>
@@ -112,6 +112,14 @@ app.innerHTML = `
     <span id="lab-status-text">等待 fixture</span>
     <span>修改 nn-theme.css 后会自动更新</span>
   </footer>
+  <button
+    type="button"
+    class="lab-fullscreen-toggle"
+    id="lab-fullscreen-toggle"
+    aria-pressed="true"
+    aria-label="退出全屏预览"
+    title="退出全屏预览"
+  ><span aria-hidden="true">⛶</span></button>
 `;
 
 const frame = requiredElement<HTMLIFrameElement>("#codex-preview");
@@ -123,6 +131,7 @@ const meta = requiredElement<HTMLElement>("#fixture-meta");
 const routes = requiredElement<HTMLElement>("#lab-routes");
 const themeSelect = requiredElement<HTMLSelectElement>("#theme-select");
 const statusText = requiredElement<HTMLElement>("#lab-status-text");
+const fullscreenToggle = requiredElement<HTMLButtonElement>("#lab-fullscreen-toggle");
 if ([...themeSelect.options].some((option) => option.value === defaultTheme)) {
   themeSelect.value = defaultTheme;
 }
@@ -131,6 +140,14 @@ let manifest: FixtureManifest | null = null;
 let activeState: FixtureState | null = null;
 let activeSize: PreviewSize = { label: "桌面", width: 1440, height: 900 };
 let activeScale = 1;
+
+function setFullscreen(fullscreen: boolean): void {
+  app.classList.toggle("is-fullscreen", fullscreen);
+  fullscreenToggle.ariaPressed = String(fullscreen);
+  fullscreenToggle.setAttribute("aria-label", fullscreen ? "退出全屏预览" : "进入全屏预览");
+  fullscreenToggle.title = fullscreen ? "退出全屏预览" : "进入全屏预览";
+  window.requestAnimationFrame(() => resizePreview(activeSize));
+}
 
 function setStatus(message: string, kind: "idle" | "ready" | "error" = "idle"): void {
   statusText.textContent = message;
@@ -154,8 +171,9 @@ function resizePreview(size: PreviewSize): void {
   activeSize = size;
   frame.style.width = `${size.width}px`;
   frame.style.height = `${size.height}px`;
-  const availableWidth = Math.max(stage.clientWidth - 48, 320);
-  const availableHeight = Math.max(stage.clientHeight - 48, 240);
+  const gutter = app.classList.contains("is-fullscreen") ? 0 : 48;
+  const availableWidth = Math.max(stage.clientWidth - gutter, 320);
+  const availableHeight = Math.max(stage.clientHeight - gutter, 240);
   const scale = Math.min(availableWidth / size.width, availableHeight / size.height, 1);
   activeScale = scale;
   viewport.style.width = `${size.width * scale}px`;
@@ -323,7 +341,7 @@ function switchState(state: FixtureState, historyMode: HistoryMode = "push"): vo
   loading.textContent = `正在还原${state.label}…`;
   frame.classList.remove("is-ready");
   navigationOverlay.replaceChildren();
-  resizePreview(availableSizes().capture);
+  resizePreview(activeSize);
   frame.src = `${fixtureBase}${state.name}/index.html?t=${Date.now()}`;
 }
 
@@ -437,6 +455,10 @@ document.querySelector<HTMLButtonElement>("#refresh-theme")?.addEventListener("c
   });
 });
 
+fullscreenToggle.addEventListener("click", () => {
+  setFullscreen(!app.classList.contains("is-fullscreen"));
+});
+
 themeSelect.addEventListener("change", () => {
   if (activeState) syncLocation(activeState, "replace");
   void applyTheme().catch((error: unknown) => {
@@ -464,6 +486,8 @@ void loadManifest().catch((error: unknown) => {
   loading.textContent = `${message}，请先运行 npm run theme:fixture`;
   setStatus("缺少 fixture", "error");
 });
+
+setFullscreen(true);
 
 if (import.meta.hot) {
   import.meta.hot.on("vite:afterUpdate", () => {

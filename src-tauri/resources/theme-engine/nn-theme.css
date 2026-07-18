@@ -2498,18 +2498,25 @@ html.codex-nn-theme[data-nn-theme-layout="miku-future"] aside [data-nn-sidebar-s
   font-size: 10px;
 }
 
+html.codex-nn-theme[data-nn-theme-layout="miku-future"] aside [data-app-action-sidebar-thread-row] {
+  padding-left: 29px !important;
+}
+
 html.codex-nn-theme[data-nn-theme-layout="miku-future"] aside [data-app-action-sidebar-thread-row]::before {
   content: "✓";
+  position: absolute;
+  left: 8px;
+  top: 50%;
   width: 15px;
   height: 15px;
   display: grid;
-  flex: 0 0 15px;
   place-items: center;
   border: 1px solid rgba(18, 174, 184, .52);
   border-radius: 50%;
   color: #0aa5af;
   font-size: 9px;
   line-height: 1;
+  transform: translateY(-50%);
 }
 
 html.codex-nn-theme[data-nn-theme-layout="miku-future"] main.main-surface,
