@@ -257,6 +257,7 @@ describe("主题注入引擎", () => {
         <button>新建任务</button>
         <button>拉取请求</button>
         <button data-app-action-sidebar-section-toggle>项目</button>
+        <div data-app-action-sidebar-thread-row><div>添加 Claude 主题设计插件</div></div>
       </aside>
       <main class="main-surface">
         <section role="main">
@@ -279,6 +280,16 @@ describe("主题注入引擎", () => {
     expect(document.querySelector("button")?.dataset.nnSidebarItem).toBe("new-task");
     expect(document.querySelectorAll("button")[1]?.dataset.nnSidebarItem).toBe("pull-requests");
     expect(document.querySelectorAll("button")[2]?.dataset.nnSidebarSection).toBe("projects");
+    const threadRow = document.querySelector<HTMLElement>("[data-app-action-sidebar-thread-row]")!;
+    expect(getComputedStyle(threadRow).position).toBe("relative");
+    expect(getComputedStyle(threadRow).paddingLeft).toBe("31px");
+    const threadIconRule = Array.from(style.sheet?.cssRules ?? []).find((rule) =>
+      rule.cssText.includes("[data-app-action-sidebar-thread-row]::before")
+    ) as CSSStyleRule | undefined;
+    expect(threadIconRule?.style.position).toBe("absolute");
+    expect(threadIconRule?.style.left).toBe("8px");
+    expect(threadIconRule?.style.top).toBe("50%");
+    expect(threadIconRule?.style.transform).toBe("translateY(-50%)");
     expect(document.querySelector(".nn-miku-header-decor")).not.toBeNull();
     const icon = document.querySelector<SVGElement>("#miku-action-icon > svg")!;
     expect(getComputedStyle(icon).position).toBe("absolute");
