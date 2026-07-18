@@ -279,6 +279,13 @@ describe("主应用界面", () => {
     click("activate-theme-button");
     await vi.waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith("activate_theme", { id: "custom-neon" }));
     await vi.waitFor(() => expect(text("toast")).toContain("热切换"));
+
+    const inactive = appSnapshot({ session: "off", activeTheme: customTheme });
+    setHandler("activate_theme", () => inactive);
+    setHandler("get_app_snapshot", () => inactive);
+    await vi.waitFor(() => expect(button("activate-theme-button").disabled).toBe(false));
+    click("activate-theme-button");
+    await vi.waitFor(() => expect(text("toast")).toContain("启动或重启"));
   });
 
   it("安装与更新普通主题包", async () => {
@@ -359,6 +366,8 @@ describe("主应用界面", () => {
     expect(mocks.invoke).not.toHaveBeenCalledWith("install_dream_skin_theme", expect.anything());
     expect(mocks.invoke).not.toHaveBeenCalledWith("verify_theme", expect.anything());
     expect(button("activate-theme-button").disabled).toBe(true);
+    button("activate-theme-button").dispatchEvent(new MouseEvent("click"));
+    expect(text("toast")).toBe("请先选择一个主题");
   });
 });
 
@@ -507,13 +516,13 @@ describe("主题库与插件操作", () => {
 
   it("Claude Code 不可用时禁用插件操作", async () => {
     setHandler("get_claude_theme_designer_plugin_status", () => claudePluginStatus({
-      claudeAvailable: false,
-      message: "未找到 Claude Code"
+      claudeAvailable: false
     }));
 
     await boot();
 
     expect(text("claude-designer-plugin-state")).toBe("不可用");
+    expect(text("claude-designer-plugin-message")).toContain("未找到 Claude Code");
     expect(button("install-claude-designer-plugin-button").disabled).toBe(true);
     expect(button("uninstall-claude-designer-plugin-button").disabled).toBe(true);
   });
