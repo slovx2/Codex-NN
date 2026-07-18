@@ -27,28 +27,48 @@ const DEFAULT_THEME_ID: &str = "strawberry-starlight";
 const LEGACY_DEFAULT_THEME_ID: &str = "codex-nn-default";
 const STRAWBERRY_STARLIGHT_THEME: &str =
     include_str!("../../theme-packs/strawberry-starlight/theme.json");
+const STRAWBERRY_STARLIGHT_THEME_EN: &str =
+    include_str!("../../theme-packs/strawberry-starlight/theme.en.json");
 const STRAWBERRY_STARLIGHT_IMAGE: &[u8] =
     include_bytes!("../../theme-packs/strawberry-starlight/background.webp");
 const AZURE_NEON_FRONTIER_THEME: &str =
     include_str!("../../theme-packs/azure-neon-frontier/theme.json");
+const AZURE_NEON_FRONTIER_THEME_EN: &str =
+    include_str!("../../theme-packs/azure-neon-frontier/theme.en.json");
 const AZURE_NEON_FRONTIER_IMAGE: &[u8] =
     include_bytes!("../../theme-packs/azure-neon-frontier/background.webp");
 const MIKU_FUTURE_COLLAB_THEME: &str =
     include_str!("../../theme-packs/miku-future-collab/theme.json");
+const MIKU_FUTURE_COLLAB_THEME_EN: &str =
+    include_str!("../../theme-packs/miku-future-collab/theme.en.json");
 const MIKU_FUTURE_COLLAB_IMAGE: &[u8] =
     include_bytes!("../../theme-packs/miku-future-collab/background.webp");
 const ADVENTURE_ATLAS_THEME: &str = include_str!("../../theme-packs/adventure-atlas/theme.json");
+const ADVENTURE_ATLAS_THEME_EN: &str =
+    include_str!("../../theme-packs/adventure-atlas/theme.en.json");
 const ADVENTURE_ATLAS_IMAGE: &[u8] =
     include_bytes!("../../theme-packs/adventure-atlas/background.webp");
 const PORTAL_DIMENSION_LAB_THEME: &str =
     include_str!("../../theme-packs/portal-dimension-lab/theme.json");
+const PORTAL_DIMENSION_LAB_THEME_EN: &str =
+    include_str!("../../theme-packs/portal-dimension-lab/theme.en.json");
 const PORTAL_DIMENSION_LAB_IMAGE: &[u8] =
     include_bytes!("../../theme-packs/portal-dimension-lab/background.webp");
 
 struct BuiltInTheme {
     id: &'static str,
-    manifest: &'static str,
+    manifest_zh_cn: &'static str,
+    manifest_en: &'static str,
     image: &'static [u8],
+}
+
+impl BuiltInTheme {
+    fn manifest(&self) -> &'static str {
+        match crate::locale::current() {
+            crate::locale::ResolvedLanguage::ZhCn => self.manifest_zh_cn,
+            crate::locale::ResolvedLanguage::En => self.manifest_en,
+        }
+    }
 }
 
 pub fn package_directory(source: &Path, output: &Path) -> Result<ThemePackageOutcome, String> {
@@ -199,27 +219,32 @@ fn replace_output_file(temporary: &Path, output: &Path) -> Result<(), String> {
 const BUILT_IN_THEMES: &[BuiltInTheme] = &[
     BuiltInTheme {
         id: "strawberry-starlight",
-        manifest: STRAWBERRY_STARLIGHT_THEME,
+        manifest_zh_cn: STRAWBERRY_STARLIGHT_THEME,
+        manifest_en: STRAWBERRY_STARLIGHT_THEME_EN,
         image: STRAWBERRY_STARLIGHT_IMAGE,
     },
     BuiltInTheme {
         id: "azure-neon-frontier",
-        manifest: AZURE_NEON_FRONTIER_THEME,
+        manifest_zh_cn: AZURE_NEON_FRONTIER_THEME,
+        manifest_en: AZURE_NEON_FRONTIER_THEME_EN,
         image: AZURE_NEON_FRONTIER_IMAGE,
     },
     BuiltInTheme {
         id: "miku-future-collab",
-        manifest: MIKU_FUTURE_COLLAB_THEME,
+        manifest_zh_cn: MIKU_FUTURE_COLLAB_THEME,
+        manifest_en: MIKU_FUTURE_COLLAB_THEME_EN,
         image: MIKU_FUTURE_COLLAB_IMAGE,
     },
     BuiltInTheme {
         id: "adventure-atlas",
-        manifest: ADVENTURE_ATLAS_THEME,
+        manifest_zh_cn: ADVENTURE_ATLAS_THEME,
+        manifest_en: ADVENTURE_ATLAS_THEME_EN,
         image: ADVENTURE_ATLAS_IMAGE,
     },
     BuiltInTheme {
         id: "portal-dimension-lab",
-        manifest: PORTAL_DIMENSION_LAB_THEME,
+        manifest_zh_cn: PORTAL_DIMENSION_LAB_THEME,
+        manifest_en: PORTAL_DIMENSION_LAB_THEME_EN,
         image: PORTAL_DIMENSION_LAB_IMAGE,
     },
 ];
@@ -377,7 +402,7 @@ impl ThemeStore {
             .ok_or_else(|| format!("主题不存在：{id}"))
     }
 
-    fn is_built_in(&self, id: &str) -> bool {
+    pub(crate) fn is_built_in(&self, id: &str) -> bool {
         BUILT_IN_THEMES.iter().any(|theme| theme.id == id)
     }
 
@@ -386,6 +411,10 @@ impl ThemeStore {
             self.ensure_built_in(theme)?;
         }
         Ok(())
+    }
+
+    pub(crate) fn refresh_built_ins(&self) -> Result<(), String> {
+        self.ensure_built_ins()
     }
 
     fn remove_legacy_default(&self) -> Result<(), String> {
@@ -398,7 +427,8 @@ impl ThemeStore {
     }
 
     fn ensure_built_in(&self, built_in: &BuiltInTheme) -> Result<(), String> {
-        let manifest: ThemeManifest = serde_json::from_str(built_in.manifest)
+        let manifest_source = built_in.manifest();
+        let manifest: ThemeManifest = serde_json::from_str(manifest_source)
             .map_err(|error| format!("内置主题 {} 的清单格式错误：{error}", built_in.id))?;
         validate_manifest(&manifest)?;
         if manifest.id != built_in.id {
@@ -408,7 +438,7 @@ impl ThemeStore {
         let directory = self.paths.themes.join(built_in.id);
         let image_path = directory.join(&manifest.image);
         let manifest_path = directory.join("theme.json");
-        if std::fs::read(&manifest_path).is_ok_and(|bytes| bytes == built_in.manifest.as_bytes())
+        if std::fs::read(&manifest_path).is_ok_and(|bytes| bytes == manifest_source.as_bytes())
             && std::fs::read(&image_path).is_ok_and(|bytes| bytes == built_in.image)
             && directory.join("preview.jpg").is_file()
         {
@@ -418,7 +448,7 @@ impl ThemeStore {
         std::fs::create_dir_all(&directory)
             .map_err(|error| format!("无法创建内置主题 {}：{error}", built_in.id))?;
         atomic_write(&image_path, built_in.image)?;
-        atomic_write(&manifest_path, built_in.manifest.as_bytes())?;
+        atomic_write(&manifest_path, manifest_source.as_bytes())?;
         let image = image::load_from_memory(built_in.image)
             .map_err(|error| format!("内置主题 {} 的图片损坏：{error}", built_in.id))?;
         atomic_write(&directory.join("preview.jpg"), &encode_preview(&image)?)
@@ -962,6 +992,11 @@ mod tests {
         assert_eq!(store.default_id(), "strawberry-starlight");
 
         for built_in in BUILT_IN_THEMES {
+            let chinese: ThemeManifest = serde_json::from_str(built_in.manifest_zh_cn).unwrap();
+            let english: ThemeManifest = serde_json::from_str(built_in.manifest_en).unwrap();
+            assert_eq!(chinese.id, built_in.id);
+            assert_eq!(english.id, built_in.id);
+            assert_ne!(chinese.name, english.name);
             let summary = themes.iter().find(|theme| theme.id == built_in.id).unwrap();
             assert!(summary.built_in);
 

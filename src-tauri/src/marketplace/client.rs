@@ -190,6 +190,7 @@ impl MarketplaceClient {
         browser_url
             .query_pairs_mut()
             .append_pair("provider", "google")
+            .append_pair("lang", crate::locale::current().as_str())
             .append_pair("redirect_uri", &callback_url)
             .append_pair("state", &client_state)
             .append_pair("code_challenge", &challenge);
@@ -203,12 +204,14 @@ impl MarketplaceClient {
             .map_err(|_| "浏览器授权回跳失败".to_string())??;
         let pair: TokenPair = self
             .public_json(
-                self.http
-                    .post(format!("{}/api/v1/auth/desktop/token", self.api_base))
-                    .json(&serde_json::json!({
-                        "code": code,
-                        "code_verifier": verifier
-                    })),
+                localized_request(
+                    self.http
+                        .post(format!("{}/api/v1/auth/desktop/token", self.api_base)),
+                )
+                .json(&serde_json::json!({
+                    "code": code,
+                    "code_verifier": verifier
+                })),
             )
             .await?;
         self.accept_token_pair(pair).await
@@ -219,12 +222,13 @@ impl MarketplaceClient {
         self.clear_local_auth()?;
         *self.auth.lock().await = AuthMemory::default();
         if let Some(refresh) = refresh {
-            let _ = self
-                .http
-                .post(format!("{}/api/v1/auth/logout", self.api_base))
-                .json(&serde_json::json!({"refresh_token": refresh}))
-                .send()
-                .await;
+            let _ = localized_request(
+                self.http
+                    .post(format!("{}/api/v1/auth/logout", self.api_base)),
+            )
+            .json(&serde_json::json!({"refresh_token": refresh}))
+            .send()
+            .await;
         }
         Ok(self.auth_snapshot().await)
     }
@@ -769,10 +773,12 @@ impl MarketplaceClient {
         path: &str,
     ) -> Result<RequestBuilder, String> {
         let token = self.ensure_access().await?;
-        Ok(self
-            .http
-            .request(method, format!("{}{}", self.api_base, path))
-            .bearer_auth(token))
+        Ok(authorized_request_for(
+            self.http
+                .request(method, format!("{}{}", self.api_base, path)),
+            &token,
+            crate::locale::current(),
+        ))
     }
 
     async fn viewer_request(
@@ -781,9 +787,10 @@ impl MarketplaceClient {
         path: &str,
         theme_id: Option<&str>,
     ) -> Result<RequestBuilder, String> {
-        let mut request = self
-            .http
-            .request(method, format!("{}{}", self.api_base, path));
+        let mut request = localized_request(
+            self.http
+                .request(method, format!("{}{}", self.api_base, path)),
+        );
         let has_login = {
             let auth = self.auth.lock().await;
             auth.access_token.is_some() || self.refresh_token_path.is_file()
@@ -820,10 +827,11 @@ impl MarketplaceClient {
         let refresh = self
             .read_refresh_token()
             .ok_or_else(|| "请先使用 Google 登录".to_string())?;
-        let request = self
-            .http
-            .post(format!("{}/api/v1/auth/token/refresh", self.api_base))
-            .json(&serde_json::json!({"refresh_token": refresh}));
+        let request = localized_request(
+            self.http
+                .post(format!("{}/api/v1/auth/token/refresh", self.api_base)),
+        )
+        .json(&serde_json::json!({"refresh_token": refresh}));
         let response = request.send().await.map_err(network_error)?;
         let unauthorized = response.status() == StatusCode::UNAUTHORIZED;
         let pair: TokenPair = match parse_response(response).await {
@@ -921,6 +929,25 @@ impl MarketplaceClient {
         )
         .await
     }
+}
+
+fn localized_request(request: RequestBuilder) -> RequestBuilder {
+    localized_request_for(request, crate::locale::current())
+}
+
+fn localized_request_for(
+    request: RequestBuilder,
+    language: crate::locale::ResolvedLanguage,
+) -> RequestBuilder {
+    request.header(reqwest::header::ACCEPT_LANGUAGE, language.as_str())
+}
+
+fn authorized_request_for(
+    request: RequestBuilder,
+    token: &str,
+    language: crate::locale::ResolvedLanguage,
+) -> RequestBuilder {
+    localized_request_for(request, language).bearer_auth(token)
 }
 
 async fn parse_response<T: DeserializeOwned>(response: reqwest::Response) -> Result<T, String> {
@@ -1030,6 +1057,7 @@ async fn handle_callback(
     } else {
         Err("授权回跳缺少 code".into())
     };
+    let succeeded = result.is_ok();
     if let Ok(mut sender) = state.sender.lock() {
         if let Some(sender) = sender.take() {
             let _ = sender.send(result);
@@ -1040,10 +1068,18 @@ async fn handle_callback(
             let _ = shutdown.send(());
         }
     }
-    (
-        AxumStatusCode::OK,
-        Html("<!doctype html><meta charset=\"utf-8\"><title>Codex NN</title><body>Codex 暖暖登录已完成，可以回到应用。</body>"),
-    )
+    let page = if succeeded {
+        crate::locale::select(
+            "<!doctype html><html lang=\"zh-CN\"><meta charset=\"utf-8\"><title>Codex 暖暖</title><body data-result=\"success\">Codex 暖暖登录已完成，可以回到应用。</body></html>",
+            "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Codex NN</title><body data-result=\"success\">Codex NN sign-in is complete. You can return to the app.</body></html>",
+        )
+    } else {
+        crate::locale::select(
+            "<!doctype html><html lang=\"zh-CN\"><meta charset=\"utf-8\"><title>Codex 暖暖</title><body data-result=\"error\">登录没有完成，请返回 Codex 暖暖后重试。</body></html>",
+            "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Codex NN</title><body data-result=\"error\">Sign-in did not finish. Return to Codex NN and try again.</body></html>",
+        )
+    };
+    (AxumStatusCode::OK, Html(page))
 }
 
 fn random_token(length: usize) -> String {
@@ -1107,6 +1143,50 @@ mod tests {
         .await
         .unwrap();
         assert!(response.status().is_success());
+        assert!(response
+            .text()
+            .await
+            .unwrap()
+            .contains("data-result=\"error\""));
         assert!(receiver.await.unwrap().is_err());
+    }
+
+    #[test]
+    fn localized_requests_send_accept_language() {
+        let request = localized_request_for(
+            reqwest::Client::new().get("https://api.example.test/api/v1/themes"),
+            crate::locale::ResolvedLanguage::En,
+        )
+        .build()
+        .unwrap();
+        assert_eq!(
+            request
+                .headers()
+                .get(reqwest::header::ACCEPT_LANGUAGE)
+                .unwrap(),
+            "en"
+        );
+
+        let authorized = authorized_request_for(
+            reqwest::Client::new().get("https://api.example.test/api/v1/me"),
+            "access-token",
+            crate::locale::ResolvedLanguage::ZhCn,
+        )
+        .build()
+        .unwrap();
+        assert_eq!(
+            authorized
+                .headers()
+                .get(reqwest::header::ACCEPT_LANGUAGE)
+                .unwrap(),
+            "zh-CN"
+        );
+        assert_eq!(
+            authorized
+                .headers()
+                .get(reqwest::header::AUTHORIZATION)
+                .unwrap(),
+            "Bearer access-token"
+        );
     }
 }

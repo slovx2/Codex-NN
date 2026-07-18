@@ -24,15 +24,19 @@ use windows::{
 };
 
 use super::CodexInstallation;
+use crate::locale;
 
 const PACKAGE_FAMILY: &str = "OpenAI.Codex_2p2nqsd0c76g0";
 
 pub fn discover() -> Result<CodexInstallation, String> {
     let mut packages = package_full_names()?;
     packages.sort();
-    let full_name = packages
-        .pop()
-        .ok_or_else(|| "未安装官方 Microsoft Store Codex".to_string())?;
+    let full_name = packages.pop().ok_or_else(|| {
+        locale::localize(
+            "未安装官方 Microsoft Store Codex",
+            "The official Microsoft Store Codex app is not installed",
+        )
+    })?;
     let root = package_path(&full_name)?;
     let (executable, application_id) = manifest_executable(&root)?;
     Ok(CodexInstallation {
@@ -75,7 +79,10 @@ fn package_full_names() -> Result<Vec<String>, String> {
         )
     };
     if result.0 != 0 {
-        return Err(format!("无法查找 Codex Store 包：Win32 {}", result.0));
+        return Err(locale::localize(
+            &format!("无法查找 Codex Store 包：Win32 {}", result.0),
+            &format!("Unable to find the Codex Store package: Win32 {}", result.0),
+        ));
     }
     pointers.truncate(count as usize);
     pointers
@@ -89,7 +96,13 @@ fn package_path(full_name: &str) -> Result<PathBuf, String> {
     let mut length = 0_u32;
     let first = unsafe { GetPackagePathByFullName(PCWSTR(name.as_ptr()), &mut length, None) };
     if first != ERROR_INSUFFICIENT_BUFFER || length == 0 {
-        return Err(format!("无法读取 Codex Store 安装路径：Win32 {}", first.0));
+        return Err(locale::localize(
+            &format!("无法读取 Codex Store 安装路径：Win32 {}", first.0),
+            &format!(
+                "Unable to read the Codex Store install path: Win32 {}",
+                first.0
+            ),
+        ));
     }
     let mut buffer = vec![0_u16; length as usize];
     let result = unsafe {
@@ -100,7 +113,13 @@ fn package_path(full_name: &str) -> Result<PathBuf, String> {
         )
     };
     if result.0 != 0 {
-        return Err(format!("无法读取 Codex Store 安装路径：Win32 {}", result.0));
+        return Err(locale::localize(
+            &format!("无法读取 Codex Store 安装路径：Win32 {}", result.0),
+            &format!(
+                "Unable to read the Codex Store install path: Win32 {}",
+                result.0
+            ),
+        ));
     }
     let end = buffer
         .iter()
@@ -111,17 +130,33 @@ fn package_path(full_name: &str) -> Result<PathBuf, String> {
 
 fn manifest_executable(root: &Path) -> Result<(PathBuf, String), String> {
     let manifest_path = root.join("AppxManifest.xml");
-    let xml = std::fs::read_to_string(&manifest_path)
-        .map_err(|error| format!("无法读取 AppxManifest.xml：{error}"))?;
-    let document = roxmltree::Document::parse(&xml)
-        .map_err(|error| format!("AppxManifest.xml 格式错误：{error}"))?;
+    let xml = std::fs::read_to_string(&manifest_path).map_err(|error| {
+        locale::localize(
+            &format!("无法读取 AppxManifest.xml：{error}"),
+            &format!("Unable to read AppxManifest.xml: {error}"),
+        )
+    })?;
+    let document = roxmltree::Document::parse(&xml).map_err(|error| {
+        locale::localize(
+            &format!("AppxManifest.xml 格式错误：{error}"),
+            &format!("AppxManifest.xml has an invalid format: {error}"),
+        )
+    })?;
     let application = document
         .descendants()
         .find(|node| node.is_element() && node.tag_name().name() == "Application")
-        .ok_or_else(|| "AppxManifest.xml 缺少 Application".to_string())?;
-    let relative = application
-        .attribute("Executable")
-        .ok_or_else(|| "AppxManifest.xml 缺少 Application Executable".to_string())?;
+        .ok_or_else(|| {
+            locale::localize(
+                "AppxManifest.xml 缺少 Application",
+                "AppxManifest.xml is missing Application",
+            )
+        })?;
+    let relative = application.attribute("Executable").ok_or_else(|| {
+        locale::localize(
+            "AppxManifest.xml 缺少 Application Executable",
+            "AppxManifest.xml is missing Application Executable",
+        )
+    })?;
     let application_id = application
         .attribute("Id")
         .filter(|value| {
@@ -131,20 +166,31 @@ fn manifest_executable(root: &Path) -> Result<(PathBuf, String), String> {
                     .chars()
                     .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character))
         })
-        .ok_or_else(|| "AppxManifest.xml 缺少有效的 Application Id".to_string())?;
+        .ok_or_else(|| {
+            locale::localize(
+                "AppxManifest.xml 缺少有效的 Application Id",
+                "AppxManifest.xml is missing a valid Application Id",
+            )
+        })?;
     let relative = Path::new(relative);
     if relative.is_absolute()
         || relative
             .components()
             .any(|part| matches!(part, Component::ParentDir))
     {
-        return Err("Codex Store 清单包含不安全的可执行路径".into());
+        return Err(locale::localize(
+            "Codex Store 清单包含不安全的可执行路径",
+            "The Codex Store manifest contains an unsafe executable path",
+        ));
     }
     let executable = root.join(relative);
     if !executable.is_file() {
-        return Err(format!(
-            "Codex Store 主程序不存在：{}",
-            executable.display()
+        return Err(locale::localize(
+            &format!("Codex Store 主程序不存在：{}", executable.display()),
+            &format!(
+                "The Codex Store executable does not exist: {}",
+                executable.display()
+            ),
         ));
     }
     Ok((executable, application_id.to_string()))
@@ -158,13 +204,21 @@ pub fn launch(installation: &CodexInstallation, port: Option<u16>) -> Result<(),
     let arguments = wide(&arguments);
     let initialized = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
     if initialized.is_err() && initialized != RPC_E_CHANGED_MODE {
-        return Err(format!("无法初始化 Windows 应用启动器：{initialized:?}"));
+        return Err(locale::localize(
+            &format!("无法初始化 Windows 应用启动器：{initialized:?}"),
+            &format!("Unable to initialize the Windows app launcher: {initialized:?}"),
+        ));
     }
     let should_uninitialize = initialized.is_ok();
     let result = (|| {
         let manager: IApplicationActivationManager =
             unsafe { CoCreateInstance(&ApplicationActivationManager, None, CLSCTX_LOCAL_SERVER) }
-                .map_err(|error| format!("无法创建 Windows 应用启动器：{error}"))?;
+                .map_err(|error| {
+                locale::localize(
+                    &format!("无法创建 Windows 应用启动器：{error}"),
+                    &format!("Unable to create the Windows app launcher: {error}"),
+                )
+            })?;
         let process_id = unsafe {
             manager.ActivateApplication(
                 PCWSTR(app_user_model_id.as_ptr()),
@@ -172,9 +226,17 @@ pub fn launch(installation: &CodexInstallation, port: Option<u16>) -> Result<(),
                 AO_NONE,
             )
         }
-        .map_err(|error| format!("无法激活 Codex Store 应用：{error}"))?;
+        .map_err(|error| {
+            locale::localize(
+                &format!("无法激活 Codex Store 应用：{error}"),
+                &format!("Unable to activate the Codex Store app: {error}"),
+            )
+        })?;
         if process_id == 0 {
-            return Err("Windows 激活 Codex 后没有返回进程 ID".into());
+            return Err(locale::localize(
+                "Windows 激活 Codex 后没有返回进程 ID",
+                "Windows did not return a process ID after activating Codex",
+            ));
         }
         Ok(())
     })();
@@ -215,7 +277,10 @@ pub fn listener_pids(port: u16) -> Result<Vec<u32>, String> {
         )
     };
     if first != ERROR_INSUFFICIENT_BUFFER.0 || size == 0 {
-        return Err(format!("无法读取 TCP 监听表：Win32 {first}"));
+        return Err(locale::localize(
+            &format!("无法读取 TCP 监听表：Win32 {first}"),
+            &format!("Unable to read the TCP listener table: Win32 {first}"),
+        ));
     }
     let mut buffer = vec![0_u8; size as usize];
     let result = unsafe {
@@ -229,7 +294,10 @@ pub fn listener_pids(port: u16) -> Result<Vec<u32>, String> {
         )
     };
     if result != 0 {
-        return Err(format!("无法读取 TCP 监听表：Win32 {result}"));
+        return Err(locale::localize(
+            &format!("无法读取 TCP 监听表：Win32 {result}"),
+            &format!("Unable to read the TCP listener table: Win32 {result}"),
+        ));
     }
     let table = unsafe { &*(buffer.as_ptr().cast::<MIB_TCPTABLE_OWNER_PID>()) };
     let rows =

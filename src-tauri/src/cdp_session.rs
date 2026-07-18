@@ -3,6 +3,8 @@ use serde_json::{json, Value};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 
+use crate::locale;
+
 pub struct CdpSession {
     socket: WebSocketStream<MaybeTlsStream<TcpStream>>,
     next_id: u64,
@@ -16,8 +18,18 @@ impl CdpSession {
             connect_async(websocket_url),
         )
         .await
-        .map_err(|_| "连接 CDP WebSocket 超时".to_string())?
-        .map_err(|error| format!("连接 CDP WebSocket 失败：{error}"))?;
+        .map_err(|_| {
+            locale::localize(
+                "连接 CDP WebSocket 超时",
+                "The CDP WebSocket connection timed out",
+            )
+        })?
+        .map_err(|error| {
+            locale::localize(
+                &format!("连接 CDP WebSocket 失败：{error}"),
+                &format!("Unable to connect to the CDP WebSocket: {error}"),
+            )
+        })?;
         Ok(Self { socket, next_id: 1 })
     }
 
@@ -31,27 +43,52 @@ impl CdpSession {
                     .into(),
             ))
             .await
-            .map_err(|error| format!("发送 CDP 命令失败：{error}"))?;
+            .map_err(|error| {
+                locale::localize(
+                    &format!("发送 CDP 命令失败：{error}"),
+                    &format!("Unable to send the CDP command: {error}"),
+                )
+            })?;
 
         let response = tokio::time::timeout(std::time::Duration::from_secs(10), async {
             while let Some(message) = self.socket.next().await {
-                let message = message.map_err(|error| format!("读取 CDP 响应失败：{error}"))?;
+                let message = message.map_err(|error| {
+                    locale::localize(
+                        &format!("读取 CDP 响应失败：{error}"),
+                        &format!("Unable to read the CDP response: {error}"),
+                    )
+                })?;
                 let Message::Text(text) = message else {
                     continue;
                 };
-                let value: Value = serde_json::from_str(&text)
-                    .map_err(|error| format!("CDP 响应格式错误：{error}"))?;
+                let value: Value = serde_json::from_str(&text).map_err(|error| {
+                    locale::localize(
+                        &format!("CDP 响应格式错误：{error}"),
+                        &format!("The CDP response has an invalid format: {error}"),
+                    )
+                })?;
                 if value.get("id").and_then(Value::as_u64) == Some(id) {
                     return Ok(value);
                 }
             }
-            Err("CDP WebSocket 已关闭".to_string())
+            Err(locale::localize(
+                "CDP WebSocket 已关闭",
+                "The CDP WebSocket closed",
+            ))
         })
         .await
-        .map_err(|_| format!("CDP 命令超时：{method}"))??;
+        .map_err(|_| {
+            locale::localize(
+                &format!("CDP 命令超时：{method}"),
+                &format!("The CDP command timed out: {method}"),
+            )
+        })??;
 
         if let Some(error) = response.get("error") {
-            return Err(format!("CDP {method} 失败：{error}"));
+            return Err(locale::localize(
+                &format!("CDP {method} 失败：{error}"),
+                &format!("CDP {method} failed: {error}"),
+            ));
         }
         Ok(response.get("result").cloned().unwrap_or(Value::Null))
     }
@@ -69,7 +106,10 @@ impl CdpSession {
             )
             .await?;
         if let Some(exception) = result.get("exceptionDetails") {
-            return Err(format!("注入脚本执行失败：{exception}"));
+            return Err(locale::localize(
+                &format!("注入脚本执行失败：{exception}"),
+                &format!("The injection script failed: {exception}"),
+            ));
         }
         Ok(result
             .pointer("/result/value")
@@ -79,13 +119,21 @@ impl CdpSession {
 }
 
 fn validate_websocket_url(value: &str, port: u16) -> Result<(), String> {
-    let url = url::Url::parse(value).map_err(|error| format!("CDP WebSocket URL 无效：{error}"))?;
+    let url = url::Url::parse(value).map_err(|error| {
+        locale::localize(
+            &format!("CDP WebSocket URL 无效：{error}"),
+            &format!("The CDP WebSocket URL is invalid: {error}"),
+        )
+    })?;
     let host = url.host_str().unwrap_or_default();
     if url.scheme() != "ws"
         || !matches!(host, "127.0.0.1" | "localhost" | "::1")
         || url.port() != Some(port)
     {
-        return Err(format!("拒绝非回环 CDP WebSocket：{url}"));
+        return Err(locale::localize(
+            &format!("拒绝非回环 CDP WebSocket：{url}"),
+            &format!("Rejected a non-loopback CDP WebSocket: {url}"),
+        ));
     }
     Ok(())
 }

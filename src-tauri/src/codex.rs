@@ -6,7 +6,7 @@ use std::process::Command;
 use serde::Serialize;
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
-use crate::models::CodexStatus;
+use crate::{locale, models::CodexStatus};
 
 #[cfg(target_os = "macos")]
 #[path = "codex_macos.rs"]
@@ -30,7 +30,10 @@ pub fn discover() -> Result<CodexInstallation, String> {
         platform::discover()
     }
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    Err("Codex NN 目前只支持 macOS 和 Windows".into())
+    Err(locale::localize(
+        "Codex NN 目前只支持 macOS 和 Windows",
+        "Codex NN currently supports only macOS and Windows",
+    ))
 }
 
 pub fn status() -> CodexStatus {
@@ -86,13 +89,19 @@ pub async fn stop(installation: &CodexInstallation, allow_force: bool) -> Result
         return Ok(());
     }
     if !allow_force {
-        return Err("Codex 未能在 15 秒内退出，需要明确允许强制重启".into());
+        return Err(locale::localize(
+            "Codex 未能在 15 秒内退出，需要明确允许强制重启",
+            "Codex did not quit within 15 seconds. Force restart must be explicitly allowed.",
+        ));
     }
     platform::force_stop(&captured)?;
     if wait_stopped(installation, Duration::from_secs(5)).await {
         Ok(())
     } else {
-        Err("Codex 未能安全退出，请手动关闭后重试".into())
+        Err(locale::localize(
+            "Codex 未能安全退出，请手动关闭后重试",
+            "Codex could not quit safely. Close it manually and try again.",
+        ))
     }
 }
 
@@ -123,7 +132,10 @@ pub fn select_available_port(preferred: u16) -> Result<u16, String> {
             return Ok(port);
         }
     }
-    Err(format!("端口 {preferred} 到 {end} 都已被占用"))
+    Err(locale::localize(
+        &format!("端口 {preferred} 到 {end} 都已被占用"),
+        &format!("Ports {preferred} through {end} are all in use"),
+    ))
 }
 
 pub fn default_port() -> u16 {
@@ -176,10 +188,12 @@ async fn wait_stopped(installation: &CodexInstallation, timeout: Duration) -> bo
 
 #[cfg(target_os = "macos")]
 pub(crate) fn spawn(mut command: Command) -> Result<(), String> {
-    command
-        .spawn()
-        .map(|_| ())
-        .map_err(|error| format!("无法启动 Codex：{error}"))
+    command.spawn().map(|_| ()).map_err(|error| {
+        locale::localize(
+            &format!("无法启动 Codex：{error}"),
+            &format!("Unable to launch Codex: {error}"),
+        )
+    })
 }
 
 #[cfg(test)]

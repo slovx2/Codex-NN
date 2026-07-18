@@ -33,8 +33,14 @@ struct PluginManagedState {
     marker: String,
     marketplace_source: String,
     plugin_version: String,
+    #[serde(default = "default_managed_language")]
+    language: String,
     features_plugins_before: Option<bool>,
     updated_at: String,
+}
+
+fn default_managed_language() -> String {
+    "zh-CN".into()
 }
 
 #[derive(Debug, Default)]
@@ -117,6 +123,24 @@ pub fn update_if_version_changed(app: &AppHandle) -> Result<(), String> {
     update_paths_if_version_changed(&PluginPaths::resolve(app)?)
 }
 
+pub fn refresh_managed_language(app: &AppHandle) -> Result<(), String> {
+    let paths = PluginPaths::resolve(app)?;
+    let Some(mut state) = read_managed_state(&paths.managed_state_path)? else {
+        return Ok(());
+    };
+    if state.marker != PLUGIN_MARKER {
+        return Ok(());
+    }
+    let config = read_config(&paths.config_path)?;
+    if !config_matches_state(&read_plugin_config(&config), &state) {
+        return Ok(());
+    }
+    write_plugin_files(&paths)?;
+    state.language = crate::locale::current().as_str().into();
+    state.updated_at = Utc::now().to_rfc3339();
+    write_json(&paths.managed_state_path, &state)
+}
+
 fn update_paths_if_version_changed(paths: &PluginPaths) -> Result<(), String> {
     let Some(mut state) = read_managed_state(&paths.managed_state_path)? else {
         return Ok(());
@@ -130,6 +154,7 @@ fn update_paths_if_version_changed(paths: &PluginPaths) -> Result<(), String> {
         return Ok(());
     }
     let bundle_current = state.plugin_version == PLUGIN_VERSION
+        && state.language == crate::locale::current().as_str()
         && paths.marketplace_manifest_path.is_file()
         && plugin_bundle_complete(&paths.plugin_root, paths)
         && plugin_bundle_complete(&paths.plugin_cache_root, paths);
@@ -138,6 +163,7 @@ fn update_paths_if_version_changed(paths: &PluginPaths) -> Result<(), String> {
     }
     write_plugin_files(paths)?;
     state.plugin_version = PLUGIN_VERSION.to_string();
+    state.language = crate::locale::current().as_str().into();
     state.updated_at = Utc::now().to_rfc3339();
     write_json(&paths.managed_state_path, &state)
 }
@@ -222,6 +248,7 @@ fn install_paths(paths: &PluginPaths) -> Result<ThemeDesignerPluginStatus, Strin
         marker: PLUGIN_MARKER.into(),
         marketplace_source: source,
         plugin_version: PLUGIN_VERSION.into(),
+        language: crate::locale::current().as_str().into(),
         features_plugins_before,
         updated_at: Utc::now().to_rfc3339(),
     };
@@ -378,13 +405,18 @@ fn write_plugin_files(paths: &PluginPaths) -> Result<(), String> {
 
 fn write_plugin_bundle(root: &Path, paths: &PluginPaths) -> Result<(), String> {
     for (relative, content) in THEME_DESIGNER_PLUGIN_ASSETS {
-        if matches!(*relative, "marketplace.json" | ".mcp.json") {
+        if matches!(*relative, "marketplace.json" | ".mcp.json")
+            || relative.starts_with(".localized/")
+        {
             continue;
         }
         if *relative == ".mcp.json.template" {
             atomic_write(&root.join(".mcp.json"), plugin_mcp_json(paths)?.as_bytes())?;
         } else {
-            atomic_write(&root.join(relative), content)?;
+            atomic_write(
+                &root.join(relative),
+                localized_plugin_asset(relative).unwrap_or(content),
+            )?;
         }
     }
     Ok(())
@@ -393,16 +425,38 @@ fn write_plugin_bundle(root: &Path, paths: &PluginPaths) -> Result<(), String> {
 fn plugin_bundle_complete(root: &Path, paths: &PluginPaths) -> bool {
     THEME_DESIGNER_PLUGIN_ASSETS
         .iter()
-        .filter(|(relative, _)| !matches!(*relative, "marketplace.json" | ".mcp.json"))
-        .all(|(relative, _)| {
+        .filter(|(relative, _)| {
+            !matches!(*relative, "marketplace.json" | ".mcp.json")
+                && !relative.starts_with(".localized/")
+        })
+        .all(|(relative, content)| {
             if *relative == ".mcp.json.template" {
                 return plugin_mcp_json(paths).is_ok_and(|expected| {
                     fs::read(root.join(".mcp.json"))
                         .is_ok_and(|actual| actual == expected.as_bytes())
                 });
             }
-            root.join(relative).is_file()
+            let expected = localized_plugin_asset(relative).unwrap_or(content);
+            fs::read(root.join(relative)).is_ok_and(|actual| actual == *expected)
         })
+}
+
+fn localized_plugin_asset(path: &str) -> Option<&'static [u8]> {
+    localized_plugin_asset_for(path, crate::locale::current())
+}
+
+fn localized_plugin_asset_for(
+    path: &str,
+    language: crate::locale::ResolvedLanguage,
+) -> Option<&'static [u8]> {
+    if language != crate::locale::ResolvedLanguage::En {
+        return None;
+    }
+    let localized = format!(".localized/en/{path}");
+    THEME_DESIGNER_PLUGIN_ASSETS
+        .iter()
+        .find(|(relative, _)| *relative == localized)
+        .map(|(_, content)| *content)
 }
 
 fn plugin_mcp_json(paths: &PluginPaths) -> Result<String, String> {
@@ -412,11 +466,14 @@ fn plugin_mcp_json(paths: &PluginPaths) -> Result<String, String> {
         serde_json::to_string(&command.display().to_string()).map_err(|error| error.to_string())?;
     let app_data_json = serde_json::to_string(&paths.app_data_root.display().to_string())
         .map_err(|error| error.to_string())?;
+    let language_json = serde_json::to_string(crate::locale::current().as_str())
+        .map_err(|error| error.to_string())?;
     let template = std::str::from_utf8(plugin_asset(".mcp.json.template")?)
         .map_err(|error| format!("MCP 配置模板不是 UTF-8：{error}"))?;
     Ok(template
         .replace("{{CODEX_NN_COMMAND_JSON}}", &command_json)
-        .replace("{{CODEX_NN_APP_DATA_DIR_JSON}}", &app_data_json))
+        .replace("{{CODEX_NN_APP_DATA_DIR_JSON}}", &app_data_json)
+        .replace("{{CODEX_NN_LANGUAGE_JSON}}", &language_json))
 }
 
 fn plugin_asset(path: &str) -> Result<&'static [u8], String> {
@@ -507,6 +564,10 @@ mod tests {
             mcp["mcpServers"]["codex-nn"]["env"]["CODEX_NN_APP_DATA_DIR"],
             paths.app_data_root.display().to_string()
         );
+        assert_eq!(
+            mcp["mcpServers"]["codex-nn"]["env"]["CODEX_NN_LANGUAGE"],
+            "zh-CN"
+        );
         let manifest: serde_json::Value = serde_json::from_slice(
             &fs::read(paths.plugin_cache_root.join(".codex-plugin/plugin.json")).unwrap(),
         )
@@ -524,6 +585,18 @@ mod tests {
         assert!(!config.contains("plugins = true"));
         assert!(!paths.marketplace_root.exists());
         assert!(!paths.plugin_cache_base_root.exists());
+    }
+
+    #[test]
+    fn embeds_english_plugin_instructions() {
+        let skill = localized_plugin_asset_for(
+            "skills/design-codex-nn-theme/SKILL.md",
+            crate::locale::ResolvedLanguage::En,
+        )
+        .unwrap();
+        let skill = std::str::from_utf8(skill).unwrap();
+        assert!(skill.contains("# Design a Codex NN Theme"));
+        assert!(!skill.contains("# 设计 Codex NN 主题"));
     }
 
     #[test]

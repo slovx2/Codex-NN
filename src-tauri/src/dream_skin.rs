@@ -9,7 +9,10 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use zip::{result::ZipError, write::SimpleFileOptions, CompressionMethod, ZipArchive, ZipWriter};
 
-use crate::models::{ThemeArt, ThemeColors, ThemeManifest};
+use crate::{
+    locale,
+    models::{ThemeArt, ThemeColors, ThemeManifest},
+};
 
 const MAX_PACKAGE_BYTES: u64 = 20 * 1024 * 1024;
 const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
@@ -242,8 +245,16 @@ fn convert_manifest(raw: DreamSkinManifest) -> ThemeManifest {
         layout_preset: "dreamSkin".into(),
         brand_subtitle: text(&raw.brand_subtitle, "CODEX DREAM SKIN", 80),
         tagline: text(&raw.tagline, "Make something wonderful.", 160),
-        project_prefix: text(&raw.project_prefix, "选择项目 · ", 80),
-        project_label: text(&raw.project_label, "◉  选择项目", 80),
+        project_prefix: text(
+            &raw.project_prefix,
+            locale::select("选择项目 · ", "Choose project · "),
+            80,
+        ),
+        project_label: text(
+            &raw.project_label,
+            locale::select("◉  选择项目", "◉  Choose a project"),
+            80,
+        ),
         status_text: text(&raw.status_text, "DREAM SKIN ONLINE", 80),
         quote: text(&raw.quote, "MAKE SOMETHING WONDERFUL", 80),
         image: raw.image,

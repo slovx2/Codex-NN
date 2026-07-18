@@ -262,7 +262,18 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 22%, 
 .theme-card-top em { color: var(--muted); background: rgba(101, 73, 80, .07); }
 .theme-card-top i { color: #26734f; background: #e5f8ee; }
 .theme-card-body > strong { margin-top: 5px; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.theme-card-body > small { margin-top: 3px; overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.theme-card-body > small {
+  display: -webkit-box;
+  min-height: 22px;
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
 .theme-accent { display: flex; align-items: center; gap: 5px; margin-top: auto; color: var(--muted); font-size: 8px; }
 .theme-accent i { width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(128, 88, 97, .08); }
 .theme-delete { position: absolute; z-index: 2; top: 12px; right: 12px; display: grid; width: 25px; height: 25px; place-items: center; border: 1px solid rgba(255, 255, 255, .5); border-radius: 50%; color: #8f3c50; background: rgba(255, 255, 255, .88); box-shadow: 0 4px 12px rgba(52, 26, 33, .15); cursor: pointer; font-size: 15px; }
@@ -462,8 +473,14 @@ button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 22%, 
 .diagnostic-action b { align-self: end; font-size: 10px; }
 .diagnostic-action small { align-self: start; color: var(--muted); font-size: 8px; }
 .diagnostic-results { min-height: 0; flex: 1; overflow: auto; margin-top: 13px; border: 1px solid var(--line); border-radius: 17px; padding: 8px 16px; background: var(--surface); scrollbar-color: color-mix(in srgb, var(--accent) 30%, transparent) transparent; }
-.settings-actions { display: flex; align-items: flex-start; }
-.settings-actions .button { width: auto; min-width: 116px; }
+.settings-list { display: flex; max-width: 720px; flex-direction: column; border-top: 1px solid var(--line); }
+.settings-row { display: flex; min-height: 68px; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); padding: 14px 2px; }
+.settings-row > span { display: flex; min-width: 0; flex-direction: column; gap: 5px; }
+.settings-row strong { color: var(--ink); font-size: 11px; }
+.settings-row small { color: var(--muted); font-size: 9px; line-height: 1.45; }
+.settings-row .button { width: auto; min-width: 116px; }
+.settings-select { width: min(210px, 42%); min-height: 38px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 8px; padding: 0 34px 0 11px; outline: none; color: var(--ink); background: var(--surface); font: inherit; font-size: 10px; }
+.settings-select:focus { border-color: color-mix(in srgb, var(--accent) 55%, transparent); box-shadow: 0 0 0 3px var(--rose-soft); }
 .empty-state { display: grid; place-items: center; color: var(--muted); font-size: 11px; }
 .check-row { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .check-row:last-child { border-bottom: 0; }

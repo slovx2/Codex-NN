@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex NN Theme Designer"
+  short_description: "Create installable Codex NN schema v1 theme packages"
+  default_prompt: "Use $design-codex-nn-theme to design a Codex NN theme from my description."

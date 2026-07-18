@@ -9,6 +9,7 @@ use reqwest::Method;
 use serde_json::{json, Value};
 
 use crate::agent_api::{AgentApiStateFile, AGENT_API_STATE_RELATIVE_PATH};
+use crate::locale;
 
 const SERVER_NAME: &str = "codex-nn";
 const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -65,7 +66,7 @@ async fn handle_mcp_line(line: &str) -> Option<Value> {
     let id = message.get("id").cloned()?;
     match handle_mcp_request(&message).await {
         Ok(result) => Some(json!({ "jsonrpc": "2.0", "id": id, "result": result })),
-        Err(error) => Some(mcp_error(id, -32000, error)),
+        Err(error) => Some(mcp_error(id, -32000, locale::translate_error(error))),
     }
 }
 
@@ -95,7 +96,10 @@ async fn handle_mcp_request(message: &Value) -> Result<Value, String> {
                 .unwrap_or_else(|| json!({}));
             match call_tool(name, arguments).await {
                 Ok(payload) => Ok(tool_result(payload, false)),
-                Err(error) => Ok(tool_result(json!({ "error": error }), true)),
+                Err(error) => Ok(tool_result(
+                    json!({ "error": locale::translate_error(error) }),
+                    true,
+                )),
             }
         }
         "ping" => Ok(json!({})),
@@ -298,7 +302,10 @@ fn api_error_message(payload: &Value) -> String {
         .and_then(Value::as_str)
         .filter(|value| !value.is_empty())
     {
-        Some(recovery) => format!("{message}\n处理方法：{recovery}"),
+        Some(recovery) => format!(
+            "{message}\n{}: {recovery}",
+            locale::select("处理方法", "How to resolve")
+        ),
         None => message.to_string(),
     }
 }
@@ -325,55 +332,55 @@ fn tool_definitions() -> Value {
     json!([
         {
             "name": "codex_nn_list_themes",
-            "description": "列出 Codex NN 主题、当前主题和会话状态。",
+            "description": locale::select("列出 Codex NN 主题、当前主题和会话状态。", "List Codex NN themes, the current theme, and session state."),
             "inputSchema": empty_schema(),
             "annotations": { "readOnlyHint": true, "destructiveHint": false }
         },
         {
             "name": "codex_nn_package_theme",
-            "description": "校验包含 theme.json 和一张图片的目录，并生成 Codex NN schema v1 主题 ZIP。",
+            "description": locale::select("校验包含 theme.json 和一张图片的目录，并生成 Codex NN schema v1 主题 ZIP。", "Validate a directory containing theme.json and one image, then create a Codex NN schema v1 theme ZIP."),
             "inputSchema": package_directory_schema(),
             "annotations": { "readOnlyHint": false, "destructiveHint": true }
         },
         {
             "name": "codex_nn_install_theme",
-            "description": "安装新的 Codex NN schema v1 主题 ZIP；同 ID 已存在时返回更新确认信息。",
+            "description": locale::select("安装新的 Codex NN schema v1 主题 ZIP；同 ID 已存在时返回更新确认信息。", "Install a new Codex NN schema v1 theme ZIP and return update confirmation details if the ID already exists."),
             "inputSchema": package_schema(),
             "annotations": { "readOnlyHint": false, "destructiveHint": false }
         },
         {
             "name": "codex_nn_update_theme",
-            "description": "用 schema v1 主题 ZIP 更新同 ID 主题，并在当前主题活动时热更新。",
+            "description": locale::select("用 schema v1 主题 ZIP 更新同 ID 主题，并在当前主题活动时热更新。", "Update a theme with a schema v1 ZIP of the same ID and apply it live when active."),
             "inputSchema": package_schema(),
             "annotations": { "readOnlyHint": false, "destructiveHint": true }
         },
         {
             "name": "codex_nn_activate_theme",
-            "description": "切换当前主题；活动会话会立即热切换。",
+            "description": locale::select("切换当前主题；活动会话会立即热切换。", "Switch the current theme and hot-swap it in an active session."),
             "inputSchema": id_schema(),
             "annotations": { "readOnlyHint": false, "destructiveHint": false }
         },
         {
             "name": "codex_nn_delete_theme",
-            "description": "删除一个已安装的自定义主题；内置主题受保护。",
+            "description": locale::select("删除一个已安装的自定义主题；内置主题受保护。", "Delete an installed custom theme. Built-in themes are protected."),
             "inputSchema": id_schema(),
             "annotations": { "readOnlyHint": false, "destructiveHint": true }
         },
         {
             "name": "codex_nn_apply_theme",
-            "description": "向当前由 Codex NN 管理的 Codex CDP 会话重新应用主题。",
+            "description": locale::select("向当前由 Codex NN 管理的 Codex CDP 会话重新应用主题。", "Reapply the theme to the Codex CDP session managed by Codex NN."),
             "inputSchema": empty_schema(),
             "annotations": { "readOnlyHint": false, "destructiveHint": false }
         },
         {
             "name": "codex_nn_launch_codex",
-            "description": "从 Codex NN 启动或重启 Codex，并建立受管理的 CDP 主题会话。",
+            "description": locale::select("从 Codex NN 启动或重启 Codex，并建立受管理的 CDP 主题会话。", "Launch or restart Codex from Codex NN and establish a managed CDP theme session."),
             "inputSchema": empty_schema(),
             "annotations": { "readOnlyHint": false, "destructiveHint": true }
         },
         {
             "name": "codex_nn_diagnose",
-            "description": "返回 App、Codex、CDP、当前主题、主题列表、恢复建议和日志路径。",
+            "description": locale::select("返回 App、Codex、CDP、当前主题、主题列表、恢复建议和日志路径。", "Return app, Codex, CDP, current theme, theme list, recovery recommendations, and log paths."),
             "inputSchema": empty_schema(),
             "annotations": { "readOnlyHint": true, "destructiveHint": false }
         }
@@ -392,7 +399,7 @@ fn package_schema() -> Value {
         "properties": {
             "package_path": {
                 "type": "string",
-                "description": "Codex NN schema v1 主题 ZIP 的绝对路径。"
+                "description": locale::select("Codex NN schema v1 主题 ZIP 的绝对路径。", "Absolute path to a Codex NN schema v1 theme ZIP.")
             }
         }
     })
@@ -406,11 +413,11 @@ fn package_directory_schema() -> Value {
         "properties": {
             "source_path": {
                 "type": "string",
-                "description": "只含 theme.json 和一张主题图片的绝对目录路径。"
+                "description": locale::select("只含 theme.json 和一张主题图片的绝对目录路径。", "Absolute path to a directory containing only theme.json and one theme image.")
             },
             "output_path": {
                 "type": "string",
-                "description": "输出 Codex NN schema v1 ZIP 的绝对路径。"
+                "description": locale::select("输出 Codex NN schema v1 ZIP 的绝对路径。", "Absolute output path for the Codex NN schema v1 ZIP.")
             }
         }
     })
@@ -422,7 +429,7 @@ fn id_schema() -> Value {
         "additionalProperties": false,
         "required": ["id"],
         "properties": {
-            "id": { "type": "string", "description": "主题 ID。" }
+            "id": { "type": "string", "description": locale::select("主题 ID。", "Theme ID.") }
         }
     })
 }

@@ -6,6 +6,7 @@ use std::{
 use plist::Value;
 
 use super::{spawn, CodexInstallation};
+use crate::locale;
 
 const BUNDLE_ID: &str = "com.openai.codex";
 const EXPECTED_TEAM_ID: &str = "2DC432GLL2";
@@ -41,24 +42,45 @@ pub fn discover() -> Result<CodexInstallation, String> {
             Err(error) => last_error = Some(error),
         }
     }
-    Err(last_error.unwrap_or_else(|| "未找到官方 Codex Desktop（com.openai.codex）".into()))
+    Err(last_error.unwrap_or_else(|| {
+        locale::localize(
+            "未找到官方 Codex Desktop（com.openai.codex）",
+            "Official Codex Desktop was not found (com.openai.codex)",
+        )
+    }))
 }
 
 fn inspect(bundle: &Path) -> Result<CodexInstallation, String> {
-    let info = Value::from_file(bundle.join("Contents/Info.plist"))
-        .map_err(|error| format!("无法读取 Codex Info.plist：{error}"))?;
-    let dictionary = info
-        .as_dictionary()
-        .ok_or_else(|| "Codex Info.plist 格式错误".to_string())?;
+    let info = Value::from_file(bundle.join("Contents/Info.plist")).map_err(|error| {
+        locale::localize(
+            &format!("无法读取 Codex Info.plist：{error}"),
+            &format!("Unable to read Codex Info.plist: {error}"),
+        )
+    })?;
+    let dictionary = info.as_dictionary().ok_or_else(|| {
+        locale::localize(
+            "Codex Info.plist 格式错误",
+            "Codex Info.plist has an invalid format",
+        )
+    })?;
     let identifier = string_value(dictionary, "CFBundleIdentifier")?;
     if identifier != BUNDLE_ID {
-        return Err(format!("拒绝非官方 Bundle ID：{identifier}"));
+        return Err(locale::localize(
+            &format!("拒绝非官方 Bundle ID：{identifier}"),
+            &format!("Rejected unofficial bundle ID: {identifier}"),
+        ));
     }
     let executable_name = string_value(dictionary, "CFBundleExecutable")?;
     let version = string_value(dictionary, "CFBundleShortVersionString")?;
     let executable = bundle.join("Contents/MacOS").join(executable_name);
     if !executable.is_file() {
-        return Err(format!("Codex 主程序不存在：{}", executable.display()));
+        return Err(locale::localize(
+            &format!("Codex 主程序不存在：{}", executable.display()),
+            &format!(
+                "The Codex executable does not exist: {}",
+                executable.display()
+            ),
+        ));
     }
     verify_signature(bundle)?;
     Ok(CodexInstallation {
@@ -74,7 +96,12 @@ fn string_value(dictionary: &plist::Dictionary, key: &str) -> Result<String, Str
         .get(key)
         .and_then(Value::as_string)
         .map(str::to_owned)
-        .ok_or_else(|| format!("Codex Info.plist 缺少 {key}"))
+        .ok_or_else(|| {
+            locale::localize(
+                &format!("Codex Info.plist 缺少 {key}"),
+                &format!("Codex Info.plist is missing {key}"),
+            )
+        })
 }
 
 fn verify_signature(bundle: &Path) -> Result<(), String> {
@@ -82,24 +109,42 @@ fn verify_signature(bundle: &Path) -> Result<(), String> {
         .args(["--verify", "--deep", "--strict"])
         .arg(bundle)
         .status()
-        .map_err(|error| format!("无法校验 Codex 签名：{error}"))?;
+        .map_err(|error| {
+            locale::localize(
+                &format!("无法校验 Codex 签名：{error}"),
+                &format!("Unable to verify the Codex signature: {error}"),
+            )
+        })?;
     if !status.success() {
-        return Err("Codex 代码签名无效，请重新安装官方应用".into());
+        return Err(locale::localize(
+            "Codex 代码签名无效，请重新安装官方应用",
+            "The Codex code signature is invalid. Reinstall the official app.",
+        ));
     }
     let output = Command::new("/usr/bin/codesign")
         .args(["-dv", "--verbose=4"])
         .arg(bundle)
         .output()
-        .map_err(|error| format!("无法读取 Codex 签名：{error}"))?;
+        .map_err(|error| {
+            locale::localize(
+                &format!("无法读取 Codex 签名：{error}"),
+                &format!("Unable to read the Codex signature: {error}"),
+            )
+        })?;
     let detail = String::from_utf8_lossy(&output.stderr);
     let team = detail
         .lines()
         .find_map(|line| line.strip_prefix("TeamIdentifier="))
         .unwrap_or_default();
     if team != EXPECTED_TEAM_ID {
-        return Err(format!(
-            "Codex 签名团队不匹配：{}",
-            if team.is_empty() { "缺失" } else { team }
+        let value = if team.is_empty() {
+            locale::select("缺失", "missing")
+        } else {
+            team
+        };
+        return Err(locale::localize(
+            &format!("Codex 签名团队不匹配：{value}"),
+            &format!("The Codex signing team does not match: {value}"),
         ));
     }
     Ok(())
@@ -122,11 +167,19 @@ pub fn request_quit(_captured: &[u32]) -> Result<(), String> {
     let status = Command::new("/usr/bin/osascript")
         .args(["-e", "tell application id \"com.openai.codex\" to quit"])
         .status()
-        .map_err(|error| format!("无法请求 Codex 退出：{error}"))?;
+        .map_err(|error| {
+            locale::localize(
+                &format!("无法请求 Codex 退出：{error}"),
+                &format!("Unable to request Codex to quit: {error}"),
+            )
+        })?;
     if status.success() {
         Ok(())
     } else {
-        Err("Codex 拒绝退出请求".into())
+        Err(locale::localize(
+            "Codex 拒绝退出请求",
+            "Codex rejected the quit request",
+        ))
     }
 }
 
@@ -148,7 +201,12 @@ pub fn listener_pids(port: u16) -> Result<Vec<u32>, String> {
     let output = Command::new("/usr/sbin/lsof")
         .args(["-nP", &format!("-iTCP:{port}"), "-sTCP:LISTEN", "-t"])
         .output()
-        .map_err(|error| format!("无法检查 CDP 端口：{error}"))?;
+        .map_err(|error| {
+            locale::localize(
+                &format!("无法检查 CDP 端口：{error}"),
+                &format!("Unable to inspect the CDP port: {error}"),
+            )
+        })?;
     Ok(String::from_utf8_lossy(&output.stdout)
         .lines()
         .filter_map(|line| line.trim().parse().ok())

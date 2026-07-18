@@ -7,6 +7,7 @@ use tokio::{
     task::JoinHandle,
 };
 
+use crate::locale;
 use crate::{
     cdp::{self, ThemePayload},
     codex,
@@ -36,8 +37,7 @@ pub struct ThemeRuntime {
 }
 
 impl ThemeRuntime {
-    pub fn new(app: AppHandle) -> Result<Arc<Self>, String> {
-        let paths = AppPaths::resolve(&app)?;
+    pub fn new_with_paths(app: AppHandle, paths: AppPaths) -> Result<Arc<Self>, String> {
         Self::from_paths(Some(app), paths)
     }
 
@@ -109,6 +109,24 @@ impl ThemeRuntime {
         self.themes.list(active.as_deref())
     }
 
+    pub async fn refresh_language(&self) -> Result<(), String> {
+        let _operation = self.operation.lock().await;
+        self.themes.refresh_built_ins()?;
+        *self.last_error.write().await = None;
+        let state = self.state.read().await.clone();
+        if state.session == SessionState::Active {
+            if let (Some(id), Some(port)) = (state.active_theme_id.as_deref(), state.port) {
+                if self.themes.is_built_in(id) {
+                    let payload = self.payload_for(id)?;
+                    cdp::wait_and_apply(port, &payload, Duration::from_secs(10)).await?;
+                    self.start_watcher(port, payload).await;
+                }
+            }
+        }
+        self.emit_snapshot().await?;
+        Ok(())
+    }
+
     pub(crate) fn load_theme_for_marketplace(
         &self,
         id: &str,
@@ -141,7 +159,12 @@ impl ThemeRuntime {
         let mut outcome =
             tokio::task::spawn_blocking(move || store.install(package, request.allow_update))
                 .await
-                .map_err(|error| format!("主题安装任务异常结束：{error}"))??;
+                .map_err(|error| {
+                    locale::localize(
+                        &format!("主题安装任务异常结束：{error}"),
+                        &format!("The theme installation task ended unexpectedly: {error}"),
+                    )
+                })??;
         if !outcome.installed {
             return Ok(outcome);
         }
@@ -149,14 +172,17 @@ impl ThemeRuntime {
             self.state.read().await.active_theme_id.as_deref() == Some(&outcome.theme.id);
         outcome.theme = self.themes.summary(&outcome.theme.id, is_active)?;
         if is_active && self.state.read().await.session == SessionState::Active {
-            let port = self
-                .state
-                .read()
-                .await
-                .port
-                .ok_or_else(|| "当前主题会话缺少端口".to_string())?;
+            let port = self.state.read().await.port.ok_or_else(|| {
+                locale::localize(
+                    "当前主题会话缺少端口",
+                    "The current theme session has no port",
+                )
+            })?;
             let payload = self.payload_for(&outcome.theme.id)?;
-            self.progress("theme", "正在热更新当前主题");
+            self.progress(
+                "theme",
+                locale::select("正在热更新当前主题", "Updating the current theme live"),
+            );
             cdp::wait_and_apply(port, &payload, Duration::from_secs(10)).await?;
             self.start_watcher(port, payload).await;
         }
@@ -172,7 +198,12 @@ impl ThemeRuntime {
         let output = PathBuf::from(request.output_path);
         tokio::task::spawn_blocking(move || theme::package_directory(&source, &output))
             .await
-            .map_err(|error| format!("主题打包任务异常结束：{error}"))?
+            .map_err(|error| {
+                locale::localize(
+                    &format!("主题打包任务异常结束：{error}"),
+                    &format!("The theme packaging task ended unexpectedly: {error}"),
+                )
+            })?
     }
 
     pub async fn install_dream_skin_theme(
@@ -190,7 +221,12 @@ impl ThemeRuntime {
             dream_skin::convert_to_package(&conversion_source, &conversion_target)
         })
         .await
-        .map_err(|error| format!("Dream Skin 转换任务异常结束：{error}"))?;
+        .map_err(|error| {
+            locale::localize(
+                &format!("Dream Skin 转换任务异常结束：{error}"),
+                &format!("The Dream Skin conversion task ended unexpectedly: {error}"),
+            )
+        })?;
         if let Err(error) = conversion {
             let _ = std::fs::remove_file(&temporary);
             return Err(error);
@@ -218,7 +254,10 @@ impl ThemeRuntime {
             };
             self.persist().await?;
             if let (true, Some(port)) = (active, port) {
-                self.progress("theme", "正在切换到内置主题");
+                self.progress(
+                    "theme",
+                    locale::select("正在切换到内置主题", "Switching to the built-in theme"),
+                );
                 cdp::wait_and_apply(port, &payload, Duration::from_secs(10)).await?;
                 self.start_watcher(port, payload).await;
             }
@@ -226,7 +265,12 @@ impl ThemeRuntime {
         let store = self.themes.clone();
         tokio::task::spawn_blocking(move || store.delete(&id))
             .await
-            .map_err(|error| format!("主题删除任务异常结束：{error}"))??;
+            .map_err(|error| {
+                locale::localize(
+                    &format!("主题删除任务异常结束：{error}"),
+                    &format!("The theme deletion task ended unexpectedly: {error}"),
+                )
+            })??;
         self.emit_snapshot().await
     }
 
@@ -242,7 +286,10 @@ impl ThemeRuntime {
         if active {
             match port {
                 Some(port) if self.owned_endpoint(port).await => {
-                    self.progress("theme", "正在热切换主题");
+                    self.progress(
+                        "theme",
+                        locale::select("正在热切换主题", "Switching theme live"),
+                    );
                     cdp::wait_and_apply(port, &payload, Duration::from_secs(10)).await?;
                     self.start_watcher(port, payload).await;
                 }
@@ -268,7 +315,10 @@ impl ThemeRuntime {
         }
         let active_id = self.active_theme_id().await;
         let payload = self.payload_for(&active_id)?;
-        self.progress("theme", "正在应用当前主题");
+        self.progress(
+            "theme",
+            locale::select("正在应用当前主题", "Applying the current theme"),
+        );
         cdp::wait_and_apply(port, &payload, Duration::from_secs(15)).await?;
         self.start_watcher(port, payload).await;
         self.set_session(SessionState::Active, Some(port)).await?;
@@ -285,7 +335,10 @@ impl ThemeRuntime {
             .unwrap_or_else(codex::default_port);
         self.set_session(SessionState::Starting, Some(saved_port))
             .await?;
-        self.progress("discover", "正在校验官方 Codex");
+        self.progress(
+            "discover",
+            locale::select("正在校验官方 Codex", "Verifying the official Codex app"),
+        );
         let result = self.launch_codex_inner(saved_port).await;
         if let Err(error) = &result {
             self.set_error(error.clone()).await;
@@ -299,14 +352,26 @@ impl ThemeRuntime {
         let payload = self.payload_for(&active_id)?;
         self.stop_watcher().await;
         if codex::is_running(&installation) {
-            self.progress("restart", "正在重启 Codex");
+            self.progress(
+                "restart",
+                locale::select("正在重启 Codex", "Restarting Codex"),
+            );
             codex::stop(&installation, true).await?;
         }
         let port = codex::select_available_port(preferred_port)?;
-        self.progress("launch", &format!("正在通过回环端口 {port} 启动 Codex"));
+        self.progress(
+            "launch",
+            &locale::localize(
+                &format!("正在通过回环端口 {port} 启动 Codex"),
+                &format!("Launching Codex through loopback port {port}"),
+            ),
+        );
         codex::launch(&installation, Some(port))?;
         wait_for_owned_endpoint(port, &installation).await?;
-        self.progress("inject", "正在应用当前主题");
+        self.progress(
+            "inject",
+            locale::select("正在应用当前主题", "Applying the current theme"),
+        );
         cdp::wait_and_apply(port, &payload, Duration::from_secs(30)).await?;
         self.start_watcher(port, payload).await;
         self.set_session(SessionState::Active, Some(port)).await?;
@@ -321,7 +386,10 @@ impl ThemeRuntime {
             if cdp::endpoint_ready(port).await
                 && codex::listener_belongs_to_codex(port, &installation)
             {
-                self.progress("pause", "正在移除实时主题");
+                self.progress(
+                    "pause",
+                    locale::select("正在移除实时主题", "Removing the live theme"),
+                );
                 cdp::remove_all(port).await?;
             }
         }
@@ -337,12 +405,21 @@ impl ThemeRuntime {
             if cdp::endpoint_ready(port).await
                 && codex::listener_belongs_to_codex(port, &installation)
             {
-                self.progress("restore", "正在清理 Codex 中的主题");
+                self.progress(
+                    "restore",
+                    locale::select("正在清理 Codex 中的主题", "Removing the theme from Codex"),
+                );
                 cdp::remove_all(port).await?;
             }
         }
         if codex::is_running(&installation) {
-            self.progress("restore", "正在关闭调试会话并恢复官方启动方式");
+            self.progress(
+                "restore",
+                locale::select(
+                    "正在关闭调试会话并恢复官方启动方式",
+                    "Closing the debugging session and restoring the official launch mode",
+                ),
+            );
             codex::stop(&installation, true).await?;
             codex::launch(&installation, None)?;
         }
@@ -355,12 +432,15 @@ impl ThemeRuntime {
         screenshot: Option<String>,
     ) -> Result<VerificationReport, String> {
         let state = self.state.read().await.clone();
-        let port = state
-            .port
-            .ok_or_else(|| "当前没有活动的主题端口".to_string())?;
+        let port = state.port.ok_or_else(|| {
+            locale::localize("当前没有活动的主题端口", "There is no active theme port")
+        })?;
         let installation = codex::discover()?;
         if !codex::listener_belongs_to_codex(port, &installation) {
-            return Err("已保存端口不属于当前 Codex 进程".into());
+            return Err(locale::localize(
+                "已保存端口不属于当前 Codex 进程",
+                "The saved port does not belong to the current Codex process",
+            ));
         }
         cdp::verify(port, screenshot.as_deref().map(PathBuf::from).as_deref()).await
     }
@@ -369,7 +449,7 @@ impl ThemeRuntime {
         let mut checks = Vec::new();
         let codex = codex::discover();
         checks.push(DiagnosticCheck {
-            name: "官方 Codex".into(),
+            name: locale::localize("官方 Codex", "Official Codex"),
             pass: codex.is_ok(),
             detail: codex
                 .as_ref()
@@ -379,15 +459,22 @@ impl ThemeRuntime {
         let active = self.active_theme_id().await;
         let theme = self.payload_for(&active);
         checks.push(DiagnosticCheck {
-            name: "当前主题".into(),
+            name: locale::localize("当前主题", "Current theme"),
             pass: theme.is_ok(),
             detail: theme
                 .as_ref()
                 .map(|item| {
-                    format!(
-                        "{} · 注入脚本 {} KB",
-                        item.theme_id,
-                        item.script.len() / 1024
+                    locale::localize(
+                        &format!(
+                            "{} · 注入脚本 {} KB",
+                            item.theme_id,
+                            item.script.len() / 1024
+                        ),
+                        &format!(
+                            "{} · Injection script {} KB",
+                            item.theme_id,
+                            item.script.len() / 1024
+                        ),
                     )
                 })
                 .unwrap_or_else(|error| error.clone()),
@@ -398,23 +485,32 @@ impl ThemeRuntime {
             None => false,
         };
         checks.push(DiagnosticCheck {
-            name: "实时 CDP".into(),
+            name: locale::localize("实时 CDP", "Live CDP"),
             pass: state.session == SessionState::Active && endpoint,
             detail: match (state.session, state.port) {
-                (SessionState::Off, _) => "尚未启动".into(),
-                (SessionState::Starting, Some(port)) => {
-                    format!("127.0.0.1:{port} · 正在启动")
-                }
-                (SessionState::Starting, None) => "正在启动".into(),
-                (SessionState::Paused, Some(port)) => {
-                    format!("127.0.0.1:{port} · 会话已暂停")
-                }
-                (SessionState::Paused, None) => "会话已暂停".into(),
+                (SessionState::Off, _) => locale::localize("尚未启动", "Not started"),
+                (SessionState::Starting, Some(port)) => locale::localize(
+                    &format!("127.0.0.1:{port} · 正在启动"),
+                    &format!("127.0.0.1:{port} · Starting"),
+                ),
+                (SessionState::Starting, None) => locale::localize("正在启动", "Starting"),
+                (SessionState::Paused, Some(port)) => locale::localize(
+                    &format!("127.0.0.1:{port} · 会话已暂停"),
+                    &format!("127.0.0.1:{port} · Session paused"),
+                ),
+                (SessionState::Paused, None) => locale::localize("会话已暂停", "Session paused"),
                 (_, Some(port)) => format!(
                     "127.0.0.1:{port} · {}",
-                    if endpoint { "可用" } else { "未连接" }
+                    locale::select(
+                        if endpoint { "可用" } else { "未连接" },
+                        if endpoint {
+                            "Available"
+                        } else {
+                            "Disconnected"
+                        }
+                    )
                 ),
-                _ => "未连接".into(),
+                _ => locale::localize("未连接", "Disconnected"),
             },
         });
         DiagnosticReport {
@@ -521,10 +617,12 @@ impl ThemeRuntime {
         self.persist_sync()
     }
     fn persist_sync(&self) -> Result<(), String> {
-        let state = self
-            .state
-            .try_read()
-            .map_err(|_| "状态正在更新，请重试".to_string())?;
+        let state = self.state.try_read().map_err(|_| {
+            locale::localize(
+                "状态正在更新，请重试",
+                "The state is being updated. Try again.",
+            )
+        })?;
         let data = serde_json::to_vec_pretty(&*state).map_err(|error| error.to_string())?;
         atomic_write(&self.paths.state, &[data, b"\n".to_vec()].concat())
     }
@@ -535,7 +633,10 @@ fn read_state(paths: &AppPaths) -> Option<PersistedState> {
 }
 
 fn requires_managed_launch() -> String {
-    "请先从 Codex NN 启动或重启 Codex".into()
+    locale::localize(
+        "请先从 Codex NN 启动或重启 Codex",
+        "Launch or restart Codex from Codex NN first",
+    )
 }
 
 async fn wait_for_owned_endpoint(
@@ -549,7 +650,8 @@ async fn wait_for_owned_endpoint(
         }
         tokio::time::sleep(Duration::from_millis(350)).await;
     }
-    Err(format!(
-        "Codex 未能在 45 秒内提供已验证的回环 CDP 端口 {port}"
+    Err(locale::localize(
+        &format!("Codex 未能在 45 秒内提供已验证的回环 CDP 端口 {port}"),
+        &format!("Codex did not provide a verified loopback CDP port {port} within 45 seconds"),
     ))
 }

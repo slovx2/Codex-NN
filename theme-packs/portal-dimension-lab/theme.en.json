@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "portal-dimension-lab",
+  "name": "Rick and Morty Multiverse Lab",
+  "layoutPreset": "portalDimension",
+  "brandSubtitle": "CODEX PORTAL EDITION",
+  "tagline": "Step through the portal and turn wild ideas into working code.",
+  "projectPrefix": "Choose a universe · ",
+  "projectLabel": "◉  Dimension C-137 Lab",
+  "statusText": "PORTAL ONLINE",
+  "quote": "WUBBA LUBBA DUB-DUB!",
+  "image": "background.webp",
+  "appearance": "dark",
+  "art": { "focusX": 0.76, "focusY": 0.26, "safeArea": "left", "taskMode": "ambient" },
+  "colors": {
+    "background": "#031315", "panel": "#061F20", "panelAlt": "#0B2D2C",
+    "accent": "#9EFF37", "accentAlt": "#D0FF57", "secondary": "#26D8E8",
+    "highlight": "#7D4DFF", "text": "#EDFFF0", "muted": "#8FB8AD",
+    "line": "rgba(158, 255, 55, 0.32)"
+  }
+}

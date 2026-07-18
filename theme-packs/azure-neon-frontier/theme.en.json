@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "azure-neon-frontier",
+  "name": "Azure Neon Frontier",
+  "layoutPreset": "azureNeon",
+  "brandSubtitle": "CODEX NN · NEON CORE",
+  "tagline": "Connect to deep space and illuminate the next line of code.",
+  "projectPrefix": "Connect to task matrix · ",
+  "projectLabel": "◈  Choose a task node",
+  "statusText": "NEURAL LINK ONLINE",
+  "quote": "BUILD BEYOND THE HORIZON",
+  "image": "background.webp",
+  "appearance": "dark",
+  "art": { "focusX": 0.75, "focusY": 0.48, "safeArea": "left", "taskMode": "ambient" },
+  "colors": {
+    "background": "#030817", "panel": "#071529", "panelAlt": "#0B2340",
+    "accent": "#32D6FF", "accentAlt": "#6A8DFF", "secondary": "#69F6E5",
+    "highlight": "#A77BFF", "text": "#EAF8FF", "muted": "#8EB5CA",
+    "line": "rgba(50, 214, 255, 0.32)"
+  }
+}

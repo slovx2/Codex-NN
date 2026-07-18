@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "strawberry-starlight",
+  "name": "Strawberry Starlight",
+  "layoutPreset": "strawberryStarlight",
+  "brandSubtitle": "CODEX NN · PINK DREAM",
+  "tagline": "Tuck every spark of inspiration into a pink galaxy.",
+  "projectPrefix": "Start a dream project · ",
+  "projectLabel": "♡  Choose a project",
+  "statusText": "DREAM MODE ONLINE",
+  "quote": "MAKE TODAY SPARKLE",
+  "image": "background.webp",
+  "appearance": "light",
+  "art": { "focusX": 0.74, "focusY": 0.48, "safeArea": "left", "taskMode": "ambient" },
+  "colors": {
+    "background": "#210D1B", "panel": "#351426", "panelAlt": "#4A1D36",
+    "accent": "#FF6FAE", "accentAlt": "#FF9BC8", "secondary": "#C98BFF",
+    "highlight": "#FFD5E9", "text": "#FFF5FA", "muted": "#D9ABC3",
+    "line": "rgba(255, 111, 174, 0.34)"
+  }
+}

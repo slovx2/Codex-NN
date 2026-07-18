@@ -4,6 +4,14 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
 import { confirmDialog } from "./app-dialog";
+import {
+  currentSystemLocale,
+  resolveSystemLanguage,
+  setResolvedLanguage,
+  t,
+  type LanguagePreference,
+  type LanguageSettings
+} from "./i18n";
 import { setupMarketplace } from "./marketplace";
 import type {
   AppSnapshot,
@@ -17,8 +25,16 @@ import type {
 } from "./types";
 import "./styles.css";
 
+const systemLocale = currentSystemLocale();
+let languageSettings = await invoke<LanguageSettings>("sync_language", { systemLocale })
+  .catch((): LanguageSettings => ({
+    preference: "system",
+    resolvedLanguage: resolveSystemLanguage(systemLocale)
+  }));
+setResolvedLanguage(languageSettings.resolvedLanguage);
+
 const root = document.querySelector<HTMLElement>("#app");
-if (!root) throw new Error("缺少 #app 根节点");
+if (!root) throw new Error(t("missingRoot"));
 
 let snapshot: AppSnapshot | null = null;
 let themes: ThemeSummary[] = [];
@@ -37,49 +53,49 @@ root.innerHTML = `
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">NN</div>
-        <div><h1>Codex 暖暖</h1><p>Codex 主题管理器</p></div>
+        <div><h1>${t("appName")}</h1><p>${t("appSubtitle")}</p></div>
       </div>
-      <nav class="navigation" aria-label="主导航">
-        <button class="nav-item active" data-page="home"><span>⌂</span><b>首页</b></button>
-        <button class="nav-item" data-page="themes"><span>◫</span><b>主题库</b></button>
-        ${MARKETPLACE_ENABLED ? `<button class="nav-item" data-page="marketplace"><span>◎</span><b>主题广场</b></button>` : ""}
-        <button class="nav-item" data-page="designer"><span>✦</span><b>设计主题</b></button>
-        <button class="nav-item" data-page="diagnostics"><span>⌁</span><b>诊断</b></button>
-        <button id="settings-nav-item" class="nav-item" data-page="settings"><span>⚙</span><b>设置</b><i id="settings-update-dot" class="nav-update-dot" hidden></i></button>
+      <nav class="navigation" aria-label="${t("navAria")}">
+        <button class="nav-item active" data-page="home"><span>⌂</span><b>${t("home")}</b></button>
+        <button class="nav-item" data-page="themes"><span>◫</span><b>${t("themes")}</b></button>
+        ${MARKETPLACE_ENABLED ? `<button class="nav-item" data-page="marketplace"><span>◎</span><b>${t("marketplace")}</b></button>` : ""}
+        <button class="nav-item" data-page="designer"><span>✦</span><b>${t("designer")}</b></button>
+        <button class="nav-item" data-page="diagnostics"><span>⌁</span><b>${t("diagnostics")}</b></button>
+        <button id="settings-nav-item" class="nav-item" data-page="settings"><span>⚙</span><b>${t("settings")}</b><i id="settings-update-dot" class="nav-update-dot" hidden></i></button>
       </nav>
       <div class="sidebar-status">
-        <div class="sidebar-status-row"><span id="codex-dot" class="state-dot"></span><span>Codex</span><strong id="codex-state">读取中</strong></div>
-        <div class="sidebar-status-row"><span id="theme-dot" class="state-dot"></span><span>主题会话</span><strong id="theme-state">读取中</strong></div>
+        <div class="sidebar-status-row"><span id="codex-dot" class="state-dot"></span><span>Codex</span><strong id="codex-state">${t("loading")}</strong></div>
+        <div class="sidebar-status-row"><span id="theme-dot" class="state-dot"></span><span>${t("currentTheme")}</span><strong id="theme-state">${t("loading")}</strong></div>
       </div>
     </aside>
 
     <main class="workspace">
       <section id="page-home" class="page active">
         <header class="page-heading">
-          <div><span class="eyebrow">OVERVIEW</span><h2>让 Codex 穿上喜欢的主题</h2><p>选择主题、启动 Codex，然后保持暖暖在后台运行。</p></div>
-          <span id="header-status" class="status-pill neutral">读取中</span>
+          <div><span class="eyebrow">OVERVIEW</span><h2>${t("overviewTitle")}</h2><p>${t("overviewDescription")}</p></div>
+          <span id="header-status" class="status-pill neutral">${t("loading")}</span>
         </header>
         <div class="home-layout">
           <article class="preview-panel">
             <div id="hero-card" class="hero-card"></div>
             <div class="preview-meta">
-              <div><span>当前主题</span><h3 id="current-theme-name">未设置</h3></div>
-              <button class="text-button" data-open-page="themes">更换主题 →</button>
+              <div><span>${t("currentTheme")}</span><h3 id="current-theme-name">${t("notSet")}</h3></div>
+              <button class="text-button" data-open-page="themes">${t("changeTheme")}</button>
             </div>
           </article>
           <article class="control-panel">
             <div class="codex-heading">
               <div class="codex-icon">C</div>
-              <div><span>官方 Codex</span><h3 id="codex-version">正在检测</h3></div>
+              <div><span>${t("officialCodex")}</span><h3 id="codex-version">${t("detecting")}</h3></div>
             </div>
             <div class="primary-action-block">
-              <button id="launch-button" class="button primary" data-operation>启动 Codex</button>
-              <small>从这里启动或重启，才能使主题生效</small>
+              <button id="launch-button" class="button primary" data-operation>${t("launchCodex")}</button>
+              <small>${t("launchHint")}</small>
             </div>
-            <button id="apply-button" class="button secondary" data-operation>应用当前主题</button>
+            <button id="apply-button" class="button secondary" data-operation>${t("applyCurrentTheme")}</button>
             <div class="secondary-actions">
-              <button id="pause-button" class="button subtle" data-operation>暂停主题</button>
-              <button id="restore-button" class="button subtle danger" data-operation>完全恢复</button>
+              <button id="pause-button" class="button subtle" data-operation>${t("pauseTheme")}</button>
+              <button id="restore-button" class="button subtle danger" data-operation>${t("restoreCompletely")}</button>
             </div>
             <div id="home-details" class="status-list"></div>
           </article>
@@ -88,37 +104,37 @@ root.innerHTML = `
 
       <section id="page-themes" class="page">
         <header class="page-heading compact">
-          <div><span class="eyebrow">LOCAL LIBRARY</span><h2>我的主题</h2><p>通过 ZIP 主题包安装，选择后可立即热切换。</p></div>
+          <div><span class="eyebrow">LOCAL LIBRARY</span><h2>${t("localLibraryTitle")}</h2><p>${t("localLibraryDescription")}</p></div>
           <div class="heading-actions">
-            ${MARKETPLACE_ENABLED ? `<button class="button subtle compact-button" data-open-page="marketplace">逛主题广场</button>` : ""}
-            <button id="import-dream-skin-button" class="button secondary compact-button" data-operation>导入 Dream Skin</button>
-            <button id="import-theme-button" class="button primary compact-button" data-operation>＋ 安装主题包</button>
+            ${MARKETPLACE_ENABLED ? `<button class="button subtle compact-button" data-open-page="marketplace">${t("browseMarketplace")}</button>` : ""}
+            <button id="import-dream-skin-button" class="button secondary compact-button" data-operation>${t("importDreamSkin")}</button>
+            <button id="import-theme-button" class="button primary compact-button" data-operation>${t("installThemePackage")}</button>
           </div>
         </header>
         <div id="theme-list" class="theme-grid"></div>
         <footer class="theme-footer">
-          <div><span>已选择</span><strong id="selected-theme-name">尚未选择主题</strong></div>
-          <button id="activate-theme-button" class="button primary compact-button" data-operation>应用主题</button>
+          <div><span>${t("selected")}</span><strong id="selected-theme-name">${t("noThemeSelected")}</strong></div>
+          <button id="activate-theme-button" class="button primary compact-button" data-operation>${t("applyTheme")}</button>
         </footer>
       </section>
 
       ${MARKETPLACE_ENABLED ? `<section id="page-marketplace" class="page">
         <header class="page-heading compact marketplace-heading">
-          <div><span class="eyebrow">THEME PLAZA</span><h2>主题广场</h2><p>发现网友分享的主题，下载后由本地校验器安全安装。</p></div>
-          <div class="marketplace-tabs" role="tablist" aria-label="主题广场视图">
-            <button id="marketplace-discover-tab" class="marketplace-tab active" role="tab" aria-selected="true">发现主题</button>
-            <button id="marketplace-mine-tab" class="marketplace-tab" role="tab" aria-selected="false">我的上传</button>
+          <div><span class="eyebrow">THEME PLAZA</span><h2>${t("marketplace")}</h2><p>${t("marketplaceDescription")}</p></div>
+          <div class="marketplace-tabs" role="tablist" aria-label="${t("marketplace")}">
+            <button id="marketplace-discover-tab" class="marketplace-tab active" role="tab" aria-selected="true">${t("discoverThemes")}</button>
+            <button id="marketplace-mine-tab" class="marketplace-tab" role="tab" aria-selected="false">${t("myUploads")}</button>
           </div>
         </header>
         <div id="marketplace-content" class="marketplace-content">
-          <div class="marketplace-loading">正在连接主题广场…</div>
+          <div class="marketplace-loading">${t("connectingMarketplace")}</div>
         </div>
       </section>` : ""}
 
       <section id="page-designer" class="page">
         <header class="page-heading compact designer-heading">
-          <div><span class="eyebrow">THEME STUDIO</span><h2>让 AI 帮你设计 Codex 主题</h2><p>从概念稿出发，生成可直接安装的 Codex NN schema v1 主题包。</p></div>
-          <div class="designer-provider-tabs" role="tablist" aria-label="选择主题设计助手">
+          <div><span class="eyebrow">THEME STUDIO</span><h2>${t("designerTitle")}</h2><p>${t("designerDescription")}</p></div>
+          <div class="designer-provider-tabs" role="tablist" aria-label="${t("designerProviderAria")}">
             <button id="designer-provider-codex-tab" class="designer-provider-tab active" type="button" role="tab" aria-selected="true" aria-controls="designer-codex-panel" tabindex="0" data-designer-provider="codex">Codex</button>
             <button id="designer-provider-claude-tab" class="designer-provider-tab" type="button" role="tab" aria-selected="false" aria-controls="designer-claude-panel" tabindex="-1" data-designer-provider="claude">Claude Code</button>
           </div>
@@ -126,42 +142,42 @@ root.innerHTML = `
         <div class="designer-layout">
           <article class="designer-hero">
             <span class="designer-spark">✦</span>
-            <div><span>CODEX NN THEME DESIGNER</span><h3>描述一个世界，让 AI 把它变成主题</h3><p>你可以提供概念稿，也可以只描述风格。设计助手会先展示完整界面概念，等你确认后再生成背景、配色、文案和主题 ZIP。</p></div>
+            <div><span>CODEX NN THEME DESIGNER</span><h3>${t("designerHeroTitle")}</h3><p>${t("designerHeroDescription")}</p></div>
           </article>
           <article id="designer-codex-panel" class="plugin-panel" role="tabpanel" aria-labelledby="designer-provider-codex-tab">
             <div class="plugin-heading">
               <div class="plugin-icon">NN</div>
-              <div><span>Codex 插件</span><h3>主题设计插件</h3></div>
-              <strong id="designer-plugin-state" class="plugin-state neutral">检测中</strong>
+              <div><span>${t("codexPlugin")}</span><h3>${t("themeDesignerPlugin")}</h3></div>
+              <strong id="designer-plugin-state" class="plugin-state neutral">${t("checking")}</strong>
             </div>
-            <p>安装后，Codex 可完成概念确认和 schema v1 打包，并通过本地 MCP 直接安装、切换和诊断主题效果。</p>
+            <p>${t("pluginDescription")}</p>
             <ol class="designer-steps">
-              <li><i>1</i><span><b>提供想法</b><small>文字描述或现有概念稿</small></span></li>
-              <li><i>2</i><span><b>确认概念</b><small>先看整体界面与视觉语言</small></span></li>
-              <li><i>3</i><span><b>获得主题包</b><small>图片、文案、配色与 ZIP</small></span></li>
+              <li><i>1</i><span><b>${t("provideIdea")}</b><small>${t("ideaHint")}</small></span></li>
+              <li><i>2</i><span><b>${t("confirmConcept")}</b><small>${t("conceptHint")}</small></span></li>
+              <li><i>3</i><span><b>${t("getThemePackage")}</b><small>${t("packageHint")}</small></span></li>
             </ol>
-            <div id="designer-plugin-message" class="plugin-message">正在检查 Codex 插件状态</div>
+            <div id="designer-plugin-message" class="plugin-message">${t("checkingPlugin")}</div>
             <div class="plugin-actions">
-              <button id="install-designer-plugin-button" class="button primary" data-operation disabled>安装主题设计插件</button>
-              <button id="uninstall-designer-plugin-button" class="button subtle danger" data-operation disabled>卸载插件</button>
+              <button id="install-designer-plugin-button" class="button primary" data-operation disabled>${t("installPlugin")}</button>
+              <button id="uninstall-designer-plugin-button" class="button subtle danger" data-operation disabled>${t("uninstallPlugin")}</button>
             </div>
           </article>
           <article id="designer-claude-panel" class="plugin-panel claude-plugin-panel" role="tabpanel" aria-labelledby="designer-provider-claude-tab" hidden>
             <div class="plugin-heading">
               <div class="plugin-icon claude-plugin-icon">CC</div>
-              <div><span>Claude Code 插件</span><h3>主题设计插件</h3></div>
-              <strong id="claude-designer-plugin-state" class="plugin-state neutral">检测中</strong>
+              <div><span>${t("claudeCodePlugin")}</span><h3>${t("themeDesignerPlugin")}</h3></div>
+              <strong id="claude-designer-plugin-state" class="plugin-state neutral">${t("checking")}</strong>
             </div>
-            <p>只安装主题设计插件，并沿用 Claude Code 现有的账号、模型与接口配置；不会读取或修改 Claude Code 配置。</p>
+            <p>${t("claudePluginDescription")}</p>
             <ol class="designer-steps">
-              <li><i>1</i><span><b>安装插件</b><small>仅添加 Codex NN 主题设计能力</small></span></li>
-              <li><i>2</i><span><b>描述主题</b><small>在 Claude Code 中提供想法或概念稿</small></span></li>
-              <li><i>3</i><span><b>预览并热更新</b><small>通过本地 MCP 安装、切换和诊断</small></span></li>
+              <li><i>1</i><span><b>${t("installClaudeStep")}</b><small>${t("installClaudeStepHint")}</small></span></li>
+              <li><i>2</i><span><b>${t("describeTheme")}</b><small>${t("describeThemeHint")}</small></span></li>
+              <li><i>3</i><span><b>${t("previewAndHotUpdate")}</b><small>${t("previewAndHotUpdateHint")}</small></span></li>
             </ol>
-            <div id="claude-designer-plugin-message" class="plugin-message">正在检查 Claude Code 插件状态</div>
+            <div id="claude-designer-plugin-message" class="plugin-message">${t("checkingClaudePlugin")}</div>
             <div class="plugin-actions">
-              <button id="install-claude-designer-plugin-button" class="button primary" data-operation disabled>安装 Claude Code 插件</button>
-              <button id="uninstall-claude-designer-plugin-button" class="button subtle danger" data-operation disabled>卸载插件</button>
+              <button id="install-claude-designer-plugin-button" class="button primary" data-operation disabled>${t("installClaudePlugin")}</button>
+              <button id="uninstall-claude-designer-plugin-button" class="button subtle danger" data-operation disabled>${t("uninstallPlugin")}</button>
             </div>
           </article>
         </div>
@@ -169,35 +185,46 @@ root.innerHTML = `
 
       <section id="page-diagnostics" class="page">
         <header class="page-heading compact">
-          <div><span class="eyebrow">DIAGNOSTICS</span><h2>运行诊断</h2><p>静态检查不会修改或重启 Codex，实时验证需要活动主题会话。</p></div>
+          <div><span class="eyebrow">DIAGNOSTICS</span><h2>${t("diagnosticsTitle")}</h2><p>${t("diagnosticsDescription")}</p></div>
         </header>
         <div class="diagnostic-actions">
-          <button id="diagnose-button" class="diagnostic-action" data-operation><span>✓</span><b>静态诊断</b><small>检查安装、主题与端口</small></button>
-          <button id="verify-button" class="diagnostic-action" data-operation><span>◉</span><b>实时验证</b><small>检查当前注入结果</small></button>
-          <button id="screenshot-button" class="diagnostic-action" data-operation><span>▣</span><b>验证并截图</b><small>保存当前验证画面</small></button>
+          <button id="diagnose-button" class="diagnostic-action" data-operation><span>✓</span><b>${t("staticDiagnostics")}</b><small>${t("staticDiagnosticsHint")}</small></button>
+          <button id="verify-button" class="diagnostic-action" data-operation><span>◉</span><b>${t("liveVerification")}</b><small>${t("liveVerificationHint")}</small></button>
+          <button id="screenshot-button" class="diagnostic-action" data-operation><span>▣</span><b>${t("verifyAndScreenshot")}</b><small>${t("verifyAndScreenshotHint")}</small></button>
         </div>
-        <div id="diagnostic-results" class="diagnostic-results empty-state">还没有诊断结果</div>
+        <div id="diagnostic-results" class="diagnostic-results empty-state">${t("noDiagnosticResults")}</div>
       </section>
 
       <section id="page-settings" class="page">
         <header class="page-heading compact">
-          <div><span class="eyebrow">SETTINGS</span><h2>设置</h2></div>
+          <div><span class="eyebrow">SETTINGS</span><h2>${t("settings")}</h2></div>
         </header>
-        <div class="settings-actions">
-          <button id="check-update-button" class="button secondary compact-button" data-operation>检查更新</button>
+        <div class="settings-list">
+          <label class="settings-row" for="language-select">
+            <span><strong>${t("language")}</strong><small>${t("languageDescription")}</small></span>
+            <select id="language-select" class="settings-select">
+              <option value="system" ${languageSettings.preference === "system" ? "selected" : ""}>${t("followSystem")}</option>
+              <option value="zh-CN" ${languageSettings.preference === "zh-CN" ? "selected" : ""}>${t("simplifiedChinese")}</option>
+              <option value="en" ${languageSettings.preference === "en" ? "selected" : ""}>${t("english")}</option>
+            </select>
+          </label>
+          <div class="settings-row">
+            <span><strong>${t("checkForUpdates")}</strong></span>
+            <button id="check-update-button" class="button secondary compact-button" data-operation>${t("checkForUpdates")}</button>
+          </div>
         </div>
       </section>
     </main>
   </div>
   <div id="dream-import-dialog" class="modal-backdrop" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dream-import-title">
-      <button id="close-dream-import-button" class="modal-close" aria-label="关闭">×</button>
+      <button id="close-dream-import-button" class="modal-close" aria-label="${t("close")}">×</button>
       <span class="eyebrow">DREAM SKIN IMPORT</span>
-      <h3 id="dream-import-title">导入 Dream Skin macOS 主题</h3>
-      <p>选择 Dream Skin 主题目录，或选择只包含 theme.json 与图片的 ZIP。导入后会转换为 Codex NN schema v1 并直接安装。</p>
+      <h3 id="dream-import-title">${t("dreamImportTitle")}</h3>
+      <p>${t("dreamImportDescription")}</p>
       <div class="dream-import-options">
-        <button id="choose-dream-folder-button" class="import-option" data-operation><span>▤</span><b>选择主题目录</b><small>适用于 themes/&lt;id&gt; 文件夹</small></button>
-        <button id="choose-dream-zip-button" class="import-option" data-operation><span>◇</span><b>选择 ZIP</b><small>支持根目录或单层包装目录</small></button>
+        <button id="choose-dream-folder-button" class="import-option" data-operation><span>▤</span><b>${t("chooseThemeDirectory")}</b><small>${t("directoryHint")}</small></button>
+        <button id="choose-dream-zip-button" class="import-option" data-operation><span>◇</span><b>${t("chooseZip")}</b><small>${t("zipHint")}</small></button>
       </div>
     </div>
   </div>
@@ -209,7 +236,7 @@ root.innerHTML = `
 
 const byId = <T extends HTMLElement>(id: string): T => {
   const element = document.getElementById(id);
-  if (!element) throw new Error(`缺少元素 #${id}`);
+  if (!element) throw new Error(t("missingElement", { id }));
   return element as T;
 };
 
@@ -225,6 +252,9 @@ document.querySelectorAll<HTMLButtonElement>("[data-page]").forEach((button) => 
 document.querySelectorAll<HTMLButtonElement>("[data-open-page]").forEach((button) => {
   button.addEventListener("click", () => showPage(button.dataset.openPage ?? "home"));
 });
+const restoredPage = window.sessionStorage.getItem("codexnn:page");
+if (restoredPage && document.getElementById(`page-${restoredPage}`)) showPage(restoredPage);
+window.sessionStorage.removeItem("codexnn:page");
 
 byId("launch-button").addEventListener("click", () => void launchCodex());
 byId("apply-button").addEventListener("click", () => void applyCurrentTheme());
@@ -244,6 +274,9 @@ byId("diagnose-button").addEventListener("click", () => void runDiagnostics());
 byId("verify-button").addEventListener("click", () => void runVerification(null));
 byId("screenshot-button").addEventListener("click", () => void chooseScreenshot());
 byId("check-update-button").addEventListener("click", () => void checkForUpdates(true));
+byId<HTMLSelectElement>("language-select").addEventListener("change", (event) => {
+  void changeLanguage((event.currentTarget as HTMLSelectElement).value as LanguagePreference);
+});
 
 document.querySelectorAll<HTMLButtonElement>("[data-designer-provider]").forEach((tab) => {
   tab.addEventListener("click", () => switchDesignerProvider(tab.dataset.designerProvider === "claude" ? "claude" : "codex"));
@@ -266,16 +299,16 @@ async function refresh(preserveSelection = true): Promise<void> {
       installed: false,
       managed: false,
       conflict: true,
-      version: "未知",
-      message: `无法读取 Codex 插件状态：${errorMessage(error)}`
+      version: t("unknown"),
+      message: t("readingPluginFailed", { error: errorMessage(error) })
     }));
   const claudePluginStatus = invoke<ClaudeThemeDesignerPluginStatus>("get_claude_theme_designer_plugin_status")
     .catch((error): ClaudeThemeDesignerPluginStatus => ({
       installed: false,
       managed: false,
       conflict: true,
-      version: "未知",
-      message: `无法读取 Claude Code 插件状态：${errorMessage(error)}`,
+      version: t("unknown"),
+      message: t("readingClaudePluginFailed", { error: errorMessage(error) }),
       claudeAvailable: false
     }));
   [snapshot, themes, designerPlugin, claudeDesignerPlugin] = await Promise.all([
@@ -292,40 +325,58 @@ async function refresh(preserveSelection = true): Promise<void> {
   renderDesignerPlugin();
 }
 
+async function changeLanguage(preference: LanguagePreference): Promise<void> {
+  const select = byId<HTMLSelectElement>("language-select");
+  select.disabled = true;
+  try {
+    languageSettings = await invoke<LanguageSettings>("set_language_preference", {
+      preference,
+      systemLocale
+    });
+    const activePage = document.querySelector<HTMLElement>(".page.active")?.id.replace("page-", "") ?? "home";
+    window.sessionStorage.setItem("codexnn:page", activePage);
+    window.location.reload();
+  } catch (error) {
+    select.value = languageSettings.preference;
+    select.disabled = false;
+    showToast(t("languageChangeFailed", { error: errorMessage(error) }), true);
+  }
+}
+
 async function checkForUpdates(manual = false): Promise<void> {
   if (checkingForUpdates) return;
   checkingForUpdates = true;
   const updateButton = byId<HTMLButtonElement>("check-update-button");
   updateButton.disabled = true;
-  updateButton.textContent = "检查中";
+  updateButton.textContent = t("checkingUpdates");
   try {
     const update = await check();
     if (!update) {
       setUpdateAvailable(false);
-      if (manual) showToast("当前已是最新版本");
+      if (manual) showToast(t("alreadyLatest"));
       return;
     }
     setUpdateAvailable(true);
     const confirmed = await confirmDialog(
-      `发现新版本 ${update.version}。是否立即下载并安装？`,
-      { title: "Codex 暖暖更新", kind: "info" }
+      t("updateAvailable", { version: update.version }),
+      { title: t("updateTitle"), kind: "info" }
     );
     if (!confirmed) return;
-    await runOperation("正在下载更新", async () => {
+    await runOperation(t("downloadingUpdate"), async () => {
       await update.downloadAndInstall();
       setUpdateAvailable(false);
-      const restart = await confirmDialog("更新已安装。是否立即重启 Codex 暖暖？", {
-        title: "更新完成",
+      const restart = await confirmDialog(t("updateInstalledRestart"), {
+        title: t("updateComplete"),
         kind: "info"
       });
       if (restart) await relaunch();
     });
   } catch (error) {
     console.warn("自动检查更新失败", error);
-    if (manual) showToast(`检查更新失败：${errorMessage(error)}`, true);
+    if (manual) showToast(t("updateCheckFailed", { error: errorMessage(error) }), true);
   } finally {
     checkingForUpdates = false;
-    updateButton.textContent = "检查更新";
+    updateButton.textContent = t("checkForUpdates");
     updateButton.disabled = busy;
   }
 }
@@ -344,20 +395,20 @@ function renderSnapshot(): void {
   header.className = `status-pill ${status.kind}`;
   byId("theme-state").textContent = status.label;
   byId("theme-dot").className = `state-dot ${status.kind}`;
-  byId("codex-state").textContent = snapshot.codex.running ? "运行中" : snapshot.codex.installed ? "未运行" : "未安装";
+  byId("codex-state").textContent = snapshot.codex.running ? t("running") : snapshot.codex.installed ? t("notRunning") : t("notInstalled");
   byId("codex-dot").className = `state-dot ${snapshot.codex.running ? "success" : snapshot.codex.installed ? "neutral" : "danger"}`;
 
   const theme = snapshot.activeTheme;
   const hero = byId("hero-card");
   hero.style.backgroundImage = theme?.previewDataUrl ? `url("${theme.previewDataUrl}")` : "none";
-  hero.innerHTML = `<div class="hero-copy"><span>${theme?.builtIn ? "内置主题" : "当前主题"}</span><h3>${escapeHtml(theme?.name ?? "未设置")}</h3><p>${escapeHtml(theme?.tagline ?? "请从主题库选择主题")}</p></div>`;
-  byId("current-theme-name").textContent = theme?.name ?? "未设置";
-  byId("codex-version").textContent = snapshot.codex.installed ? `Codex ${snapshot.codex.version ?? "未知版本"}` : "未找到官方 Codex";
-  byId("launch-button").textContent = snapshot.codex.running ? "重启 Codex" : "启动 Codex";
+  hero.innerHTML = `<div class="hero-copy"><span>${theme?.builtIn ? t("builtInTheme") : t("currentTheme")}</span><h3>${escapeHtml(theme?.name ?? t("notSet"))}</h3><p>${escapeHtml(theme?.tagline ?? t("chooseFromLibrary"))}</p></div>`;
+  byId("current-theme-name").textContent = theme?.name ?? t("notSet");
+  byId("codex-version").textContent = snapshot.codex.installed ? `Codex ${snapshot.codex.version ?? t("unknownVersion")}` : t("codexNotFound");
+  byId("launch-button").textContent = snapshot.codex.running ? t("restartCodex") : t("launchCodex");
   byId("home-details").innerHTML = `
-    <div><span>运行状态</span><strong>${snapshot.codex.running ? "正在运行" : "未运行"}</strong></div>
-    <div><span>本机端口</span><strong>${snapshot.port ? `127.0.0.1:${snapshot.port}` : "尚未启用"}</strong></div>
-    <div><span>后台守护</span><strong>${snapshot.watcherRunning ? "运行中" : "未运行"}</strong></div>
+    <div><span>${t("runtimeStatus")}</span><strong>${snapshot.codex.running ? t("running") : t("notRunning")}</strong></div>
+    <div><span>${t("localPort")}</span><strong>${snapshot.port ? `127.0.0.1:${snapshot.port}` : t("notEnabled")}</strong></div>
+    <div><span>${t("backgroundWatcher")}</span><strong>${snapshot.watcherRunning ? t("running") : t("notRunning")}</strong></div>
     ${snapshot.lastError ? `<p class="error-note">${escapeHtml(snapshot.lastError)}</p>` : ""}
   `;
   setButtonsDisabled(busy);
@@ -377,7 +428,7 @@ function syncAppAccent(themeAccent: string | undefined): void {
 function renderThemes(): void {
   const list = byId("theme-list");
   if (!themes.length) {
-    list.innerHTML = `<div class="empty-library">主题库为空</div>`;
+    list.innerHTML = `<div class="empty-library">${t("themeLibraryEmpty")}</div>`;
     return;
   }
   list.innerHTML = themes.map((theme) => `
@@ -385,13 +436,13 @@ function renderThemes(): void {
       <button class="theme-select" data-theme-id="${escapeHtml(theme.id)}">
         <span class="theme-preview" style="background-image:url('${theme.previewDataUrl}')"></span>
         <span class="theme-card-body">
-          <span class="theme-card-top"><em>${theme.builtIn ? "内置" : "已安装"}</em>${theme.active ? "<i>当前主题</i>" : ""}</span>
+          <span class="theme-card-top"><em>${theme.builtIn ? t("builtIn") : t("installed")}</em>${theme.active ? `<i>${t("currentTheme")}</i>` : ""}</span>
           <strong>${escapeHtml(theme.name)}</strong>
           <small>${escapeHtml(theme.tagline || theme.quote)}</small>
-          <span class="theme-accent"><i style="background:${escapeHtml(theme.accent)}"></i>${theme.active ? "正在使用" : "点击选择"}</span>
+          <span class="theme-accent"><i style="background:${escapeHtml(theme.accent)}"></i>${theme.active ? t("inUse") : t("clickToSelect")}</span>
         </span>
       </button>
-      ${theme.builtIn ? "" : `<button class="theme-delete" data-delete-theme="${escapeHtml(theme.id)}" title="删除主题" aria-label="删除 ${escapeHtml(theme.name)}">×</button>`}
+      ${theme.builtIn ? "" : `<button class="theme-delete" data-delete-theme="${escapeHtml(theme.id)}" title="${t("deleteThemeTitle")}" aria-label="${escapeHtml(t("deleteNamedThemeAria", { name: theme.name }))}">×</button>`}
     </article>
   `).join("");
   list.querySelectorAll<HTMLButtonElement>("[data-theme-id]").forEach((button) => {
@@ -404,7 +455,7 @@ function renderThemes(): void {
     button.addEventListener("click", () => void deleteTheme(button.dataset.deleteTheme ?? ""));
   });
   const selected = themes.find((theme) => theme.id === selectedThemeId);
-  byId("selected-theme-name").textContent = selected?.name ?? "尚未选择主题";
+  byId("selected-theme-name").textContent = selected?.name ?? t("noThemeSelected");
   setButtonsDisabled(busy);
 }
 
@@ -440,31 +491,31 @@ function renderDesignerPlugin(): void {
   const installButton = byId<HTMLButtonElement>("install-designer-plugin-button");
   const uninstallButton = byId<HTMLButtonElement>("uninstall-designer-plugin-button");
   if (!designerPlugin) {
-    state.textContent = "检测中";
+    state.textContent = t("checking");
     state.className = "plugin-state neutral";
-    message.textContent = "正在检查 Codex 插件状态";
+    message.textContent = t("checkingPlugin");
     installButton.disabled = true;
     uninstallButton.disabled = true;
     renderClaudeDesignerPlugin();
     return;
   }
   if (designerPlugin.conflict) {
-    state.textContent = "需要处理";
+    state.textContent = t("needsAttention");
     state.className = "plugin-state danger";
   } else if (designerPlugin.installed) {
-    state.textContent = "已安装";
+    state.textContent = t("readyInstalled");
     state.className = "plugin-state success";
   } else {
-    state.textContent = "未安装";
+    state.textContent = t("notInstalled");
     state.className = "plugin-state neutral";
   }
   message.textContent = designerPlugin.message
     ?? (designerPlugin.installed
-      ? `插件 v${designerPlugin.version} 已就绪，请在 Codex 中新建任务使用。`
-      : "插件通过本地 MCP 管理主题，不会修改模型或账号配置。");
+      ? t("pluginReady", { version: designerPlugin.version })
+      : t("pluginNotInstalledHint"));
   installButton.textContent = designerPlugin.installed || designerPlugin.managed
-    ? "重新安装主题设计插件"
-    : "安装主题设计插件";
+    ? t("reinstallPlugin")
+    : t("installPlugin");
   installButton.disabled = busy || !snapshot?.codex.installed || designerPlugin.conflict;
   uninstallButton.disabled = busy || !designerPlugin.managed || designerPlugin.conflict;
   renderClaudeDesignerPlugin();
@@ -477,92 +528,92 @@ function renderClaudeDesignerPlugin(): void {
   const uninstallButton = byId<HTMLButtonElement>("uninstall-claude-designer-plugin-button");
 
   if (!claudeDesignerPlugin) {
-    state.textContent = "检测中";
+    state.textContent = t("checking");
     state.className = "plugin-state neutral";
-    message.textContent = "正在检查 Claude Code 插件状态";
+    message.textContent = t("checkingClaudePlugin");
     installButton.disabled = true;
     uninstallButton.disabled = true;
     return;
   }
 
   if (!claudeDesignerPlugin.claudeAvailable) {
-    state.textContent = "不可用";
+    state.textContent = t("unavailable");
     state.className = "plugin-state danger";
   } else if (claudeDesignerPlugin.conflict) {
-    state.textContent = "需要处理";
+    state.textContent = t("needsAttention");
     state.className = "plugin-state danger";
   } else if (claudeDesignerPlugin.installed) {
-    state.textContent = "已安装";
+    state.textContent = t("readyInstalled");
     state.className = "plugin-state success";
   } else {
-    state.textContent = "未安装";
+    state.textContent = t("notInstalled");
     state.className = "plugin-state neutral";
   }
 
   message.textContent = claudeDesignerPlugin.message
     ?? (!claudeDesignerPlugin.claudeAvailable
-      ? "未找到 Claude Code，请先完成安装后再返回此处。"
+      ? t("claudeNotFound")
       : claudeDesignerPlugin.installed
-        ? `插件 v${claudeDesignerPlugin.version} 已就绪，将沿用 Claude Code 现有配置。`
-        : "插件只增加主题设计能力，不会修改 Claude Code 的账号、模型或接口配置。");
+        ? t("claudePluginReady", { version: claudeDesignerPlugin.version })
+        : t("claudePluginNotInstalledHint"));
 
   const unavailable = busy || !claudeDesignerPlugin.claudeAvailable || claudeDesignerPlugin.conflict;
   installButton.textContent = claudeDesignerPlugin.installed || claudeDesignerPlugin.managed
-    ? "重新安装 Claude Code 插件"
-    : "安装 Claude Code 插件";
+    ? t("reinstallClaudePlugin")
+    : t("installClaudePlugin");
   installButton.disabled = unavailable;
   uninstallButton.disabled = unavailable || !claudeDesignerPlugin.managed;
 }
 
 async function launchCodex(): Promise<void> {
-  await runOperation(snapshot?.codex.running ? "正在重启 Codex" : "正在启动 Codex", async () => {
+  await runOperation(snapshot?.codex.running ? t("restartingCodex") : t("launchingCodex"), async () => {
     snapshot = await invoke<AppSnapshot>("launch_codex");
     renderSnapshot();
-    showToast("Codex 已启动，当前主题已生效");
+    showToast(t("codexLaunched"));
   });
 }
 
 async function applyCurrentTheme(): Promise<void> {
-  await runOperation("正在应用当前主题", async () => {
+  await runOperation(t("applyingCurrentTheme"), async () => {
     snapshot = await invoke<AppSnapshot>("apply_theme");
     renderSnapshot();
-    showToast("当前主题已热应用");
+    showToast(t("currentThemeApplied"));
   });
 }
 
 async function pauseTheme(): Promise<void> {
-  await runOperation("正在暂停主题", async () => {
+  await runOperation(t("pausingTheme"), async () => {
     snapshot = await invoke<AppSnapshot>("pause_theme");
     renderSnapshot();
-    showToast("主题已暂停");
+    showToast(t("themePaused"));
   });
 }
 
 async function restoreTheme(): Promise<void> {
-  const confirmed = await confirmDialog("完全恢复会移除主题，并在需要时重启 Codex 以关闭调试端口。继续吗？", {
-    title: "Codex 暖暖",
+  const confirmed = await confirmDialog(t("restoreConfirmation"), {
+    title: t("appName"),
     kind: "warning"
   });
   if (!confirmed) return;
-  await runOperation("正在恢复官方外观", async () => {
+  await runOperation(t("restoringOfficialAppearance"), async () => {
     snapshot = await invoke<AppSnapshot>("restore_theme");
     renderSnapshot();
-    showToast("Codex 已恢复官方启动方式");
+    showToast(t("restoredOfficialLaunch"));
   });
 }
 
 async function activateSelectedTheme(): Promise<void> {
   if (!selectedThemeId) {
-    showToast("请先选择一个主题", true);
+    showToast(t("chooseThemeFirst"), true);
     return;
   }
-  await runOperation("正在切换主题", async () => {
+  await runOperation(t("switchingTheme"), async () => {
     snapshot = await invoke<AppSnapshot>("activate_theme", { id: selectedThemeId });
     await refresh(true);
     if (snapshot.session === "active") {
-      showToast("主题已热切换");
+      showToast(t("themeSwitchedLive"));
     } else {
-      showToast("已设为当前主题，请启动或重启 Codex 使其生效");
+      showToast(t("themeSelectedRestart"));
     }
   });
 }
@@ -571,16 +622,16 @@ async function importThemePackage(): Promise<void> {
   const packagePath = await open({
     multiple: false,
     directory: false,
-    filters: [{ name: "Codex NN 主题包", extensions: ["zip"] }]
+    filters: [{ name: t("themePackageFilter"), extensions: ["zip"] }]
   });
   if (typeof packagePath !== "string") return;
-  await runOperation("正在检查主题包", async () => {
+  await runOperation(t("checkingThemePackage"), async () => {
     let outcome = await invoke<ThemeInstallOutcome>("install_theme_package", {
       request: { packagePath, allowUpdate: false }
     });
     if (outcome.needsConfirmation) {
-      const confirmed = await confirmDialog(`主题“${outcome.theme.name}”已经安装。是否更新现有主题？`, {
-        title: "更新主题",
+      const confirmed = await confirmDialog(t("themeAlreadyInstalled", { name: outcome.theme.name }), {
+        title: t("updateTheme"),
         kind: "warning"
       });
       if (!confirmed) return;
@@ -591,7 +642,9 @@ async function importThemePackage(): Promise<void> {
     if (!outcome.installed) return;
     selectedThemeId = outcome.theme.id;
     await refresh(true);
-    showToast(outcome.updated ? `已更新“${outcome.theme.name}”` : `已安装“${outcome.theme.name}”`);
+    showToast(outcome.updated
+      ? t("themeUpdated", { name: outcome.theme.name })
+      : t("themeInstalled", { name: outcome.theme.name }));
   });
 }
 
@@ -609,21 +662,21 @@ async function chooseDreamSkinSource(directory: boolean): Promise<void> {
   const sourcePath = await open(directory ? {
     multiple: false,
     directory: true,
-    title: "选择 Dream Skin macOS 主题目录"
+    title: t("chooseDreamDirectoryTitle")
   } : {
     multiple: false,
     directory: false,
-    title: "选择 Dream Skin macOS 主题 ZIP",
-    filters: [{ name: "Dream Skin 主题包", extensions: ["zip"] }]
+    title: t("chooseDreamZipTitle"),
+    filters: [{ name: t("dreamSkinPackage"), extensions: ["zip"] }]
   });
   if (typeof sourcePath !== "string") return;
-  await runOperation("正在转换 Dream Skin 主题", async () => {
+  await runOperation(t("convertingDreamSkin"), async () => {
     let outcome = await invoke<ThemeInstallOutcome>("install_dream_skin_theme", {
       request: { sourcePath, allowUpdate: false }
     });
     if (outcome.needsConfirmation) {
-      const confirmed = await confirmDialog(`转换后的主题“${outcome.theme.name}”已经安装。是否更新？`, {
-        title: "更新 Dream Skin 主题",
+      const confirmed = await confirmDialog(t("convertedThemeAlreadyInstalled", { name: outcome.theme.name }), {
+        title: t("updateDreamSkinTheme"),
         kind: "warning"
       });
       if (!confirmed) return;
@@ -635,84 +688,84 @@ async function chooseDreamSkinSource(directory: boolean): Promise<void> {
     selectedThemeId = outcome.theme.id;
     await refresh(true);
     showToast(outcome.updated
-      ? `已更新 Dream Skin 主题“${outcome.theme.name}”`
-      : `已导入 Dream Skin 主题“${outcome.theme.name}”`);
+      ? t("dreamSkinUpdated", { name: outcome.theme.name })
+      : t("dreamSkinImported", { name: outcome.theme.name }));
   });
 }
 
 async function installDesignerPlugin(): Promise<void> {
-  await runOperation("正在安装主题设计插件", async () => {
+  await runOperation(t("installingPlugin"), async () => {
     designerPlugin = await invoke<ThemeDesignerPluginStatus>("install_theme_designer_plugin");
     renderDesignerPlugin();
     if (!designerPlugin.installed) {
-      throw new Error(designerPlugin.message ?? "主题设计插件未能完成安装");
+      throw new Error(designerPlugin.message ?? t("pluginInstallIncomplete"));
     }
-    showToast("主题设计插件已安装，请在 Codex 中新建任务使用");
+    showToast(t("pluginInstalled"));
   });
 }
 
 async function uninstallDesignerPlugin(): Promise<void> {
-  const confirmed = await confirmDialog("卸载后，新建的 Codex 任务将不再加载主题设计 Skill。继续吗？", {
-    title: "卸载主题设计插件",
+  const confirmed = await confirmDialog(t("pluginUninstallConfirmation"), {
+    title: t("uninstallPluginTitle"),
     kind: "warning"
   });
   if (!confirmed) return;
-  await runOperation("正在卸载主题设计插件", async () => {
+  await runOperation(t("uninstallingPlugin"), async () => {
     designerPlugin = await invoke<ThemeDesignerPluginStatus>("uninstall_theme_designer_plugin");
     renderDesignerPlugin();
     if (designerPlugin.managed || designerPlugin.conflict) {
-      throw new Error(designerPlugin.message ?? "主题设计插件未能完成卸载");
+      throw new Error(designerPlugin.message ?? t("pluginUninstallIncomplete"));
     }
-    showToast("主题设计插件已卸载");
+    showToast(t("pluginUninstalled"));
   });
 }
 
 async function installClaudeDesignerPlugin(): Promise<void> {
-  await runOperation("正在安装 Claude Code 主题设计插件", async () => {
+  await runOperation(t("installingClaudePlugin"), async () => {
     claudeDesignerPlugin = await invoke<ClaudeThemeDesignerPluginStatus>("install_claude_theme_designer_plugin");
     renderClaudeDesignerPlugin();
     if (!claudeDesignerPlugin.installed) {
-      throw new Error(claudeDesignerPlugin.message ?? "Claude Code 主题设计插件未能完成安装");
+      throw new Error(claudeDesignerPlugin.message ?? t("claudePluginInstallIncomplete"));
     }
-    showToast("Claude Code 主题设计插件已安装");
+    showToast(t("claudePluginInstalled"));
   });
 }
 
 async function uninstallClaudeDesignerPlugin(): Promise<void> {
-  const confirmed = await confirmDialog("卸载后，Claude Code 将不再加载主题设计插件；现有账号、模型和接口配置不会改变。继续吗？", {
-    title: "卸载 Claude Code 主题设计插件",
+  const confirmed = await confirmDialog(t("claudePluginUninstallConfirmation"), {
+    title: t("uninstallClaudePluginTitle"),
     kind: "warning"
   });
   if (!confirmed) return;
 
-  await runOperation("正在卸载 Claude Code 主题设计插件", async () => {
+  await runOperation(t("uninstallingClaudePlugin"), async () => {
     claudeDesignerPlugin = await invoke<ClaudeThemeDesignerPluginStatus>("uninstall_claude_theme_designer_plugin");
     renderClaudeDesignerPlugin();
     if (claudeDesignerPlugin.managed || claudeDesignerPlugin.conflict) {
-      throw new Error(claudeDesignerPlugin.message ?? "Claude Code 主题设计插件未能完成卸载");
+      throw new Error(claudeDesignerPlugin.message ?? t("claudePluginUninstallIncomplete"));
     }
-    showToast("Claude Code 主题设计插件已卸载");
+    showToast(t("claudePluginUninstalled"));
   });
 }
 
 async function deleteTheme(id: string): Promise<void> {
   const theme = themes.find((item) => item.id === id);
   if (!theme || theme.builtIn) return;
-  const confirmed = await confirmDialog(`确定删除主题“${theme.name}”吗？`, {
-    title: "删除主题",
+  const confirmed = await confirmDialog(t("deleteThemeConfirmation", { name: theme.name }), {
+    title: t("deleteTheme"),
     kind: "warning"
   });
   if (!confirmed) return;
-  await runOperation("正在删除主题", async () => {
+  await runOperation(t("deletingTheme"), async () => {
     snapshot = await invoke<AppSnapshot>("delete_theme", { id });
     selectedThemeId = snapshot.activeTheme?.id ?? "";
     await refresh(true);
-    showToast(`已删除“${theme.name}”`);
+    showToast(t("themeDeleted", { name: theme.name }));
   });
 }
 
 async function runDiagnostics(): Promise<void> {
-  await runOperation("正在检查本地环境", async () => {
+  await runOperation(t("checkingEnvironment"), async () => {
     const report = await invoke<DiagnosticReport>("run_diagnostics");
     const output = byId("diagnostic-results");
     output.classList.remove("empty-state");
@@ -728,13 +781,13 @@ async function runDiagnostics(): Promise<void> {
 async function chooseScreenshot(): Promise<void> {
   const path = await save({
     defaultPath: "Codex-NN-Verification.png",
-    filters: [{ name: "PNG 图片", extensions: ["png"] }]
+    filters: [{ name: t("pngImage"), extensions: ["png"] }]
   });
   if (path) await runVerification(path);
 }
 
 async function runVerification(screenshotPath: string | null): Promise<void> {
-  await runOperation("正在验证实时主题", async () => {
+  await runOperation(t("verifyingTheme"), async () => {
     const report = await invoke<VerificationReport>("verify_theme", { screenshotPath });
     renderVerification(report);
     showToast(report.message, !report.pass);
@@ -747,12 +800,12 @@ function renderVerification(report: VerificationReport): void {
   output.innerHTML = `
     <div class="verification-summary ${report.pass ? "pass" : "fail"}">
       <span>${report.pass ? "✓" : "!"}</span>
-      <div><strong>${report.pass ? "实时验证通过" : "实时验证未通过"}</strong><small>${escapeHtml(report.message)}</small></div>
+      <div><strong>${report.pass ? t("verificationPassed") : t("verificationFailed")}</strong><small>${escapeHtml(report.message)}</small></div>
     </div>
-    <div class="result-detail"><span>CDP 目标</span><strong>${report.targetCount} 个</strong></div>
-    <div class="result-detail"><span>端口</span><strong>${report.port ? `127.0.0.1:${report.port}` : "无"}</strong></div>
-    ${report.screenshotPath ? `<p class="path-note">截图：${escapeHtml(report.screenshotPath)}</p>` : ""}
-    <details><summary>查看原始验证数据</summary><pre>${escapeHtml(JSON.stringify(report.details, null, 2))}</pre></details>
+    <div class="result-detail"><span>${t("cdpTargets")}</span><strong>${t("countUnit", { count: report.targetCount })}</strong></div>
+    <div class="result-detail"><span>${t("port")}</span><strong>${report.port ? `127.0.0.1:${report.port}` : t("none")}</strong></div>
+    ${report.screenshotPath ? `<p class="path-note">${escapeHtml(t("screenshotPath", { path: report.screenshotPath }))}</p>` : ""}
+    <details><summary>${t("rawVerificationData")}</summary><pre>${escapeHtml(JSON.stringify(report.details, null, 2))}</pre></details>
   `;
 }
 
@@ -794,19 +847,19 @@ function showToast(message: string, error = false): void {
 
 function sessionMeta(state: SessionState): { label: string; kind: string } {
   return {
-    off: { label: "未启用", kind: "neutral" },
-    starting: { label: "处理中", kind: "working" },
-    active: { label: "主题已启用", kind: "success" },
-    paused: { label: "已暂停", kind: "warning" },
-    stale: { label: "等待启动", kind: "warning" },
-    error: { label: "运行异常", kind: "danger" }
+    off: { label: t("sessionOff"), kind: "neutral" },
+    starting: { label: t("sessionStarting"), kind: "working" },
+    active: { label: t("sessionActive"), kind: "success" },
+    paused: { label: t("sessionPaused"), kind: "warning" },
+    stale: { label: t("sessionStale"), kind: "warning" },
+    error: { label: t("sessionError"), kind: "danger" }
   }[state];
 }
 
 function errorMessage(error: unknown): string {
   if (typeof error === "string") return error;
   if (error instanceof Error) return error.message;
-  try { return JSON.stringify(error); } catch { return "发生未知错误"; }
+  try { return JSON.stringify(error); } catch { return t("unknownError"); }
 }
 
 function escapeHtml(value: string): string {
@@ -827,5 +880,5 @@ void refresh(false)
   .then(() => checkForUpdates())
   .catch((error) => {
     showToast(errorMessage(error), true);
-    byId("header-status").textContent = "初始化失败";
+    byId("header-status").textContent = t("initializationFailed");
   });

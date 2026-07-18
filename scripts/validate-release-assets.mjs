@@ -169,13 +169,18 @@ function validatePlugin() {
   const template = text(join(PLUGIN_ROOT, ".mcp.json.template"));
   if (template.split("{{CODEX_NN_COMMAND_JSON}}").length !== 2) fail("MCP 模板可执行文件占位符数量错误");
   if (template.split("{{CODEX_NN_APP_DATA_DIR_JSON}}").length !== 2) fail("MCP 模板数据目录占位符数量错误");
+  if (template.split("{{CODEX_NN_LANGUAGE_JSON}}").length !== 2) fail("MCP 模板语言占位符数量错误");
   const renderedMcp = JSON.parse(template
     .replace("{{CODEX_NN_COMMAND_JSON}}", JSON.stringify("/app/codex-nn"))
-    .replace("{{CODEX_NN_APP_DATA_DIR_JSON}}", JSON.stringify("/data/codex-nn")));
+    .replace("{{CODEX_NN_APP_DATA_DIR_JSON}}", JSON.stringify("/data/codex-nn"))
+    .replace("{{CODEX_NN_LANGUAGE_JSON}}", JSON.stringify("en")));
   validateMcp("静态 MCP", staticMcp);
   validateMcp("MCP 模板", renderedMcp);
   if (renderedMcp.mcpServers["codex-nn"].env?.CODEX_NN_APP_DATA_DIR !== "/data/codex-nn") {
     fail("MCP 模板未传递 Codex NN App 数据目录");
+  }
+  if (renderedMcp.mcpServers["codex-nn"].env?.CODEX_NN_LANGUAGE !== "en") {
+    fail("MCP 模板未传递 Codex NN App 语言");
   }
 }
 
@@ -228,7 +233,13 @@ function validateThemePacks() {
   for (const id of [...EXPECTED_THEME_IDS].sort()) {
     const directory = join(root, id);
     const manifest = json(join(directory, "theme.json"));
+    const englishManifest = json(join(directory, "theme.en.json"));
     if (manifest.schemaVersion !== 1 || manifest.id !== id) fail(`内置主题 ${id} 的 schemaVersion 或 id 错误`);
+    for (const key of ["schemaVersion", "id", "layoutPreset", "appearance", "image", "art"]) {
+      if (JSON.stringify(englishManifest[key]) !== JSON.stringify(manifest[key])) {
+        fail(`内置主题 ${id} 的英文 manifest 结构字段 ${key} 与中文不一致`);
+      }
+    }
     const expectedAppearance = EXPECTED_THEME_APPEARANCE[id];
     if (manifest.appearance !== expectedAppearance) fail(`内置主题 ${id} 的 appearance 错误`);
     const expectedLayout = EXPECTED_THEME_LAYOUT[id];
@@ -244,13 +255,14 @@ function validateThemePacks() {
     if (typeof manifest.image !== "string" || manifest.image.includes("/") || manifest.image.includes("\\")) {
       fail(`内置主题 ${id} 的 image 路径不安全`);
     }
-    const expected = new Set(["theme.json", manifest.image]);
+    const expectedDirectory = new Set(["theme.json", "theme.en.json", manifest.image]);
+    const expectedArchive = new Set(["theme.json", manifest.image]);
     const actual = new Set(readdirSync(directory, { withFileTypes: true })
       .filter((entry) => entry.isFile()).map((entry) => entry.name));
-    if (!sameSet(actual, expected)) fail(`内置主题目录 ${id} 不是严格双文件结构`);
+    if (!sameSet(actual, expectedDirectory)) fail(`内置主题目录 ${id} 不是严格三文件结构`);
     const archive = zipEntries(join(root, `${id}.zip`));
-    if (!sameSet(new Set(archive.keys()), expected)) fail(`内置主题 ZIP ${id} 不是严格双文件结构`);
-    for (const name of expected) {
+    if (!sameSet(new Set(archive.keys()), expectedArchive)) fail(`内置主题 ZIP ${id} 不是严格双文件结构`);
+    for (const name of expectedArchive) {
       if (!archive.get(name).equals(readFileSync(join(directory, name)))) {
         fail(`内置主题 ${id} 的 ZIP 与目录内容不一致：${name}`);
       }

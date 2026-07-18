@@ -41,11 +41,11 @@ function showConfirmDialog(message: string, options: AppDialogOptions): Promise<
       return;
     }
 
-    title.textContent = options.title ?? "请确认";
+    title.textContent = options.title ?? t("confirmTitle");
     eyebrow.textContent = options.kind === "danger" ? "ATTENTION" : options.kind === "warning" ? "PLEASE CONFIRM" : "CONFIRM";
     messageNode.textContent = message;
-    cancelButton.textContent = options.cancelLabel ?? "取消";
-    acceptButton.textContent = options.confirmLabel ?? "确认";
+    cancelButton.textContent = options.cancelLabel ?? t("cancel");
+    acceptButton.textContent = options.confirmLabel ?? t("confirm");
     if (options.kind === "danger") acceptButton.classList.add("danger-confirm");
 
     const finish = (confirmed: boolean): void => {
@@ -72,3 +72,4 @@ function showConfirmDialog(message: string, options: AppDialogOptions): Promise<
     acceptButton.focus();
   });
 }
+import { t } from "./i18n";

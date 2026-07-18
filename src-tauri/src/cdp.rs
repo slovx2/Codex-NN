@@ -7,6 +7,7 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tokio::sync::watch;
 
+use crate::locale;
 use crate::{
     cdp_session::CdpSession,
     models::{ThemeManifest, VerificationReport},
@@ -50,13 +51,28 @@ pub fn build_payload(manifest: &ThemeManifest, image: &[u8]) -> Result<ThemePayl
         "jpg" | "jpeg" => "image/jpeg",
         "png" => "image/png",
         "webp" => "image/webp",
-        _ => return Err(format!("不支持的主题图片格式：{extension}")),
+        _ => {
+            return Err(locale::localize(
+                &format!("不支持的主题图片格式：{extension}"),
+                &format!("Unsupported theme image format: {extension}"),
+            ))
+        }
     };
     let (width, height) = ImageReader::new(Cursor::new(image))
         .with_guessed_format()
-        .map_err(|error| format!("无法识别主题图片：{error}"))?
+        .map_err(|error| {
+            locale::localize(
+                &format!("无法识别主题图片：{error}"),
+                &format!("Unable to identify the theme image: {error}"),
+            )
+        })?
         .into_dimensions()
-        .map_err(|error| format!("无法解析主题图片元数据：{error}"))?;
+        .map_err(|error| {
+            locale::localize(
+                &format!("无法解析主题图片元数据：{error}"),
+                &format!("Unable to parse theme image metadata: {error}"),
+            )
+        })?;
     let ratio = f64::from(width) / f64::from(height);
     let aspect = if ratio >= 2.25 {
         "ultrawide"
@@ -243,16 +259,24 @@ pub async fn wait_and_apply(
     timeout: Duration,
 ) -> Result<usize, String> {
     let deadline = tokio::time::Instant::now() + timeout;
-    let mut last_error = "尚未发现 Codex 页面".to_string();
+    let mut last_error = locale::localize("尚未发现 Codex 页面", "No Codex page has been found");
     while tokio::time::Instant::now() < deadline {
         match apply_all(port, payload).await {
             Ok(count) if count > 0 => return Ok(count),
-            Ok(_) => last_error = "CDP 已启动，但没有匹配的 Codex 页面".into(),
+            Ok(_) => {
+                last_error = locale::localize(
+                    "CDP 已启动，但没有匹配的 Codex 页面",
+                    "CDP is running, but no matching Codex page was found",
+                )
+            }
             Err(error) => last_error = error,
         }
         tokio::time::sleep(Duration::from_millis(350)).await;
     }
-    Err(format!("等待 Codex 页面超时：{last_error}"))
+    Err(locale::localize(
+        &format!("等待 Codex 页面超时：{last_error}"),
+        &format!("Timed out waiting for a Codex page: {last_error}"),
+    ))
 }
 
 pub async fn run_watcher(port: u16, payload: ThemePayload, mut stop: watch::Receiver<bool>) {
@@ -316,11 +340,16 @@ pub async fn verify(port: u16, screenshot: Option<&Path>) -> Result<Verification
         screenshot_path,
         details: Value::Array(details),
         message: if pass {
-            "主题注入、原生控件和页面尺寸检查通过"
+            locale::localize(
+                "主题注入、原生控件和页面尺寸检查通过",
+                "Theme injection, native controls, and page dimensions passed verification",
+            )
         } else {
-            "实时验证未通过，请查看详细结果"
-        }
-        .into(),
+            locale::localize(
+                "实时验证未通过，请查看详细结果",
+                "Live verification failed. Review the details.",
+            )
+        },
     })
 }
 
@@ -333,7 +362,10 @@ async fn apply_all(port: u16, payload: &ThemePayload) -> Result<usize, String> {
         if session.evaluate(&marker).await?.as_bool() != Some(true) {
             let result = session.evaluate(&payload.script).await?;
             if result.get("installed").and_then(Value::as_bool) != Some(true) {
-                return Err("渲染脚本没有返回成功标记".into());
+                return Err(locale::localize(
+                    "渲染脚本没有返回成功标记",
+                    "The renderer did not return a success marker",
+                ));
             }
         }
         count += 1;
@@ -351,14 +383,24 @@ async fn list_targets(port: u16) -> Result<Vec<Target>, String> {
         .get(format!("http://127.0.0.1:{port}/json/list"))
         .send()
         .await
-        .map_err(|error| format!("无法读取 CDP 页面列表：{error}"))?;
+        .map_err(|error| {
+            locale::localize(
+                &format!("无法读取 CDP 页面列表：{error}"),
+                &format!("Unable to read the CDP page list: {error}"),
+            )
+        })?;
     if !response.status().is_success() {
-        return Err(format!("CDP 返回 HTTP {}", response.status()));
+        return Err(locale::localize(
+            &format!("CDP 返回 HTTP {}", response.status()),
+            &format!("CDP returned HTTP {}", response.status()),
+        ));
     }
-    let targets: Vec<Target> = response
-        .json()
-        .await
-        .map_err(|error| format!("CDP 页面列表格式错误：{error}"))?;
+    let targets: Vec<Target> = response.json().await.map_err(|error| {
+        locale::localize(
+            &format!("CDP 页面列表格式错误：{error}"),
+            &format!("The CDP page list has an invalid format: {error}"),
+        )
+    })?;
     Ok(targets.into_iter().filter(is_codex_page_target).collect())
 }
 
@@ -381,7 +423,10 @@ async fn connect_verified(target: &Target, port: u16) -> Result<CdpSession, Stri
     session.send("Page.enable", json!({})).await?;
     let probe = session.evaluate(PROBE_SCRIPT).await?;
     if probe.get("codex").and_then(Value::as_bool) != Some(true) {
-        return Err(format!("拒绝非 Codex 页面目标：{}", target.id));
+        return Err(locale::localize(
+            &format!("拒绝非 Codex 页面目标：{}", target.id),
+            &format!("Rejected a non-Codex page target: {}", target.id),
+        ));
     }
     Ok(session)
 }
@@ -393,21 +438,29 @@ async fn capture(session: &mut CdpSession, path: &Path) -> Result<(), String> {
             json!({ "format": "png", "fromSurface": true, "captureBeyondViewport": false }),
         )
         .await?;
-    let data = result
-        .get("data")
-        .and_then(Value::as_str)
-        .ok_or_else(|| "CDP 截图没有返回图片".to_string())?;
-    let bytes = STANDARD
-        .decode(data)
-        .map_err(|error| format!("无法解码截图：{error}"))?;
+    let data = result.get("data").and_then(Value::as_str).ok_or_else(|| {
+        locale::localize(
+            "CDP 截图没有返回图片",
+            "The CDP screenshot did not return image data",
+        )
+    })?;
+    let bytes = STANDARD.decode(data).map_err(|error| {
+        locale::localize(
+            &format!("无法解码截图：{error}"),
+            &format!("Unable to decode the screenshot: {error}"),
+        )
+    })?;
     if let Some(parent) = path.parent() {
         tokio::fs::create_dir_all(parent)
             .await
             .map_err(|error| error.to_string())?;
     }
-    tokio::fs::write(path, bytes)
-        .await
-        .map_err(|error| format!("无法保存截图：{error}"))
+    tokio::fs::write(path, bytes).await.map_err(|error| {
+        locale::localize(
+            &format!("无法保存截图：{error}"),
+            &format!("Unable to save the screenshot: {error}"),
+        )
+    })
 }
 
 const PROBE_SCRIPT: &str = r#"(() => { const shell = !!document.querySelector('main.main-surface'); const sidebar = !!document.querySelector('aside.app-shell-left-panel'); const composer = !!document.querySelector('.composer-surface-chrome'); const main = !!document.querySelector('[role="main"]'); return { codex: shell && sidebar && (composer || main) }; })()"#;

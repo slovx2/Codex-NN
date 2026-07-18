@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tokio::sync::oneshot;
 
+use crate::locale;
 use crate::{
     models::{AppSnapshot, DiagnosticReport, ThemeInstallRequest, ThemePackageRequest},
     paths::{atomic_write, AppPaths},
@@ -302,7 +303,7 @@ fn diagnostic_recommendations(snapshot: &AppSnapshot, report: &DiagnosticReport)
         && report
             .checks
             .iter()
-            .any(|check| check.name == "实时 CDP" && !check.pass)
+            .any(|check| matches!(check.name.as_str(), "实时 CDP" | "Live CDP") && !check.pass)
     {
         recommendations.push(restart_codex_recommendation());
     }
@@ -312,18 +313,24 @@ fn diagnostic_recommendations(snapshot: &AppSnapshot, report: &DiagnosticReport)
 fn snapshot_recommendations(snapshot: &AppSnapshot) -> Vec<String> {
     let mut recommendations = Vec::new();
     if !snapshot.codex.installed {
-        recommendations.push("未找到官方 Codex Desktop，请先完成安装。".into());
+        recommendations.push(locale::localize(
+            "未找到官方 Codex Desktop，请先完成安装。",
+            "Official Codex Desktop was not found. Install it first.",
+        ));
     } else {
         match snapshot.session {
-            crate::models::SessionState::Off => {
-                recommendations.push("主题会话尚未启动，请从 Codex NN App 启动 Codex。".into())
-            }
-            crate::models::SessionState::Starting => {
-                recommendations.push("主题会话正在启动，请等待启动完成后重试。".into())
-            }
-            crate::models::SessionState::Paused => {
-                recommendations.push("主题会话已暂停，请从 Codex NN App 启动或重启 Codex。".into())
-            }
+            crate::models::SessionState::Off => recommendations.push(locale::localize(
+                "主题会话尚未启动，请从 Codex NN App 启动 Codex。",
+                "The theme session has not started. Launch Codex from the Codex NN app.",
+            )),
+            crate::models::SessionState::Starting => recommendations.push(locale::localize(
+                "主题会话正在启动，请等待启动完成后重试。",
+                "The theme session is starting. Wait for it to finish, then try again.",
+            )),
+            crate::models::SessionState::Paused => recommendations.push(locale::localize(
+                "主题会话已暂停，请从 Codex NN App 启动或重启 Codex。",
+                "The theme session is paused. Launch or restart Codex from the Codex NN app.",
+            )),
             crate::models::SessionState::Stale | crate::models::SessionState::Error => {
                 recommendations.push(restart_codex_recommendation())
             }
@@ -331,13 +338,16 @@ fn snapshot_recommendations(snapshot: &AppSnapshot) -> Vec<String> {
         }
     }
     if let Some(error) = &snapshot.last_error {
-        recommendations.push(format!("最近错误：{error}"));
+        recommendations.push(locale::localize(
+            &format!("最近错误：{error}"),
+            &format!("Most recent error: {error}"),
+        ));
     }
     recommendations
 }
 
 fn restart_codex_recommendation() -> String {
-    "CDP 未连接或端口已失效，请从 Codex NN App 启动或重启 Codex，然后重试。".into()
+    locale::localize("CDP 未连接或端口已失效，请从 Codex NN App 启动或重启 Codex，然后重试。", "CDP is disconnected or its port has expired. Launch or restart Codex from the Codex NN app, then try again.")
 }
 
 fn authorize(state: &ApiState, headers: &HeaderMap) -> Result<(), ApiError> {
@@ -352,7 +362,10 @@ fn authorize(state: &ApiState, headers: &HeaderMap) -> Result<(), ApiError> {
     Err(api_error(
         StatusCode::UNAUTHORIZED,
         "unauthorized",
-        "Agent API 令牌无效，请重新安装主题设计插件或重启 Codex NN。",
+        locale::select(
+            "Agent API 令牌无效，请重新安装主题设计插件或重启 Codex NN。",
+            "The Agent API token is invalid. Reinstall Theme Designer or restart Codex NN.",
+        ),
         None,
     ))
 }
@@ -374,11 +387,14 @@ fn strip_theme_previews(value: &mut Value) {
 }
 
 fn operation_error(error: String) -> ApiError {
-    let recovery = if error.contains("CDP")
+    let needs_recovery = error.contains("CDP")
         || error.contains("端口")
         || error.contains("从 Codex NN")
         || error.contains("主题会话")
-    {
+        || error.contains("port")
+        || error.contains("theme session");
+    let error = locale::translate_error(error);
+    let recovery = if needs_recovery {
         Some(restart_codex_recommendation())
     } else {
         None

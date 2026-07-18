@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { confirmDialog } from "./app-dialog";
+import { mt } from "./i18n-marketplace";
+import { resolvedLanguage } from "./i18n";
 import type {
   MarketplaceAuthState,
   MarketplaceLikeResult,
@@ -123,20 +125,20 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     content.innerHTML = `
       <div class="marketplace-toolbar">
         <form id="marketplace-search-form" class="marketplace-search">
-          <input id="marketplace-search-input" value="${escapeHtml(query)}" maxlength="80" placeholder="搜索标题、简介、标签、ID 或作者" aria-label="搜索主题">
-          <button class="button primary compact-button" type="submit">搜索</button>
+          <input id="marketplace-search-input" value="${escapeHtml(query)}" maxlength="80" placeholder="${mt("searchPlaceholder")}" aria-label="${mt("searchThemesAria")}">
+          <button class="button primary compact-button" type="submit">${mt("search")}</button>
         </form>
-        <button id="marketplace-redeem" class="button subtle compact-button">输入分享码</button>
+        <button id="marketplace-redeem" class="button subtle compact-button">${mt("enterShareCode")}</button>
       </div>
       <div class="marketplace-results">
         ${discoverBody()}
       </div>
       ${themesPage && themesPage.pages > 0 ? `
         <footer class="marketplace-pagination">
-          <span>共 ${themesPage.total} 个主题 · 第 ${themesPage.page} / ${themesPage.pages} 页</span>
+          <span>${mt("pagination", { total: themesPage.total, page: themesPage.page, pages: themesPage.pages })}</span>
           <div>
-            <button id="marketplace-prev" class="button subtle compact-button" ${themesPage.page <= 1 ? "disabled" : ""}>上一页</button>
-            <button id="marketplace-next" class="button subtle compact-button" ${themesPage.page >= themesPage.pages ? "disabled" : ""}>下一页</button>
+            <button id="marketplace-prev" class="button subtle compact-button" ${themesPage.page <= 1 ? "disabled" : ""}>${mt("previous")}</button>
+            <button id="marketplace-next" class="button subtle compact-button" ${themesPage.page >= themesPage.pages ? "disabled" : ""}>${mt("next")}</button>
           </div>
         </footer>` : ""}
     `;
@@ -162,12 +164,12 @@ export function setupMarketplace(options: MarketplaceOptions): void {
   }
 
   function discoverBody(): string {
-    if (discoverLoading) return `<div class="marketplace-loading">正在读取主题与安全预览…</div>`;
+    if (discoverLoading) return `<div class="marketplace-loading">${mt("loadingThemes")}</div>`;
     if (discoverError) {
-      return `<div class="marketplace-empty"><strong>暂时无法读取主题</strong><p>${escapeHtml(discoverError)}</p><button id="marketplace-retry" class="button subtle compact-button">重新加载</button></div>`;
+      return `<div class="marketplace-empty"><strong>${mt("themesUnavailable")}</strong><p>${escapeHtml(discoverError)}</p><button id="marketplace-retry" class="button subtle compact-button">${mt("reload")}</button></div>`;
     }
     if (!themesPage?.items.length) {
-      return `<div class="marketplace-empty"><strong>还没有找到主题</strong><p>可以换一个关键词，或者成为第一个投稿的人。</p></div>`;
+      return `<div class="marketplace-empty"><strong>${mt("noThemes")}</strong><p>${mt("noThemesHint")}</p></div>`;
     }
     return `<div class="marketplace-grid">${themesPage.items.map(themeCardHtml).join("")}</div>`;
   }
@@ -191,7 +193,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
   async function showDetail(themeId: string): Promise<void> {
     if (!themeId) return;
     detailDialog.hidden = false;
-    detailCard.innerHTML = `<button class="modal-close" data-close-marketplace aria-label="关闭">×</button><div class="marketplace-loading">正在读取主题详情…</div>`;
+    detailCard.innerHTML = `<button class="modal-close" data-close-marketplace aria-label="${mt("close")}">×</button><div class="marketplace-loading">${mt("loadingDetail")}</div>`;
     bindCloseDetail();
     try {
       const [detail, states] = await Promise.all([
@@ -202,26 +204,26 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       const sync = localSyncStates.find((item) => item.themeId === detail.themeId || item.manifestId === detail.manifestId);
       const syncView = detailSyncView(detail, sync);
       detailCard.innerHTML = `
-        <button class="modal-close" data-close-marketplace aria-label="关闭">×</button>
+        <button class="modal-close" data-close-marketplace aria-label="${mt("close")}">×</button>
         <div class="marketplace-detail-preview">
-          ${detail.detailPreviewDataUrl ? `<img src="${detail.detailPreviewDataUrl}" alt="${escapeHtml(detail.title)} 预览">` : ""}
+          ${detail.detailPreviewDataUrl ? `<img src="${detail.detailPreviewDataUrl}" alt="${escapeHtml(mt("previewAlt", { title: detail.title }))}">` : ""}
         </div>
         <div class="marketplace-detail-body">
           <span class="eyebrow">${escapeHtml(detail.manifestId)} · V${detail.versionNumber}</span>
           <h3 id="marketplace-detail-title">${escapeHtml(detail.title)}</h3>
-          <p>${escapeHtml(detail.description || "作者暂未填写简介")}</p>
+          <p>${escapeHtml(detail.description || mt("noDescription"))}</p>
           <div class="marketplace-tags">${detail.tags.map(tagHtml).join("")}</div>
           <div class="marketplace-detail-meta">
-            <span>作者<strong>${escapeHtml(detail.authorName)}</strong></span>
-            <span>点赞<strong id="marketplace-like-count">${detail.likeCount}</strong></span>
-            <span>下载<strong>${detail.downloadCount}</strong></span>
-            <span>大小<strong>${formatBytes(detail.packageSize)}</strong></span>
+            <span>${mt("author")}<strong>${escapeHtml(detail.authorName)}</strong></span>
+            <span>${mt("likes")}<strong id="marketplace-like-count">${detail.likeCount}</strong></span>
+            <span>${mt("downloads")}<strong>${detail.downloadCount}</strong></span>
+            <span>${mt("size")}<strong>${formatBytes(detail.packageSize)}</strong></span>
           </div>
           ${syncView ? `<div class="marketplace-sync-note ${syncView.kind}"><strong>${syncView.label}</strong><span>${syncView.detail}</span></div>` : ""}
           <div class="marketplace-detail-actions">
-            <button id="marketplace-like" class="button subtle">${detail.viewerLiked ? "取消点赞" : "♡ 点赞"}</button>
-            <button id="marketplace-install" class="button primary">${syncView?.action ?? "下载并安装"}</button>
-            <button id="marketplace-save" class="button subtle">另存 ZIP</button>
+            <button id="marketplace-like" class="button subtle">${detail.viewerLiked ? mt("unlike") : mt("like")}</button>
+            <button id="marketplace-install" class="button primary">${syncView?.action ?? mt("downloadInstall")}</button>
+            <button id="marketplace-save" class="button subtle">${mt("saveZip")}</button>
           </div>
         </div>`;
       bindCloseDetail();
@@ -230,8 +232,8 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       byId("marketplace-save").addEventListener("click", () => void saveTheme(detail));
     } catch (error) {
       detailCard.innerHTML = `
-        <button class="modal-close" data-close-marketplace aria-label="关闭">×</button>
-        <div class="marketplace-empty"><strong>无法读取主题详情</strong><p>${escapeHtml(options.errorMessage(error))}</p></div>`;
+        <button class="modal-close" data-close-marketplace aria-label="${mt("close")}">×</button>
+        <div class="marketplace-empty"><strong>${mt("detailUnavailable")}</strong><p>${escapeHtml(options.errorMessage(error))}</p></div>`;
       bindCloseDetail();
     }
   }
@@ -252,15 +254,15 @@ export function setupMarketplace(options: MarketplaceOptions): void {
   function showRedeemDialog(): void {
     detailDialog.hidden = false;
     detailCard.innerHTML = `
-      <button class="modal-close" data-close-marketplace aria-label="关闭">×</button>
+      <button class="modal-close" data-close-marketplace aria-label="${mt("close")}">×</button>
       <form id="marketplace-redeem-form" class="marketplace-form-card">
         <span class="eyebrow">PRIVATE THEME</span>
-        <h3 id="marketplace-detail-title">输入永久分享码</h3>
-        <p>分享码只会安全地提交给服务端，不会出现在地址或搜索记录中。</p>
-        <label>分享码<input id="marketplace-share-code" autocomplete="off" spellcheck="false" placeholder="CNN-XXXX-XXXX-XXXX-XXXX-XXXX" required></label>
+        <h3 id="marketplace-detail-title">${mt("permanentShareCode")}</h3>
+        <p>${mt("shareCodeSafety")}</p>
+        <label>${mt("shareCode")}<input id="marketplace-share-code" autocomplete="off" spellcheck="false" placeholder="CNN-XXXX-XXXX-XXXX-XXXX-XXXX" required></label>
         <div class="marketplace-detail-actions">
-          <button type="button" class="button subtle" data-close-marketplace>取消</button>
-          <button id="marketplace-redeem-submit" class="button primary">查看主题</button>
+          <button type="button" class="button subtle" data-close-marketplace>${mt("cancel")}</button>
+          <button id="marketplace-redeem-submit" class="button primary">${mt("viewTheme")}</button>
         </div>
       </form>`;
     detailCard.querySelectorAll<HTMLElement>("[data-close-marketplace]").forEach((button) => {
@@ -282,8 +284,8 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       auth = auth ?? await invoke<MarketplaceAuthState>("marketplace_auth_state");
       if (!auth.loggedIn) {
         const continueAnonymously = await confirmDialog(
-          "登录后，私密主题权限会跟随账号并可跨设备使用。匿名继续也可以，但授权只保存在当前这台机器。",
-          { title: "建议先登录", kind: "warning" }
+          mt("loginRecommendation"),
+          { title: mt("loginRecommendedTitle"), kind: "warning" }
         );
         if (!continueAnonymously) {
           closeDetail();
@@ -307,10 +309,10 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     try {
       auth = auth ?? await invoke<MarketplaceAuthState>("marketplace_auth_state");
       if (!auth.loggedIn) {
-        button.textContent = "等待 Google 登录";
+        button.textContent = mt("waitingGoogle");
         const login = await invoke<MarketplaceLoginResult>("marketplace_start_login");
         auth = login.auth;
-        if (!auth.loggedIn) throw new Error("登录未完成，暂时不能点赞");
+        if (!auth.loggedIn) throw new Error(mt("loginIncomplete"));
       }
       const result = await invoke<MarketplaceLikeResult>("marketplace_set_like", {
         themeId: detail.themeId,
@@ -318,7 +320,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       });
       detail.viewerLiked = result.liked;
       detail.likeCount = result.likeCount;
-      button.textContent = result.liked ? "取消点赞" : "♡ 点赞";
+      button.textContent = result.liked ? mt("unlike") : mt("like");
       byId("marketplace-like-count").textContent = String(result.likeCount);
       const card = themesPage?.items.find((item) => item.themeId === detail.themeId);
       if (card) {
@@ -337,9 +339,9 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     sync: MarketplaceLocalSyncState | undefined
   ): Promise<void> {
     const button = byId<HTMLButtonElement>("marketplace-install");
-    const idleLabel = button.textContent ?? "下载并安装";
+    const idleLabel = button.textContent ?? mt("downloadInstall");
     button.disabled = true;
-    button.textContent = "下载并校验中";
+    button.textContent = mt("downloadingValidating");
     try {
       let outcome = await invoke<ThemeInstallOutcome>("marketplace_install_theme", {
         themeId: detail.themeId,
@@ -348,7 +350,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       if (outcome.needsConfirmation) {
         const confirmed = await confirmDialog(
           installConfirmation(detail, sync, outcome.theme.name),
-          { title: "更新主题", kind: "warning" }
+          { title: mt("updateTheme"), kind: "warning" }
         );
         if (!confirmed) return;
         outcome = await invoke<ThemeInstallOutcome>("marketplace_install_theme", {
@@ -360,7 +362,9 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       await options.refreshLocalThemes();
       localSyncStates = await invoke<MarketplaceLocalSyncState[]>("marketplace_local_sync_states");
       closeDetail();
-      options.showToast(outcome.updated ? `已更新“${outcome.theme.name}”` : `已安装“${outcome.theme.name}”`);
+      options.showToast(outcome.updated
+        ? mt("themeUpdated", { name: outcome.theme.name })
+        : mt("themeInstalled", { name: outcome.theme.name }));
     } catch (error) {
       options.showToast(options.errorMessage(error), true);
     } finally {
@@ -374,14 +378,14 @@ export function setupMarketplace(options: MarketplaceOptions): void {
   async function saveTheme(detail: MarketplaceThemeDetail): Promise<void> {
     const destination = await save({
       defaultPath: `${detail.manifestId}.zip`,
-      filters: [{ name: "Codex NN 主题包", extensions: ["zip"] }]
+      filters: [{ name: mt("themePackageFilter"), extensions: ["zip"] }]
     });
     if (!destination) return;
     const button = byId<HTMLButtonElement>("marketplace-save");
     button.disabled = true;
     try {
       await invoke("marketplace_save_theme", { themeId: detail.themeId, destination });
-      options.showToast("主题包已经过完整校验并保存");
+      options.showToast(mt("packageSaved"));
     } catch (error) {
       options.showToast(options.errorMessage(error), true);
     } finally {
@@ -419,17 +423,17 @@ export function setupMarketplace(options: MarketplaceOptions): void {
 
   function renderMine(): void {
     if (!auth && mineLoading) {
-      content.innerHTML = `<div class="marketplace-loading">正在读取登录状态…</div>`;
+      content.innerHTML = `<div class="marketplace-loading">${mt("loadingAuth")}</div>`;
       return;
     }
     if (!auth?.loggedIn) {
       content.innerHTML = `
         <div class="marketplace-login-panel">
           <span class="marketplace-login-mark">G</span>
-          <h3>${auth?.pending ? "请在浏览器中完成登录" : "登录后分享你的主题"}</h3>
-          <p>${auth?.pending ? "登录完成后，这里会自动继续。Token 不会出现在浏览器地址中。" : "发现主题不需要登录；只有上传、更新和下架主题时需要账号。"}</p>
+          <h3>${auth?.pending ? mt("finishLogin") : mt("shareAfterLogin")}</h3>
+          <p>${auth?.pending ? mt("pendingLoginHint") : mt("loginHint")}</p>
           ${mineError ? `<div class="marketplace-inline-error">${escapeHtml(mineError)}</div>` : ""}
-          <button id="marketplace-login" class="button primary" ${auth?.pending || mineBusy ? "disabled" : ""}>${auth?.pending ? "等待 Google 登录" : "使用 Google 登录"}</button>
+          <button id="marketplace-login" class="button primary" ${auth?.pending || mineBusy ? "disabled" : ""}>${auth?.pending ? mt("waitingGoogle") : mt("googleLogin")}</button>
         </div>`;
       document.getElementById("marketplace-login")?.addEventListener("click", () => void startLogin());
       return;
@@ -442,32 +446,32 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     content.innerHTML = `
       <div class="marketplace-account-bar">
         <form id="marketplace-profile-form" class="marketplace-profile-form">
-          <span>公开昵称</span>
+          <span>${mt("publicName")}</span>
           <input id="marketplace-public-name" value="${escapeHtml(state.user?.publicName ?? "")}" minlength="2" maxlength="40" required>
-          <button class="button subtle compact-button" ${mineBusy ? "disabled" : ""}>保存</button>
+          <button class="button subtle compact-button" ${mineBusy ? "disabled" : ""}>${mt("save")}</button>
         </form>
-        <button id="marketplace-logout" class="button subtle compact-button" ${mineBusy ? "disabled" : ""}>退出登录</button>
+        <button id="marketplace-logout" class="button subtle compact-button" ${mineBusy ? "disabled" : ""}>${mt("logout")}</button>
       </div>
       <div class="marketplace-upload-bar">
-        <div><strong>分享或更新主题</strong><small>包上限 20 MB；本地内容与云端不一致时，会先询问再自动创建下一版本</small></div>
+        <div><strong>${mt("publishHeading")}</strong><small>${mt("publishHint")}</small></div>
         <div class="marketplace-local-picker">
           <select id="marketplace-local-theme" class="marketplace-select" ${!localThemes.length || mineBusy ? "disabled" : ""}>
             ${localThemes.length
               ? localThemes.map((theme) => `<option value="${escapeHtml(theme.id)}">${escapeHtml(theme.name)} · ${escapeHtml(localThemeStatus(theme.id).label)}</option>`).join("")
-              : `<option>没有可投稿的自定义主题</option>`}
+              : `<option>${mt("noCustomThemes")}</option>`}
           </select>
           <small id="marketplace-local-sync-copy"></small>
         </div>
-        <button id="marketplace-upload-installed" class="button secondary compact-button" ${!localThemes.length || mineBusy ? "disabled" : ""}>发布主题</button>
-        <button id="marketplace-upload-zip" class="button primary compact-button" ${mineBusy ? "disabled" : ""}>上传 / 更新 ZIP</button>
+        <button id="marketplace-upload-installed" class="button secondary compact-button" ${!localThemes.length || mineBusy ? "disabled" : ""}>${mt("publishTheme")}</button>
+        <button id="marketplace-upload-zip" class="button primary compact-button" ${mineBusy ? "disabled" : ""}>${mt("uploadZip")}</button>
       </div>
       ${mineError ? `<div class="marketplace-inline-error">${escapeHtml(mineError)}</div>` : ""}
       <div class="marketplace-upload-list">
         ${mineLoading && !uploads.length
-          ? `<div class="marketplace-loading">正在读取投稿记录…</div>`
+          ? `<div class="marketplace-loading">${mt("loadingUploads")}</div>`
           : uploads.length
             ? uploads.map(uploadHtml).join("")
-            : `<div class="marketplace-empty"><strong>还没有投稿</strong><p>可以上传本地已安装主题，也可以选择一个主题 ZIP。</p></div>`}
+            : `<div class="marketplace-empty"><strong>${mt("noUploads")}</strong><p>${mt("noUploadsHint")}</p></div>`}
       </div>`;
     byId<HTMLFormElement>("marketplace-profile-form").addEventListener("submit", (event) => {
       event.preventDefault();
@@ -501,14 +505,14 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       <article class="marketplace-upload-item">
         <span class="marketplace-upload-icon">${escapeHtml(record.title.slice(0, 1).toUpperCase() || "N")}</span>
         <span class="marketplace-upload-copy">
-          <span><strong>${escapeHtml(record.title)}</strong><em>v${record.versionNumber} · ${record.visibility === "private" ? "私密" : "公开"}</em></span>
-          <small>${escapeHtml(record.manifestId)} · ${formatDate(record.createdAt)}${shareCodes.length ? ` · ${shareCodes.length} 个永久码 / ${redemptions} 次领取` : ""}</small>
+          <span><strong>${escapeHtml(record.title)}</strong><em>v${record.versionNumber} · ${record.visibility === "private" ? mt("private") : mt("public")}</em></span>
+          <small>${escapeHtml(record.manifestId)} · ${formatDate(record.createdAt)}${shareCodes.length ? ` · ${mt("shareCodeStats", { codes: shareCodes.length, redemptions })}` : ""}</small>
         </span>
         <span class="marketplace-upload-actions">
           <span class="marketplace-review-state ${status.kind}"><i></i>${status.label}</span>
-          ${canShare ? `<button class="button subtle compact-button" data-create-share-code="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>创建分享码</button>` : ""}
-          ${canWithdraw ? `<button class="button subtle danger compact-button" data-withdraw-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>下架</button>` : ""}
-          ${canRestore ? `<button class="button subtle compact-button" data-restore-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>恢复上架</button>` : ""}
+          ${canShare ? `<button class="button subtle compact-button" data-create-share-code="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>${mt("createShareCode")}</button>` : ""}
+          ${canWithdraw ? `<button class="button subtle danger compact-button" data-withdraw-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>${mt("withdraw")}</button>` : ""}
+          ${canRestore ? `<button class="button subtle compact-button" data-restore-theme="${escapeHtml(record.themeId)}" ${mineBusy ? "disabled" : ""}>${mt("restore")}</button>` : ""}
         </span>
       </article>`;
   }
@@ -522,7 +526,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       if (auth.loggedIn) {
         await refreshUploadsOnly();
       }
-      options.showToast("Google 登录已完成");
+      options.showToast(mt("googleLoginComplete"));
     });
   }
 
@@ -530,7 +534,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     await runMineAction(async () => {
       auth = await invoke<MarketplaceAuthState>("marketplace_logout");
       uploads = [];
-      options.showToast("已退出主题广场账号");
+      options.showToast(mt("loggedOut"));
     });
   }
 
@@ -539,7 +543,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     await runMineAction(async () => {
       const user = await invoke<MarketplaceUser>("marketplace_update_profile", { publicName });
       if (auth) auth = { ...auth, user };
-      options.showToast("公开昵称已更新");
+      options.showToast(mt("publicNameUpdated"));
     });
   }
 
@@ -559,48 +563,48 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     const record = latestUpload(state?.manifestId ?? localThemeId);
     if (state?.role === "consumer") {
       return {
-        label: `来自广场 v${state.versionNumber ?? "?"}`,
-        detail: "这是消费端安装的主题；如要投稿，请先修改主题 ID。",
-        action: "不可直接投稿",
+        label: mt("fromMarketplace", { version: state.versionNumber ?? "?" }),
+        detail: mt("consumerThemeHint"),
+        action: mt("cannotPublish"),
         disabled: true
       };
     }
     if (record && ["uploading", "reviewing", "publishing"].includes(record.status)) {
       return {
-        label: `v${record.versionNumber} 审核中`,
-        detail: "当前版本完成审核后，才可以继续发布下一版。",
-        action: "审核中",
+        label: mt("reviewingVersion", { version: record.versionNumber }),
+        detail: mt("reviewingHint"),
+        action: mt("reviewing"),
         disabled: true
       };
     }
     if (state?.role === "publisher" && state.localChanged) {
       return {
-        label: "有未发布更改",
-        detail: `本地内容已不同于关联的云端 v${state.versionNumber ?? "?"}，可以发布更新。`,
-        action: "发布更新",
+        label: mt("unpublishedChanges"),
+        detail: mt("localChangedHint", { version: state.versionNumber ?? "?" }),
+        action: mt("publishUpdate"),
         disabled: false
       };
     }
     if (state?.role === "publisher" && record?.status === "published" && state.versionId === record.versionId) {
       return {
-        label: `已同步 v${record.versionNumber}`,
-        detail: "本地内容和已发布版本一致。",
-        action: "已同步",
+        label: mt("syncedVersion", { version: record.versionNumber }),
+        detail: mt("syncedHint"),
+        action: mt("synced"),
         disabled: true
       };
     }
     if (record) {
       return {
-        label: `云端已有 v${record.versionNumber}`,
-        detail: "发布前会比较本地主题包，并在不一致时请求确认。",
-        action: "检查并发布",
+        label: mt("cloudVersion", { version: record.versionNumber }),
+        detail: mt("compareBeforePublish"),
+        action: mt("inspectPublish"),
         disabled: false
       };
     }
     return {
-      label: "尚未发布",
-      detail: "首次发布后会建立本地与云端主题的关联。",
-      action: "发布主题",
+      label: mt("neverPublished"),
+      detail: mt("firstPublishHint"),
+      action: mt("publishTheme"),
       disabled: false
     };
   }
@@ -629,7 +633,7 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     const path = await open({
       multiple: false,
       directory: false,
-      filters: [{ name: "Codex NN 主题包", extensions: ["zip"] }]
+      filters: [{ name: mt("themePackageFilter"), extensions: ["zip"] }]
     });
     if (typeof path !== "string") return;
     await runMineAction(async () => {
@@ -648,8 +652,8 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     });
     if (outcome.needsConfirmation) {
       const confirmed = await confirmDialog(
-        `“${outcome.title}”与云端 v${outcome.previousVersionNumber ?? "?"} 不一致。是否发布为下一版本？`,
-        { title: "发布主题更新", kind: "warning" }
+        mt("publishMismatch", { title: outcome.title, version: outcome.previousVersionNumber ?? "?" }),
+        { title: mt("publishUpdateTitle"), kind: "warning" }
       );
       if (!confirmed) return;
       outcome = await invoke<MarketplaceUploadOutcome>("marketplace_upload_theme", {
@@ -660,8 +664,12 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     }
     if (!outcome.record) return;
     options.showToast(outcome.uploaded
-      ? `${outcome.isUpdate ? `v${outcome.record.versionNumber} 更新` : "主题"}已提交，正在审核`
-      : `已与云端 v${outcome.record.versionNumber} 同步`);
+      ? mt("submittedReview", {
+          subject: outcome.isUpdate
+            ? mt("versionUpdate", { version: outcome.record.versionNumber })
+            : mt("themeSubject")
+        })
+      : mt("syncedCloud", { version: outcome.record.versionNumber }));
     await refreshUploadsOnly();
   }
 
@@ -669,13 +677,13 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     const record = uploads.find((item) => item.themeId === themeId && item.status === "published");
     if (!record) return;
     const confirmed = await confirmDialog(
-      `下架“${record.title}”后会立即从广场和 API 隐藏。历史版本、R2 资源、分享码和已有授权都会保留，之后可以直接恢复。继续吗？`,
-      { title: "下架主题", kind: "warning" }
+      mt("withdrawConfirm", { title: record.title }),
+      { title: mt("withdrawTitle"), kind: "warning" }
     );
     if (!confirmed) return;
     await runMineAction(async () => {
       await invoke("marketplace_withdraw_theme", { themeId });
-      options.showToast(`已下架“${record.title}”`);
+      options.showToast(mt("withdrawnToast", { title: record.title }));
       await refreshUploadsOnly();
     });
   }
@@ -685,15 +693,15 @@ export function setupMarketplace(options: MarketplaceOptions): void {
     if (!record) return;
     await runMineAction(async () => {
       await invoke("marketplace_restore_theme", { themeId });
-      options.showToast(`已恢复“${record.title}”，版本和分享授权保持不变`);
+      options.showToast(mt("restoredToast", { title: record.title }));
       await refreshUploadsOnly();
     });
   }
 
   async function createShareCode(themeId: string): Promise<void> {
     const confirmed = await confirmDialog(
-      "永久分享码可以被多人反复领取，创建后永不过期，也不能撤销或删除。确定继续创建吗？",
-      { title: "创建不可撤销的永久分享码", kind: "warning" }
+      mt("permanentCodeConfirm"),
+      { title: mt("permanentCodeTitle"), kind: "warning" }
     );
     if (!confirmed) return;
     await runMineAction(async () => {
@@ -706,13 +714,13 @@ export function setupMarketplace(options: MarketplaceOptions): void {
   function showCreatedShareCode(code: string): void {
     detailDialog.hidden = false;
     detailCard.innerHTML = `
-      <button class="modal-close" data-close-marketplace aria-label="关闭">×</button>
+      <button class="modal-close" data-close-marketplace aria-label="${mt("close")}">×</button>
       <div class="marketplace-form-card">
         <span class="eyebrow">SHARE CODE</span>
-        <h3 id="marketplace-detail-title">永久分享码已创建</h3>
-        <p>这是唯一一次显示完整明文。关闭后无法再次查看，但可以继续创建新的永久码。</p>
+        <h3 id="marketplace-detail-title">${mt("codeCreated")}</h3>
+        <p>${mt("codeOneTimeHint")}</p>
         <code class="marketplace-share-code-result">${escapeHtml(code)}</code>
-        <button class="button primary" data-close-marketplace>我已保存，关闭</button>
+        <button class="button primary" data-close-marketplace>${mt("savedClose")}</button>
       </div>`;
     detailCard.querySelectorAll<HTMLElement>("[data-close-marketplace]").forEach((button) => {
       button.addEventListener("click", closeDetail);
@@ -736,34 +744,34 @@ export function setupMarketplace(options: MarketplaceOptions): void {
       cancelActiveDialog = () => finish(null);
       detailDialog.hidden = false;
       detailCard.innerHTML = `
-        <button class="modal-close" data-close-marketplace aria-label="关闭">×</button>
+        <button class="modal-close" data-close-marketplace aria-label="${mt("close")}">×</button>
         <form id="marketplace-listing-form" class="marketplace-form-card marketplace-listing-form">
           <span class="eyebrow">PUBLISH THEME</span>
-          <h3 id="marketplace-detail-title">填写广场信息</h3>
-          <p>这些是广场展示信息，不会写回主题 ZIP。资源或展示信息发生变化时，会自动创建下一版本。</p>
-          <label>标题 <small>必填，最多 80 字</small>
+          <h3 id="marketplace-detail-title">${mt("listingTitle")}</h3>
+          <p>${mt("listingHint")}</p>
+          <label>${mt("title")} <small>${mt("titleLimit")}</small>
             <input id="marketplace-listing-title" maxlength="80" required value="${escapeHtml(preparation.listing.title)}">
           </label>
-          <label>简介 <small>可选，最多 1000 字</small>
+          <label>${mt("description")} <small>${mt("descriptionLimit")}</small>
             <textarea id="marketplace-listing-description" maxlength="1000" rows="5">${escapeHtml(preparation.listing.description)}</textarea>
           </label>
-          <label>标签 <small>可选，最多 10 个；输入后按回车或逗号</small>
+          <label>${mt("tags")} <small>${mt("tagsLimit")}</small>
             <div id="marketplace-tag-editor" class="marketplace-tag-editor">
               <div id="marketplace-tag-chips" class="marketplace-tags"></div>
-              <input id="marketplace-tag-input" maxlength="24" placeholder="添加标签">
+              <input id="marketplace-tag-input" maxlength="24" placeholder="${mt("addTag")}">
             </div>
           </label>
-          <label>可见性
+          <label>${mt("visibility")}
             <select id="marketplace-listing-visibility" class="marketplace-select">
-              <option value="public" ${preparation.listing.visibility === "public" ? "selected" : ""}>公开 · 出现在主题广场</option>
-              <option value="private" ${preparation.listing.visibility === "private" ? "selected" : ""} ${preparation.existingVisibility === "public" ? "disabled" : ""}>私密 · 仅通过永久分享码访问</option>
+              <option value="public" ${preparation.listing.visibility === "public" ? "selected" : ""}>${mt("publicVisibility")}</option>
+              <option value="private" ${preparation.listing.visibility === "private" ? "selected" : ""} ${preparation.existingVisibility === "public" ? "disabled" : ""}>${mt("privateVisibility")}</option>
             </select>
           </label>
-          ${preparation.existingVisibility === "public" ? `<div class="marketplace-inline-note">这个主题已经公开，公开状态不可逆，不能再转为私密。</div>` : `<div class="marketplace-inline-note">私密主题以后可以转为公开；一旦公开，就不能改回私密。</div>`}
+          ${preparation.existingVisibility === "public" ? `<div class="marketplace-inline-note">${mt("publicImmutable")}</div>` : `<div class="marketplace-inline-note">${mt("privateCanPublish")}</div>`}
           <div id="marketplace-listing-error" class="marketplace-inline-error" hidden></div>
           <div class="marketplace-detail-actions">
-            <button type="button" class="button subtle" data-close-marketplace>取消</button>
-            <button class="button primary">继续发布</button>
+            <button type="button" class="button subtle" data-close-marketplace>${mt("cancel")}</button>
+            <button class="button primary">${mt("continuePublish")}</button>
           </div>
         </form>`;
       const chips = byId("marketplace-tag-chips");
@@ -782,12 +790,12 @@ export function setupMarketplace(options: MarketplaceOptions): void {
         tagInput.value = "";
         if (!tag) return;
         if ([...tag].length > 24 || /[\p{C}]/u.test(tag)) {
-          showListingError("单个标签需为 1–24 字，且不能包含控制字符");
+          showListingError(mt("invalidTag"));
           return;
         }
         if (tags.some((item) => item.toLocaleLowerCase() === tag.toLocaleLowerCase())) return;
         if (tags.length >= 10) {
-          showListingError("最多只能填写 10 个标签");
+          showListingError(mt("tooManyTags"));
           return;
         }
         tags.push(tag);
@@ -815,11 +823,11 @@ export function setupMarketplace(options: MarketplaceOptions): void {
         const title = byId<HTMLInputElement>("marketplace-listing-title").value.trim();
         const description = byId<HTMLTextAreaElement>("marketplace-listing-description").value.trim();
         if (![...title].length || [...title].length > 80) {
-          showListingError("标题需为 1–80 字");
+          showListingError(mt("invalidTitle"));
           return;
         }
         if ([...description].length > 1000) {
-          showListingError("简介最多 1000 字");
+          showListingError(mt("invalidDescription"));
           return;
         }
         const visibility = byId<HTMLSelectElement>("marketplace-listing-visibility").value;
@@ -885,40 +893,40 @@ function detailSyncView(
     && sync.packageSha256 !== detail.packageSha256;
   if (sync.localChanged && cloudUpdate) {
     return {
-      label: "本地和云端都有更新",
-      detail: `本地有修改，云端已更新到 v${detail.versionNumber}；安装前会再次确认是否覆盖本地内容。`,
-      action: `检查并更新到 v${detail.versionNumber}`,
+      label: mt("localCloudChanged"),
+      detail: mt("localCloudChangedHint", { version: detail.versionNumber }),
+      action: mt("inspectUpdate", { version: detail.versionNumber }),
       kind: "warning"
     };
   }
   if (sameVersionConflict) {
     return {
-      label: "同一版本内容不一致",
-      detail: `本地关联和云端都是 v${detail.versionNumber}，但主题包哈希不同；不会静默覆盖。`,
-      action: "检查并重新安装",
+      label: mt("sameVersionConflict"),
+      detail: mt("sameVersionConflictHint", { version: detail.versionNumber }),
+      action: mt("inspectReinstall"),
       kind: "warning"
     };
   }
   if (cloudUpdate) {
     return {
-      label: `可更新到 v${detail.versionNumber}`,
-      detail: `本地关联版本为 v${linkedVersion}，更新后会同步新的云端版本信息。`,
-      action: `更新到 v${detail.versionNumber}`,
+      label: mt("updateAvailable", { version: detail.versionNumber }),
+      detail: mt("updateAvailableHint", { local: linkedVersion, version: detail.versionNumber }),
+      action: mt("updateTo", { version: detail.versionNumber }),
       kind: "update"
     };
   }
   if (sync.localChanged) {
     return {
-      label: "本地有未同步修改",
-      detail: `云端仍为 v${detail.versionNumber}；重新安装会覆盖本地修改，因此会先请求确认。`,
-      action: "重新安装云端版本",
+      label: mt("unsyncedLocal"),
+      detail: mt("unsyncedLocalHint", { version: detail.versionNumber }),
+      action: mt("reinstallCloud"),
       kind: "warning"
     };
   }
   return {
-    label: `已同步 v${detail.versionNumber}`,
-    detail: "本地主题与当前云端版本一致。",
-    action: "重新安装",
+    label: mt("syncedVersion", { version: detail.versionNumber }),
+    detail: mt("syncedCloudHint"),
+    action: mt("reinstall"),
     kind: "synced"
   };
 }
@@ -929,36 +937,36 @@ function installConfirmation(
   themeName: string
 ): string {
   if (!sync || sync.themeId !== detail.themeId) {
-    return `主题“${themeName}”已经安装。是否用广场版本覆盖？`;
+    return mt("overwriteInstalled", { name: themeName });
   }
   if (sync.localChanged) {
-    return `“${themeName}”在本地有修改。安装云端 v${detail.versionNumber} 会覆盖这些内容，是否继续？`;
+    return mt("overwriteLocalChanges", { name: themeName, version: detail.versionNumber });
   }
   if (sync.versionNumber === detail.versionNumber && sync.packageSha256 !== detail.packageSha256) {
-    return `“${themeName}”的本地关联与云端同为 v${detail.versionNumber}，但主题包哈希不同。是否用云端包覆盖？`;
+    return mt("overwriteHashConflict", { name: themeName, version: detail.versionNumber });
   }
   if ((sync.versionNumber ?? 0) < detail.versionNumber) {
-    return `是否将“${themeName}”从 v${sync.versionNumber ?? "?"} 更新到 v${detail.versionNumber}？`;
+    return mt("updateConfirmation", { name: themeName, local: sync.versionNumber ?? "?", version: detail.versionNumber });
   }
-  return `“${themeName}”已经安装。是否重新安装云端 v${detail.versionNumber}？`;
+  return mt("reinstallConfirmation", { name: themeName, version: detail.versionNumber });
 }
 
 function uploadStatus(status: string): { label: string; kind: string } {
   const labels: Record<string, { label: string; kind: string }> = {
-    uploading: { label: "等待上传", kind: "neutral" },
-    reviewing: { label: "审核中", kind: "working" },
-    publishing: { label: "审核中", kind: "working" },
-    published: { label: "已发布", kind: "success" },
-    rejected: { label: "未通过", kind: "danger" },
-    publish_failed: { label: "发布失败", kind: "danger" },
-    withdrawn: { label: "已下架", kind: "neutral" }
+    uploading: { label: mt("statusUploading"), kind: "neutral" },
+    reviewing: { label: mt("reviewing"), kind: "working" },
+    publishing: { label: mt("reviewing"), kind: "working" },
+    published: { label: mt("statusPublished"), kind: "success" },
+    rejected: { label: mt("statusRejected"), kind: "danger" },
+    publish_failed: { label: mt("statusFailed"), kind: "danger" },
+    withdrawn: { label: mt("statusWithdrawn"), kind: "neutral" }
   };
-  return labels[status] ?? { label: "处理中", kind: "working" };
+  return labels[status] ?? { label: mt("statusProcessing"), kind: "working" };
 }
 
 function byId<T extends HTMLElement = HTMLElement>(id: string): T {
   const element = document.getElementById(id);
-  if (!element) throw new Error(`缺少元素 #${id}`);
+  if (!element) throw new Error(mt("missingElement", { id }));
   return element as T;
 }
 
@@ -973,13 +981,16 @@ function tagHtml(value: string): string {
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  const locale = resolvedLanguage();
+  if (bytes < 1024 * 1024) {
+    return `${new Intl.NumberFormat(locale).format(Math.max(1, Math.round(bytes / 1024)))} KB`;
+  }
+  return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(bytes / 1024 / 1024)} MB`;
 }
 
 function formatDate(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.valueOf())
     ? value
-    : new Intl.DateTimeFormat("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
+    : new Intl.DateTimeFormat(resolvedLanguage(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
 }

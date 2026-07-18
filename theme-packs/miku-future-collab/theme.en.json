@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "miku-future-collab",
+  "name": "Miku Future Collab",
+  "layoutPreset": "mikuFuture",
+  "brandSubtitle": "CODEX NN · MIKU FUTURE",
+  "tagline": "Create melodies and code with Hatsune Miku.",
+  "projectPrefix": "Start a future project · ",
+  "projectLabel": "♫  Choose a creative project",
+  "statusText": "MIKU CREATIVE LINK ONLINE",
+  "quote": "BE TOGETHER · BE FUTURE",
+  "image": "background.webp",
+  "appearance": "light",
+  "art": { "focusX": 0.72, "focusY": 0.0, "safeArea": "left", "taskMode": "ambient" },
+  "colors": {
+    "background": "#EDF8FC", "panel": "#FFFFFF", "panelAlt": "#F6F1FB",
+    "accent": "#086B7A", "accentAlt": "#AD347F", "secondary": "#0D7399",
+    "highlight": "#745AC0", "text": "#173B58", "muted": "#5A6E82",
+    "line": "rgba(8, 107, 122, 0.30)"
+  }
+}

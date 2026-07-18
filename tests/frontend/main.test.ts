@@ -128,6 +128,7 @@ function setHandler(name: string, handler: (args?: Record<string, unknown>) => u
 beforeEach(() => {
   vi.resetModules();
   document.body.innerHTML = '<div id="app"></div>';
+  window.sessionStorage.clear();
   mocks.listeners.clear();
   mocks.handlers.clear();
   mocks.confirm.mockResolvedValue(true);
@@ -149,6 +150,11 @@ beforeEach(() => {
   setHandler("get_theme_designer_plugin_status", () => pluginStatus());
   setHandler("get_claude_theme_designer_plugin_status", () => claudePluginStatus());
   setHandler("set_app_accent", () => null);
+  setHandler("sync_language", () => ({ preference: "system", resolvedLanguage: "zh-CN" }));
+  setHandler("set_language_preference", (args) => ({
+    preference: args?.preference ?? "system",
+    resolvedLanguage: args?.preference === "en" ? "en" : "zh-CN"
+  }));
   mocks.invoke.mockImplementation((name: string, args?: Record<string, unknown>) => {
     const handler = mocks.handlers.get(name);
     if (!handler) return Promise.reject(new Error(`未模拟命令：${name}`));
@@ -161,6 +167,32 @@ beforeEach(() => {
 });
 
 describe("主应用界面", () => {
+  it("按后端解析结果显示英文界面", async () => {
+    setHandler("sync_language", () => ({ preference: "en", resolvedLanguage: "en" }));
+
+    await boot();
+
+    expect(document.documentElement.lang).toBe("en");
+    expect(document.title).toBe("Codex NN");
+    expect(text("header-status")).toBe("Not enabled");
+    expect(text("language-select")).toContain("Follow system");
+    expect(text("launch-button")).toBe("Launch Codex");
+  });
+
+  it.each(["system", "zh-CN", "en"] as const)("保存语言偏好 %s 并保留当前页面", async (preference) => {
+    await boot();
+    document.querySelector<HTMLButtonElement>('[data-page="designer"]')?.click();
+    const select = document.getElementById("language-select") as HTMLSelectElement;
+    select.value = preference;
+    select.dispatchEvent(new Event("change"));
+
+    await vi.waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith(
+      "set_language_preference",
+      { preference, systemLocale: expect.any(String) }
+    ));
+    expect(window.sessionStorage.getItem("codexnn:page")).toBe("designer");
+  });
+
   it("初始化状态、切换导航并选择主题", async () => {
     const unsafeTheme = { ...builtInTheme, name: "<script>坏名字</script>" };
     setHandler("get_app_snapshot", () => appSnapshot({ activeTheme: unsafeTheme }));
