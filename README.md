@@ -30,6 +30,8 @@
 
 **Codex 暖暖（Codex NN）** 是为官方 Codex Desktop 打造的可视化主题管理器。
 
+兼容 [Codex Dream Skin](https://github.com/Fei-Away/Codex-Dream-Skin) 主题包，可直接导入并使用已有主题。
+
 不用手动改文件，也不用反复执行脚本。打开 Codex 暖暖，选择喜欢的主题，然后一键启动或切换，就能为 Codex 换上全新的界面风格。
 
 ## 内置主题预览

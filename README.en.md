@@ -30,6 +30,8 @@
 
 **Codex NN** is a visual theme manager for the official Codex Desktop app.
 
+Compatible with [Codex Dream Skin](https://github.com/Fei-Away/Codex-Dream-Skin) theme packages, so existing themes can be imported and used directly.
+
 No manual file editing or repeated scripts are required. Open Codex NN, choose a theme, and launch or switch with one click to give Codex a completely new appearance.
 
 ## Built-in Theme Preview
