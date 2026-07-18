@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   AppSnapshot,
+  ClaudeThemeDesignerPluginStatus,
   ThemeDesignerPluginStatus,
   ThemeInstallOutcome,
   ThemeSummary
@@ -73,6 +74,18 @@ const pluginStatus = (overrides: Partial<ThemeDesignerPluginStatus> = {}): Theme
   ...overrides
 });
 
+const claudePluginStatus = (
+  overrides: Partial<ClaudeThemeDesignerPluginStatus> = {}
+): ClaudeThemeDesignerPluginStatus => ({
+  installed: false,
+  managed: false,
+  conflict: false,
+  version: "0.1.0",
+  message: null,
+  claudeAvailable: true,
+  ...overrides
+});
+
 function installOutcome(overrides: Partial<ThemeInstallOutcome> = {}): ThemeInstallOutcome {
   return {
     installed: true,
@@ -134,6 +147,7 @@ beforeEach(() => {
   setHandler("get_app_snapshot", () => appSnapshot());
   setHandler("list_themes", () => [builtInTheme, customTheme]);
   setHandler("get_theme_designer_plugin_status", () => pluginStatus());
+  setHandler("get_claude_theme_designer_plugin_status", () => claudePluginStatus());
   setHandler("set_app_accent", () => null);
   mocks.invoke.mockImplementation((name: string, args?: Record<string, unknown>) => {
     const handler = mocks.handlers.get(name);
@@ -335,6 +349,28 @@ describe("主题库与插件操作", () => {
     expect(text("toast")).toContain("已删除");
   });
 
+  it("通过可访问标签页切换 Codex 与 Claude Code 面板", async () => {
+    await boot();
+
+    const codexTab = button("designer-provider-codex-tab");
+    const claudeTab = button("designer-provider-claude-tab");
+    expect(codexTab.getAttribute("aria-selected")).toBe("true");
+    expect(claudeTab.getAttribute("aria-selected")).toBe("false");
+    expect(document.getElementById("designer-codex-panel")?.hidden).toBe(false);
+    expect(document.getElementById("designer-claude-panel")?.hidden).toBe(true);
+
+    claudeTab.click();
+    expect(claudeTab.getAttribute("aria-selected")).toBe("true");
+    expect(claudeTab.tabIndex).toBe(0);
+    expect(codexTab.tabIndex).toBe(-1);
+    expect(document.getElementById("designer-codex-panel")?.hidden).toBe(true);
+    expect(document.getElementById("designer-claude-panel")?.hidden).toBe(false);
+
+    claudeTab.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    expect(codexTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(codexTab);
+  });
+
   it("安装和卸载主题设计插件", async () => {
     setHandler("install_theme_designer_plugin", () => pluginStatus({
       installed: true,
@@ -357,6 +393,9 @@ describe("主题库与插件操作", () => {
     setHandler("get_theme_designer_plugin_status", () => {
       throw new Error("配置损坏");
     });
+    setHandler("get_claude_theme_designer_plugin_status", () => {
+      throw new Error("Claude 插件状态损坏");
+    });
 
     await boot();
 
@@ -364,6 +403,10 @@ describe("主题库与插件操作", () => {
     expect(text("designer-plugin-message")).toContain("配置损坏");
     expect(button("install-designer-plugin-button").disabled).toBe(true);
     expect(button("uninstall-designer-plugin-button").disabled).toBe(true);
+    expect(text("claude-designer-plugin-state")).toBe("不可用");
+    expect(text("claude-designer-plugin-message")).toContain("Claude 插件状态损坏");
+    expect(button("install-claude-designer-plugin-button").disabled).toBe(true);
+    expect(button("uninstall-claude-designer-plugin-button").disabled).toBe(true);
   });
 
   it("Codex 未安装时禁用启动和插件安装", async () => {
@@ -384,6 +427,104 @@ describe("主题库与插件操作", () => {
     expect(button("launch-button").disabled).toBe(true);
     expect(button("apply-button").disabled).toBe(true);
     expect(button("install-designer-plugin-button").disabled).toBe(true);
+    expect(button("install-claude-designer-plugin-button").disabled).toBe(false);
+  });
+
+  it("不读取或修改 Claude Code 配置并无参数安装插件", async () => {
+    setHandler("install_claude_theme_designer_plugin", (args) => {
+      expect(args).toBeUndefined();
+      return claudePluginStatus({
+        installed: true,
+        managed: true
+      });
+    });
+
+    await boot();
+    expect(document.getElementById("claude-endpoint-input")).toBeNull();
+    expect(document.getElementById("claude-model-input")).toBeNull();
+    expect(document.getElementById("claude-api-key-input")).toBeNull();
+    expect(document.getElementById("claude-remove-provider-config-checkbox")).toBeNull();
+    expect(text("designer-claude-panel")).toContain("沿用 Claude Code 现有");
+    click("install-claude-designer-plugin-button");
+
+    await vi.waitFor(() => expect(mocks.invoke.mock.calls).toContainEqual([
+      "install_claude_theme_designer_plugin"
+    ]));
+    expect(text("claude-designer-plugin-state")).toBe("已安装");
+  });
+
+  it("无参数卸载 Claude Code 插件并保留现有配置", async () => {
+    setHandler("get_claude_theme_designer_plugin_status", () => claudePluginStatus({
+      installed: true,
+      managed: true
+    }));
+    setHandler("uninstall_claude_theme_designer_plugin", (args) => {
+      expect(args).toBeUndefined();
+      return claudePluginStatus();
+    });
+
+    await boot();
+    click("uninstall-claude-designer-plugin-button");
+
+    await vi.waitFor(() => expect(mocks.invoke.mock.calls).toContainEqual([
+      "uninstall_claude_theme_designer_plugin"
+    ]));
+    expect(text("claude-designer-plugin-state")).toBe("未安装");
+    expect(text("toast")).toContain("已卸载");
+  });
+
+  it("Claude Code 不可用时禁用插件操作", async () => {
+    setHandler("get_claude_theme_designer_plugin_status", () => claudePluginStatus({
+      claudeAvailable: false,
+      message: "未找到 Claude Code"
+    }));
+
+    await boot();
+
+    expect(text("claude-designer-plugin-state")).toBe("不可用");
+    expect(button("install-claude-designer-plugin-button").disabled).toBe(true);
+    expect(button("uninstall-claude-designer-plugin-button").disabled).toBe(true);
+  });
+
+  it("Claude Code 插件冲突时阻止覆盖并显示处理提示", async () => {
+    setHandler("get_claude_theme_designer_plugin_status", () => claudePluginStatus({
+      managed: true,
+      conflict: true
+    }));
+
+    await boot();
+
+    expect(text("claude-designer-plugin-state")).toBe("需要处理");
+    expect(text("claude-designer-plugin-message")).toContain("不会修改 Claude Code");
+    expect(button("install-claude-designer-plugin-button").disabled).toBe(true);
+    expect(button("uninstall-claude-designer-plugin-button").disabled).toBe(true);
+  });
+
+  it("Claude Code 插件命令未完成时支持取消卸载并显示默认错误", async () => {
+    setHandler("get_claude_theme_designer_plugin_status", () => claudePluginStatus({
+      installed: true,
+      managed: true
+    }));
+    setHandler("install_claude_theme_designer_plugin", () => claudePluginStatus({
+      managed: true
+    }));
+    setHandler("uninstall_claude_theme_designer_plugin", () => claudePluginStatus({
+      installed: true,
+      managed: true
+    }));
+
+    await boot();
+    click("install-claude-designer-plugin-button");
+    await vi.waitFor(() => expect(text("toast")).toContain("未能完成安装"));
+
+    mocks.confirm.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    click("uninstall-claude-designer-plugin-button");
+    await Promise.resolve();
+    expect(mocks.invoke).not.toHaveBeenCalledWith("uninstall_claude_theme_designer_plugin");
+
+    click("uninstall-claude-designer-plugin-button");
+    await vi.waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith("uninstall_claude_theme_designer_plugin"));
+    expect(text("toast")).toContain("未能完成卸载");
   });
 
   it("插件命令返回未完成状态时显示明确错误", async () => {

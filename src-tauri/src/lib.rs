@@ -2,6 +2,7 @@ mod agent_api;
 mod app_icon;
 mod cdp;
 mod cdp_session;
+mod claude_theme_designer_plugin;
 mod codex;
 mod dream_skin;
 mod marketplace;
@@ -308,6 +309,27 @@ fn uninstall_theme_designer_plugin(
     theme_designer_plugin::uninstall(&app)
 }
 
+#[tauri::command]
+fn get_claude_theme_designer_plugin_status(
+    app: AppHandle,
+) -> Result<claude_theme_designer_plugin::ClaudeThemeDesignerPluginStatus, String> {
+    claude_theme_designer_plugin::inspect(&app)
+}
+
+#[tauri::command]
+fn install_claude_theme_designer_plugin(
+    app: AppHandle,
+) -> Result<claude_theme_designer_plugin::ClaudeThemeDesignerPluginStatus, String> {
+    claude_theme_designer_plugin::install(&app)
+}
+
+#[tauri::command]
+fn uninstall_claude_theme_designer_plugin(
+    app: AppHandle,
+) -> Result<claude_theme_designer_plugin::ClaudeThemeDesignerPluginStatus, String> {
+    claude_theme_designer_plugin::uninstall(&app)
+}
+
 fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     let menu = MenuBuilder::new(app)
         .text(MENU_SHOW, "显示 Codex 暖暖")
@@ -429,6 +451,11 @@ pub fn run() {
             if let Err(error) = theme_designer_plugin::update_if_version_changed(app.handle()) {
                 eprintln!("[codex-nn] 更新主题设计插件失败：{error}");
             }
+            if let Err(error) =
+                claude_theme_designer_plugin::update_if_version_changed(app.handle())
+            {
+                eprintln!("[codex-nn] 更新 Claude Code 主题设计插件失败：{error}");
+            }
             setup_tray(app.handle())?;
             Ok(())
         })
@@ -467,6 +494,9 @@ pub fn run() {
             get_theme_designer_plugin_status,
             install_theme_designer_plugin,
             uninstall_theme_designer_plugin,
+            get_claude_theme_designer_plugin_status,
+            install_claude_theme_designer_plugin,
+            uninstall_claude_theme_designer_plugin,
         ])
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {

@@ -48,6 +48,15 @@ export type ThemeDesignerPluginStatus = {
   message: string | null;
 };
 
+export type ClaudeThemeDesignerPluginStatus = {
+  installed: boolean;
+  managed: boolean;
+  conflict: boolean;
+  version: string;
+  message: string | null;
+  claudeAvailable: boolean;
+};
+
 export type DiagnosticReport = {
   pass: boolean;
   checks: Array<{ name: string; pass: boolean; detail: string }>;

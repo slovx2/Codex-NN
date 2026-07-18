@@ -74,8 +74,8 @@ Every screenshot below shows the full Codex new-task page.
 
 - **Visual workflow**: preview, install, switch, and restore themes from a desktop interface
 - **No-code theme design**: describe a visual style or provide a concept image; no knowledge of color systems, schemas, or packaging is required
-- **Built-in theme design Skill**: install the bundled designer plugin with one click and let Codex create the concept, background, palette, copy, and theme package
-- **Design with live feedback**: Codex installs, switches, and diagnoses themes through the local MCP so you can review the real interface and keep refining it in the same conversation
+- **Built-in theme design Skill**: install the bundled designer plugin for Codex or Claude Code and let the AI create the concept, background, palette, copy, and theme package
+- **Design with live feedback**: Codex or Claude Code installs, switches, and diagnoses themes through the local MCP so you can review the real interface and keep refining it in the same conversation
 - **Ready to use**: includes Adventure Atlas, Miku Future Collab, Strawberry Starlight, Azure Neon Frontier, and Rick and Morty Multiverse Lab
 - **Instant switching**: hot-swap themes while a managed theme session is running
 - **Local theme library**: install, update, and manage your own ZIP theme packages
@@ -134,6 +134,16 @@ You do not need to learn the theme format or edit configuration files:
 
 The theme designer plugin can be removed at any time from the **Design Theme** page.
 
+## Designing Themes with Claude Code
+
+The Claude Code plugin uses the same Codex NN schema v1 specification and local MCP. Codex NN only installs the theme design Skill and MCP connection; it does not manage your Claude Code account or model configuration:
+
+1. Install Claude Code using the [official setup guide](https://code.claude.com/docs/en/setup), complete your own login, model, and endpoint setup, then run `claude --version` to verify that the command is available.
+2. Select Claude Code on the **Design Theme** page in Codex NN, then select **Install Claude Code Plugin**.
+3. Keep Codex NN running and start a new Claude Code session. Describe the theme or attach a concept image. Claude first presents a complete interface concept; only after your explicit approval does it create the final background and ZIP, then install, switch, and diagnose the theme through MCP.
+
+The Skill is installed at `~/.claude/skills/codex-nn-theme-designer`. Claude Code continues to use your existing login state, model, and endpoint settings. Codex NN does not read or modify `~/.claude/settings.json`, and it never reads, stores, or transmits your Claude Code API key.
+
 ## How It Works
 
 Codex NN connects to a locally running Codex page through the Chrome DevTools Protocol (CDP), listening only on `127.0.0.1`. It applies the selected theme and keeps the theme state active in the background.
@@ -162,7 +172,7 @@ Codex NN is open source under the [MIT License](./LICENSE).
 
 Parts of the theme engine are adapted from Codex Dream Skin Studio. See [Third-Party Notices](./THIRD_PARTY_NOTICES.md) and the [corresponding license text](./THIRD_PARTY_LICENSE_CODEX_DREAM_SKIN.txt).
 
-Codex, OpenAI, and related names and marks belong to their respective owners. This project is not affiliated with or endorsed by OpenAI.
+Codex, OpenAI, Claude, Anthropic, and related names and marks belong to their respective owners. This project is not affiliated with or endorsed by OpenAI or Anthropic.
 
 ---
 
