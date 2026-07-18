@@ -22,6 +22,7 @@
     azureNeon: "azure-neon",
     mikuFuture: "miku-future",
     adventureAtlas: "adventure-atlas",
+    portalDimension: "portal-dimension",
   })[THEME.layoutPreset] || "standard";
   const THEME_VARIABLES = [
     "--ds-bg", "--ds-panel", "--ds-panel-2", "--ds-green", "--ds-lime",
@@ -150,6 +151,70 @@
           setAttribute(section, "data-nn-adventure-section", String(index % 4));
         }
       });
+    }
+  };
+
+  const clearPortalSidebar = () => {
+    document.querySelectorAll(".nn-theme-portal-universes").forEach((node) => node.remove());
+    for (const name of [
+      "data-nn-portal-empty",
+      "data-nn-portal-item",
+      "data-nn-portal-nav",
+      "data-nn-portal-section",
+    ]) {
+      document.querySelectorAll(`[${name}]`).forEach((node) => node.removeAttribute(name));
+    }
+  };
+
+  const markPortalSidebar = () => {
+    const sidebar = document.querySelector("aside.app-shell-left-panel");
+    if (!sidebar) return;
+    const navLabels = new Map([
+      ["新建任务", "new"], ["New task", "new"],
+      ["拉取请求", "pull-requests"], ["Pull requests", "pull-requests"],
+      ["已安排", "scheduled"], ["Scheduled", "scheduled"],
+      ["插件", "plugins"], ["Plugins", "plugins"],
+    ]);
+    for (const button of sidebar.querySelectorAll("button")) {
+      const kind = navLabels.get(normalizeText(button));
+      if (kind) setAttribute(button, "data-nn-portal-nav", kind);
+      else button.removeAttribute("data-nn-portal-nav");
+    }
+
+    const sections = [
+      ["Projects", "universes"],
+      ["Tasks", "missions"],
+    ];
+    for (const [heading, kind] of sections) {
+      const section = sidebar.querySelector(
+        `[data-app-action-sidebar-section-heading="${heading}"]`
+      );
+      if (!section) continue;
+      setAttribute(section, "data-nn-portal-section", kind);
+      const title = section.querySelector("[data-app-action-sidebar-section-toggle]");
+      if (title) setAttribute(title, "data-nn-portal-section", kind);
+      if (kind === "universes") {
+        const emptyProjectNode = [...section.querySelectorAll("div, span")].find((node) =>
+          /^(没有项目|No projects)$/i.test(node.textContent?.trim() || "")
+        );
+        if (!emptyProjectNode) continue;
+        setAttribute(emptyProjectNode, "data-nn-portal-empty", "true");
+        let decoration = section.querySelector(".nn-theme-portal-universes");
+        if (!decoration) {
+          decoration = document.createElement("div");
+          decoration.className = "nn-theme-portal-universes";
+          decoration.setAttribute("aria-hidden", "true");
+          decoration.innerHTML = `
+            <span class="is-active">维度 C-137 实验室</span>
+            <span>传送枪控制台</span>
+            <span>多元宇宙调试器</span>
+            <span>微型宇宙电池</span>`;
+          section.querySelector(".group\\/nav-section-title")?.after(decoration);
+        }
+      } else {
+        const tasks = section.querySelectorAll('div[role="button"].group.relative');
+        tasks.forEach((node) => setAttribute(node, "data-nn-portal-item", "mission"));
+      }
     }
   };
 
@@ -586,6 +651,8 @@
     const composedHome = Boolean(home && LAYOUT !== "dream-skin");
     setAttribute(root, PAGE_ATTR, isHome ? "home" : "thread");
     shellMain.classList.toggle("nn-theme-home-shell", composedHome);
+    if (LAYOUT === "portal-dimension") markPortalSidebar();
+    else clearPortalSidebar();
     let chrome = document.getElementById(CHROME_ID);
     if (LAYOUT === "dream-skin") {
       chrome?.remove();
@@ -618,7 +685,9 @@
     setText(chrome.querySelector(".nn-theme-brand small"), THEME.brandSubtitle || "CODEX NN");
     setText(
       chrome.querySelector(".nn-theme-portal-mark"),
-      LAYOUT === "strawberry-starlight" ? "♡" : LAYOUT === "adventure-atlas" ? "✦" : "◈"
+      LAYOUT === "strawberry-starlight" ? "♡"
+        : LAYOUT === "adventure-atlas" ? "✦"
+          : LAYOUT === "portal-dimension" ? "◉" : "◈"
     );
     setText(chrome.querySelector(".nn-theme-status span"), THEME.statusText || "CODEX NN ONLINE");
     setText(chrome.querySelector(".nn-theme-quote"), THEME.quote || "MAKE SOMETHING WONDERFUL");
@@ -657,6 +726,7 @@
     });
     document.querySelectorAll("[data-nn-adventure-thread]").forEach((node) => node.removeAttribute("data-nn-adventure-thread"));
     document.querySelectorAll("[data-nn-adventure-section]").forEach((node) => node.removeAttribute("data-nn-adventure-section"));
+    clearPortalSidebar();
     document.getElementById(STYLE_ID)?.remove();
     document.getElementById(CHROME_ID)?.remove();
     state?.observer?.disconnect();

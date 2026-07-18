@@ -14,17 +14,26 @@ const EXPECTED_THEME_IDS = new Set([
   "adventure-atlas",
   "azure-neon-frontier",
   "miku-future-collab",
+  "portal-dimension-lab",
   "strawberry-starlight"
 ]);
 const EXPECTED_THEME_APPEARANCE = {
   "adventure-atlas": "light",
   "azure-neon-frontier": "dark",
   "miku-future-collab": "light",
+  "portal-dimension-lab": "dark",
   "strawberry-starlight": "light"
 };
 const DREAM_SKIN_ENGINE_ASSETS = {
   "dream-skin.css": "ec3c3bc5f6e10e20a3f2307796bd1e1350e80e5d23d37318ee5468833c95a6df",
   "dream-skin-renderer-inject.js": "9adab4655c54740c2fcbbd5b2555aacdb659982b855706399b0f5367914511b3"
+};
+const EXPECTED_THEME_LAYOUT = {
+  "adventure-atlas": "adventureAtlas",
+  "azure-neon-frontier": "azureNeon",
+  "miku-future-collab": "mikuFuture",
+  "portal-dimension-lab": "portalDimension",
+  "strawberry-starlight": "strawberryStarlight"
 };
 
 function fail(message) {
@@ -222,6 +231,8 @@ function validateThemePacks() {
     if (manifest.schemaVersion !== 1 || manifest.id !== id) fail(`内置主题 ${id} 的 schemaVersion 或 id 错误`);
     const expectedAppearance = EXPECTED_THEME_APPEARANCE[id];
     if (manifest.appearance !== expectedAppearance) fail(`内置主题 ${id} 的 appearance 错误`);
+    const expectedLayout = EXPECTED_THEME_LAYOUT[id];
+    if (manifest.layoutPreset !== expectedLayout) fail(`内置主题 ${id} 的 layoutPreset 错误`);
     if (
       typeof manifest.art?.focusX !== "number" || manifest.art.focusX < 0 || manifest.art.focusX > 1
       || typeof manifest.art?.focusY !== "number" || manifest.art.focusY < 0 || manifest.art.focusY > 1

@@ -88,6 +88,7 @@ app.innerHTML = `
         <option value="miku-future-collab">初音未来</option>
         <option value="strawberry-starlight">星莓绮梦</option>
         <option value="azure-neon-frontier">苍蓝矩阵</option>
+        <option value="portal-dimension-lab">瑞克与莫蒂</option>
       </select>
       <button type="button" data-size="capture">抓取尺寸</button>
       <button type="button" data-size="desktop">1440 × 900</button>

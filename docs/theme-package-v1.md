@@ -52,7 +52,7 @@ v1 以 Codex Dream Skin schema v1 的同名字段和缺省行为为准；`layout
 字段限制：
 
 - `schemaVersion` 固定为数字 `1`。
-- `layoutPreset` 可选 `standard`、`dreamSkin`、`strawberryStarlight`、`azureNeon`、`mikuFuture` 或 `adventureAtlas`；旧清单缺省时按 `standard` 处理。
+- `layoutPreset` 可选 `standard`、`dreamSkin`、`strawberryStarlight`、`azureNeon`、`mikuFuture`、`adventureAtlas` 或 `portalDimension`；旧清单缺省时按 `standard` 处理。
 - `appearance` 可选 `auto`、`light` 或 `dark`。`auto` 跟随 Codex/系统外观，图片亮度不会擅自改变明暗模式。
 - `art.focusX` / `art.focusY` 是 `0..1` 的归一化焦点坐标。
 - `art.safeArea` 可选 `auto`、`left`、`right`、`center` 或 `none`，表示适合放置文字和控件的低信息区域。
@@ -60,6 +60,7 @@ v1 以 Codex Dream Skin schema v1 的同名字段和缺省行为为准；`layout
 - `dreamSkin` 直接使用同步自 Dream Skin 1.2.0 的原生渲染器，保留 Codex 原生布局和字段缺省语义。
 - `mikuFuture` 使用浅色薄荷工作台、音乐装饰和居中的大尺寸行动卡，适合初音未来主题。
 - `adventureAtlas` 使用浅色羊皮纸表面、航海罗盘和水彩冒险装饰，适合明亮的横向风景图。
+- `portalDimension` 使用深青实验室、荧光绿传送门、宇宙分组与任务坐标视觉。
 - `id` 只能使用小写字母、数字和连字符，不能为空，最长 80 字符；后续更新同一主题时保持 ID 不变。
 - `name` 必填，最长 80 字符；`tagline` 最长 160 字符；其余文字字段最长 80 字符。
 - `colors` 可以省略或只提供需要覆盖的字段；缺省颜色由图片在本地分析生成。显式颜色使用 `#RRGGBB`、`rgb(...)` 或 `rgba(...)`。

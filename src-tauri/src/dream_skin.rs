@@ -20,6 +20,7 @@ const BUILT_IN_IDS: &[&str] = &[
     "strawberry-starlight",
     "azure-neon-frontier",
     "miku-future-collab",
+    "portal-dimension-lab",
 ];
 
 #[derive(Debug, Clone, Deserialize)]

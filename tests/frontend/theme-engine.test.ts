@@ -46,7 +46,7 @@ function manifest(layoutPreset = "standard", id = "engine-test") {
     statusText: "ONLINE",
     quote: "TEST THE ENGINE",
     image: "background.png",
-    appearance: layoutPreset === "azureNeon" ? "dark" :
+    appearance: ["azureNeon", "portalDimension"].includes(layoutPreset) ? "dark" :
       ["strawberryStarlight", "mikuFuture", "adventureAtlas"].includes(layoutPreset) ? "light" : "auto",
     art: {
       focusX: 0.74,
@@ -158,6 +158,9 @@ describe("主题注入引擎", () => {
     expect(engineCss).toContain(":has(main.main-surface:not(.nn-theme-home-shell)) .composer-surface-chrome");
     expect(engineCss).toContain('[data-nn-theme-layout="strawberry-starlight"][data-nn-art-wide="true"]');
     expect(engineCss).toContain('[data-nn-theme-layout="azure-neon"] main.main-surface');
+    expect(engineCss).toContain('[data-nn-theme-layout="portal-dimension"] main.main-surface');
+    expect(engineCss).toContain(".nn-theme-portal-universes");
+    expect(engineCss).toContain('button[class~="bg-token-bg-fog"]');
     expect(engineCss).toContain(':not([data-nn-theme-layout="dream-skin"])[data-nn-art-wide="true"]');
     expect(engineCss).toContain('.thread-scroll-container .bg-gradient-to-t.from-token-main-surface-primary');
     expect(engineCss).toContain('[class~="group/application-menu-top-bar"]');
@@ -175,7 +178,8 @@ describe("主题注入引擎", () => {
     ["strawberryStarlight", "strawberry-starlight", "light"],
     ["azureNeon", "azure-neon", "dark"],
     ["mikuFuture", "miku-future", "light"],
-    ["adventureAtlas", "adventure-atlas", "light"]
+    ["adventureAtlas", "adventure-atlas", "light"],
+    ["portalDimension", "portal-dimension", "dark"]
   ])("映射 %s 布局并选择正确 Shell", (preset, layout, shell) => {
     const result = install(preset, `layout-${preset}`);
 
@@ -190,7 +194,8 @@ describe("主题注入引擎", () => {
     ["strawberryStarlight", true],
     ["azureNeon", true],
     ["mikuFuture", true],
-    ["adventureAtlas", true]
+    ["adventureAtlas", true],
+    ["portalDimension", true]
   ])("%s 在新版首页 Portal 中保留行动卡", (preset, composedHome) => {
     document.body.innerHTML = `
       <aside class="app-shell-left-panel"></aside>
@@ -290,7 +295,8 @@ describe("主题注入引擎", () => {
     ["strawberryStarlight", "strawberry-starlight", "light"],
     ["azureNeon", "azure-neon", "dark"],
     ["mikuFuture", "miku-future", "light"],
-    ["adventureAtlas", "adventure-atlas", "light"]
+    ["adventureAtlas", "adventure-atlas", "light"],
+    ["portalDimension", "portal-dimension", "dark"]
   ])("%s 从首页切到聊天页后保留原布局和装饰层", (preset, layout, shell) => {
     install(preset, `built-in-${preset}`);
     const route = document.querySelector('[role="main"]')!;
@@ -478,7 +484,14 @@ describe("主题注入引擎", () => {
     expect(route.getAttribute("style")).toBe(originalStyle);
   });
 
-  it.each(["standard", "strawberryStarlight", "azureNeon"])(
+  it.each([
+    "standard",
+    "strawberryStarlight",
+    "azureNeon",
+    "mikuFuture",
+    "adventureAtlas",
+    "portalDimension"
+  ])(
     "%s 在新版首页缺少 role 时仍完整应用 Hero 状态",
     (preset) => {
       const route = document.querySelector("section")!;
@@ -527,7 +540,7 @@ describe("主题注入引擎", () => {
 
   it("Dream Skin CSS 不包含原生布局几何重排", () => {
     const start = themeCss.indexOf("/* Dream Skin keeps Codex geometry native");
-    const end = themeCss.indexOf("/* 两个内置主题共享原生布局", start);
+    const end = themeCss.indexOf("/* 三个内置主题共享原生布局", start);
     const dreamSkinCss = themeCss.slice(start, end);
 
     expect(start).toBeGreaterThanOrEqual(0);
@@ -697,5 +710,52 @@ describe("主题注入引擎", () => {
 
     expect(requestFrame).not.toHaveBeenCalled();
     expect(document.querySelectorAll("#codex-nn-theme-chrome")).toHaveLength(1);
+  });
+
+  it("多元宇宙预设标记原生侧栏并完整清理附加装饰", () => {
+    document.body.innerHTML = `
+      <aside class="app-shell-left-panel">
+        <nav>
+          <button>新建任务</button>
+          <div data-app-action-sidebar-section-heading="Projects">
+            <div class="group/nav-section-title">
+              <button data-app-action-sidebar-section-toggle><span>项目</span></button>
+            </div>
+            <div><span>没有项目</span></div>
+          </div>
+          <section data-app-action-sidebar-section-heading="Tasks">
+            <div class="group/nav-section-title">
+              <button data-app-action-sidebar-section-toggle><span>任务</span></button>
+            </div>
+            <div role="button" class="group relative">测试任务</div>
+          </section>
+        </nav>
+      </aside>
+      <main class="main-surface">
+        <section role="main">
+          <span data-testid="home-icon"></span>
+          <div data-feature="game-source"></div>
+          <div class="group/home-suggestions"><button>行动</button></div>
+          <div class="composer-surface-chrome"></div>
+        </section>
+      </main>
+    `;
+
+    install("portalDimension", "portal-sidebar-test");
+    window.__CODEX_NN_THEME_STATE__?.ensure();
+
+    expect(document.documentElement.dataset.nnThemeLayout).toBe("portal-dimension");
+    expect(document.querySelector('[data-nn-portal-nav="new"]')).not.toBeNull();
+    expect(document.querySelector('[data-nn-portal-section="universes"]')).not.toBeNull();
+    expect(document.querySelector('[data-nn-portal-section="missions"]')).not.toBeNull();
+    expect(document.querySelector('[data-nn-portal-item="mission"]')).not.toBeNull();
+    expect(document.querySelectorAll(".nn-theme-portal-universes")).toHaveLength(1);
+    expect(document.querySelector(".nn-theme-portal-mark")?.textContent).toBe("◉");
+
+    expect(window.__CODEX_NN_THEME_STATE__?.cleanup()).toBe(true);
+    expect(document.querySelector(".nn-theme-portal-universes")).toBeNull();
+    expect(document.querySelector("[data-nn-portal-nav]")).toBeNull();
+    expect(document.querySelector("[data-nn-portal-section]")).toBeNull();
+    expect(document.querySelector("[data-nn-portal-item]")).toBeNull();
   });
 });

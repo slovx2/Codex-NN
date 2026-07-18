@@ -40,6 +40,10 @@ const MIKU_FUTURE_COLLAB_IMAGE: &[u8] =
 const ADVENTURE_ATLAS_THEME: &str = include_str!("../../theme-packs/adventure-atlas/theme.json");
 const ADVENTURE_ATLAS_IMAGE: &[u8] =
     include_bytes!("../../theme-packs/adventure-atlas/background.webp");
+const PORTAL_DIMENSION_LAB_THEME: &str =
+    include_str!("../../theme-packs/portal-dimension-lab/theme.json");
+const PORTAL_DIMENSION_LAB_IMAGE: &[u8] =
+    include_bytes!("../../theme-packs/portal-dimension-lab/background.webp");
 
 struct BuiltInTheme {
     id: &'static str,
@@ -212,6 +216,11 @@ const BUILT_IN_THEMES: &[BuiltInTheme] = &[
         id: "adventure-atlas",
         manifest: ADVENTURE_ATLAS_THEME,
         image: ADVENTURE_ATLAS_IMAGE,
+    },
+    BuiltInTheme {
+        id: "portal-dimension-lab",
+        manifest: PORTAL_DIMENSION_LAB_THEME,
+        image: PORTAL_DIMENSION_LAB_IMAGE,
     },
 ];
 
@@ -566,9 +575,10 @@ fn validate_manifest(manifest: &ThemeManifest) -> Result<(), String> {
             | "azureNeon"
             | "mikuFuture"
             | "adventureAtlas"
+            | "portalDimension"
     ) {
         return Err(
-            "主题布局只能是 standard、dreamSkin、strawberryStarlight、azureNeon、mikuFuture 或 adventureAtlas"
+            "主题布局只能是 standard、dreamSkin、strawberryStarlight、azureNeon、mikuFuture、adventureAtlas 或 portalDimension"
                 .into(),
         );
     }
@@ -948,7 +958,7 @@ mod tests {
     fn exposes_and_protects_all_built_in_themes() {
         let (root, store) = test_store();
         let themes = store.list(None).unwrap();
-        assert_eq!(themes.len(), 4);
+        assert_eq!(themes.len(), 5);
         assert_eq!(store.default_id(), "strawberry-starlight");
 
         for built_in in BUILT_IN_THEMES {
@@ -959,7 +969,12 @@ mod tests {
             assert_eq!(loaded.id, built_in.id);
             assert!(matches!(
                 loaded.layout_preset.as_str(),
-                "dreamSkin" | "strawberryStarlight" | "azureNeon" | "mikuFuture" | "adventureAtlas"
+                "dreamSkin"
+                    | "strawberryStarlight"
+                    | "azureNeon"
+                    | "mikuFuture"
+                    | "adventureAtlas"
+                    | "portalDimension"
             ));
             assert!(!image.is_empty());
 

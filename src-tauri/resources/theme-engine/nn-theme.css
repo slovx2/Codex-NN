@@ -917,24 +917,27 @@ html.codex-nn-theme[data-nn-theme-layout="dream-skin"][data-nn-theme-page="home"
   color: var(--ds-green) !important;
 }
 
-/* 两个内置主题共享原生布局，只用受控预设改变视觉语言。 */
+/* 三个内置主题共享原生布局，只用受控预设改变视觉语言。 */
 html.codex-nn-theme:is(
   [data-nn-theme-layout="strawberry-starlight"],
-  [data-nn-theme-layout="azure-neon"]
+  [data-nn-theme-layout="azure-neon"],
+  [data-nn-theme-layout="portal-dimension"]
 ) body {
   font-family: "Microsoft YaHei UI", "PingFang SC", "Segoe UI", system-ui, sans-serif !important;
 }
 
 html.codex-nn-theme:is(
   [data-nn-theme-layout="strawberry-starlight"],
-  [data-nn-theme-layout="azure-neon"]
+  [data-nn-theme-layout="azure-neon"],
+  [data-nn-theme-layout="portal-dimension"]
 ) main.main-surface [class~="bg-gradient-to-b"][class*="from-token-main-surface-primary"] {
   background-image: linear-gradient(to bottom, var(--nn-theme-surface-fade) 0%, transparent 100%) !important;
 }
 
 html.codex-nn-theme:is(
   [data-nn-theme-layout="strawberry-starlight"],
-  [data-nn-theme-layout="azure-neon"]
+  [data-nn-theme-layout="azure-neon"],
+  [data-nn-theme-layout="portal-dimension"]
 ) main.main-surface [class~="bg-gradient-to-t"][class*="from-token-main-surface-primary"] {
   background-image: linear-gradient(
     to top,
@@ -963,14 +966,16 @@ html.codex-nn-theme .nn-theme-home .group\/home-suggestions
 
 html.codex-nn-theme:is(
   [data-nn-theme-layout="strawberry-starlight"],
-  [data-nn-theme-layout="azure-neon"]
+  [data-nn-theme-layout="azure-neon"],
+  [data-nn-theme-layout="portal-dimension"]
 ) main.nn-theme-home-shell > header.app-header-tint > div:nth-child(3) {
   visibility: hidden !important;
 }
 
 html.codex-nn-theme:is(
   [data-nn-theme-layout="strawberry-starlight"],
-  [data-nn-theme-layout="azure-neon"]
+  [data-nn-theme-layout="azure-neon"],
+  [data-nn-theme-layout="portal-dimension"]
 ) main.main-surface:not(.nn-theme-home-shell) article {
   border: 0 !important;
   background: transparent !important;
@@ -1074,7 +1079,7 @@ html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home 
 
 html.codex-nn-theme[data-nn-theme-layout="strawberry-starlight"] .nn-theme-home [data-feature="game-source"] {
   color: #fff9fc !important;
-  font-size: clamp(20px, 2vw, 29px) !important;
+  font-size: 27px !important;
   font-weight: 760 !important;
   text-shadow: 0 2px 14px rgba(45, 7, 27, .58) !important;
 }
@@ -1556,6 +1561,519 @@ html.codex-nn-theme[data-nn-theme-layout="azure-neon"] .nn-theme-home div:has(> 
 
 html.codex-nn-theme[data-nn-theme-layout="azure-neon"] button[class~="bg-token-foreground"] {
   color: #020611 !important;
+}
+
+/* 多元宇宙开发站：传送门荧光、实验室面板与任务坐标。 */
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] {
+  color-scheme: dark !important;
+  --nn-theme-surface-fade: #031315;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] body {
+  background:
+    radial-gradient(circle at 84% 2%, rgba(125, 77, 255, .20), transparent 28%),
+    radial-gradient(circle at 20% 8%, rgba(38, 216, 232, .09), transparent 30%),
+    linear-gradient(145deg, #01090d 0%, #031315 54%, #061f20 100%) !important;
+  color: #edfff0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] body::before {
+  opacity: .38 !important;
+  background-image:
+    linear-gradient(rgba(38, 216, 232, .028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(38, 216, 232, .028) 1px, transparent 1px),
+    radial-gradient(circle, rgba(158, 255, 55, .70) 0 1px, transparent 2px) !important;
+  background-position: 0 0, 0 0, 31px 43px !important;
+  background-size: 46px 46px, 46px 46px, 97px 97px !important;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, .38), black 34%, black 100%);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(38, 216, 232, .09), transparent 30%),
+    linear-gradient(180deg, rgba(2, 24, 27, .995), rgba(3, 31, 32, .985)) !important;
+  border: 1px solid rgba(38, 216, 232, .22) !important;
+  border-left: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: 10px 0 34px rgba(0, 0, 0, .34), inset -1px 0 rgba(158, 255, 55, .08) !important;
+  color: #edfff0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel button,
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel a,
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel span,
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel div {
+  color: #dff9e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel svg {
+  color: #70d9d7 !important;
+  opacity: .94 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel
+  button[aria-label^="切换模式"] {
+  color: #9eff37 !important;
+  text-shadow: 0 0 15px rgba(158, 255, 55, .30) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel
+  button[aria-label^="切换模式"]::after {
+  content: " ◉" !important;
+  color: #26d8e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel button:hover {
+  background: linear-gradient(90deg, rgba(158, 255, 55, .13), rgba(38, 216, 232, .08)) !important;
+  box-shadow: inset 0 0 0 1px rgba(158, 255, 55, .16) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel
+  [data-nn-portal-nav] {
+  position: relative !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel
+  [data-nn-portal-nav] svg {
+  display: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] aside.app-shell-left-panel
+  [data-nn-portal-nav]::before {
+  width: 16px;
+  flex: 0 0 16px;
+  color: #b8ff53;
+  font: 700 14px/1 "Cascadia Code", Consolas, monospace;
+  text-align: center;
+  text-shadow: 0 0 9px rgba(158, 255, 55, .42);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] [data-nn-portal-nav="new"]::before { content: "+"; }
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] [data-nn-portal-nav="pull-requests"]::before { content: "⑂"; }
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] [data-nn-portal-nav="scheduled"]::before { content: "◷"; }
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] [data-nn-portal-nav="plugins"]::before { content: "◇"; }
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] [data-nn-portal-section] {
+  font-family: "Cascadia Code", Consolas, "Microsoft YaHei UI", monospace !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"]
+  button[data-nn-portal-section] > span {
+  display: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"]
+  button[data-nn-portal-section]::before {
+  color: #5bd5d9;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .11em;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"]
+  button[data-nn-portal-section="universes"]::before { content: "项目 / UNIVERSES"; }
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"]
+  button[data-nn-portal-section="missions"]::before { content: "任务 / MISSIONS"; }
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] [data-nn-portal-empty] {
+  display: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-portal-universes {
+  display: grid;
+  gap: 3px;
+  padding: 3px 0 1px;
+  pointer-events: none;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-portal-universes span {
+  position: relative;
+  min-height: 29px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px 0 27px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: #c9eee1 !important;
+  font: 500 12px/1.2 "Microsoft YaHei UI", sans-serif !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-portal-universes span::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #50cecf;
+  border-radius: 50%;
+  box-shadow: 0 0 7px rgba(38, 216, 232, .36);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-portal-universes .is-active {
+  border-color: rgba(158, 255, 55, .28);
+  color: #f1ffe9 !important;
+  background: linear-gradient(90deg, rgba(158, 255, 55, .20), rgba(38, 216, 232, .10));
+  box-shadow: inset 3px 0 #9eff37, 0 0 16px rgba(158, 255, 55, .06);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-portal-universes .is-active::before {
+  border-color: #d0ff57;
+  background: #9eff37;
+  box-shadow: 0 0 9px rgba(158, 255, 55, .68);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] [data-nn-portal-item="mission"] {
+  padding-left: 27px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] [data-nn-portal-item="mission"]::before {
+  content: "✓";
+  position: absolute;
+  left: 9px;
+  top: 7px;
+  z-index: 2;
+  color: #9eff37;
+  font: 700 12px/1 "Cascadia Code", Consolas, monospace;
+  text-shadow: 0 0 8px rgba(158, 255, 55, .46);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface,
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell) {
+  background:
+    radial-gradient(circle at 86% 7%, rgba(125, 77, 255, .12), transparent 29%),
+    radial-gradient(circle at 18% 0%, rgba(38, 216, 232, .07), transparent 30%),
+    linear-gradient(180deg, #06191d 0%, #020e12 100%) !important;
+  border: 1px solid rgba(38, 216, 232, .20) !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 18px 0 0 0 !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .035), -10px 0 34px rgba(0, 0, 0, .30) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface > header.app-header-tint {
+  background: linear-gradient(90deg, rgba(4, 24, 27, .98), rgba(7, 34, 34, .96), rgba(25, 18, 47, .94)) !important;
+  border-bottom: 1px solid rgba(158, 255, 55, .18) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface > header.app-header-tint * {
+  color: #dff9e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  > div:first-child > div:first-child > div:first-child {
+  border: 1px solid rgba(158, 255, 55, .58) !important;
+  border-radius: 22px !important;
+  overflow: visible !important;
+  background-image:
+    linear-gradient(90deg, rgba(1, 9, 14, .24), transparent 56%),
+    var(--nn-theme-art) !important;
+  background-size: 100% 100%, cover !important;
+  background-position: center, var(--nn-art-position) !important;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, .46),
+    0 0 25px rgba(158, 255, 55, .09),
+    inset 0 0 0 2px rgba(38, 216, 232, .05) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  > div:first-child > div:first-child > div:first-child::before {
+  content: "" !important;
+  width: 59% !important;
+  background:
+    linear-gradient(90deg, rgba(1, 8, 17, .97) 0%, rgba(3, 14, 27, .86) 61%, rgba(6, 23, 34, .38) 82%, transparent 100%),
+    repeating-linear-gradient(0deg, transparent 0 7px, rgba(38, 216, 232, .018) 8px) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home [data-feature="game-source"] {
+  color: #f5fff7 !important;
+  font-size: clamp(20px, 2vw, 29px) !important;
+  font-weight: 780 !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, .86), 0 0 14px rgba(158, 255, 55, .10) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  [data-feature="game-source"]::before {
+  color: #9eff37 !important;
+  font: 750 11px/1.3 "Cascadia Code", Consolas, "Microsoft YaHei UI", monospace !important;
+  letter-spacing: .10em !important;
+  text-shadow: 0 0 13px rgba(158, 255, 55, .34) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  [data-feature="game-source"]::after {
+  color: rgba(223, 249, 232, .80) !important;
+  font-size: 13px !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  [data-feature="game-source"] button {
+  border-color: rgba(158, 255, 55, .44) !important;
+  background: rgba(158, 255, 55, .10) !important;
+  color: #d0ff57 !important;
+  box-shadow: inset 0 0 13px rgba(38, 216, 232, .07), 0 0 12px rgba(158, 255, 55, .07) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  .group\/home-suggestions button {
+  border: 1px solid rgba(38, 216, 232, .25) !important;
+  border-radius: 18px !important;
+  background:
+    radial-gradient(circle at 50% 4%, rgba(158, 255, 55, .065), transparent 42%),
+    linear-gradient(145deg, rgba(8, 34, 36, .98), rgba(3, 19, 24, .99)) !important;
+  color: #edfff0 !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .38), inset 0 0 0 2px rgba(158, 255, 55, .025) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  .group\/home-suggestions button:hover {
+  border-color: rgba(158, 255, 55, .52) !important;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, .44), 0 0 0 2px rgba(158, 255, 55, .06) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  .group\/home-suggestions button span {
+  color: #edfff0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  .group\/home-suggestions button > span:first-child > span:first-child {
+  color: #031315 !important;
+  border: 1px solid rgba(208, 255, 87, .70) !important;
+  background: linear-gradient(145deg, #d0ff57, #6af24c) !important;
+  box-shadow: 0 0 0 6px rgba(158, 255, 55, .055), 0 0 18px rgba(158, 255, 55, .30) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  .group\/home-suggestions button svg {
+  color: #031315 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .composer-surface-chrome {
+  border: 1px solid rgba(158, 255, 55, .31) !important;
+  border-radius: 20px !important;
+  background:
+    radial-gradient(circle at 90% 12%, rgba(125, 77, 255, .12), transparent 25%),
+    linear-gradient(145deg, rgba(8, 34, 36, .96), rgba(3, 18, 24, .97)) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .42), inset 0 0 0 2px rgba(38, 216, 232, .035) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .composer-surface-chrome,
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .composer-surface-chrome button,
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .composer-surface-chrome span,
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .composer-surface-chrome div {
+  color: #dff9e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .composer-surface-chrome::before {
+  content: "◉" !important;
+  color: #031315 !important;
+  border-color: rgba(208, 255, 87, .76) !important;
+  background: radial-gradient(circle, #d0ff57, #9eff37 58%, #4fbf2a) !important;
+  box-shadow: 0 0 0 5px rgba(158, 255, 55, .07), 0 0 18px rgba(158, 255, 55, .34) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  div:has(> .horizontal-scroll-fade-mask .group\/project-selector) {
+  border-color: rgba(38, 216, 232, .20) !important;
+  background: linear-gradient(180deg, rgba(7, 30, 32, .98), rgba(3, 19, 24, .96)) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  div:has(> .horizontal-scroll-fade-mask .group\/project-selector)::before {
+  color: #9eff37 !important;
+  font-family: "Cascadia Code", Consolas, monospace !important;
+  letter-spacing: .08em !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  .group\/project-selector > button {
+  border-color: rgba(158, 255, 55, .24) !important;
+  background: linear-gradient(135deg, rgba(14, 49, 42, .96), rgba(12, 25, 48, .94)) !important;
+  color: #edfff0 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .ProseMirror {
+  color: #edfff0 !important;
+  caret-color: #9eff37 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  [class*="_markdownContent_"] :is(p, li, h1, h2, h3, h4, strong, em, blockquote),
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  :is(p, li, h1, h2, h3, h4, strong, em, blockquote)[class*="_markdownText_"] {
+  color: #dff9e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  [class*="_markdownContent_"] code,
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  [class*="_markdownContent_"] a {
+  color: #9eff37 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] button[class~="bg-token-foreground"] {
+  color: #031315 !important;
+  background: linear-gradient(145deg, #d0ff57, #78ea41) !important;
+  box-shadow: 0 0 18px rgba(158, 255, 55, .26) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-brand {
+  color: #edfff0 !important;
+  text-shadow: 0 0 12px rgba(158, 255, 55, .15) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-portal-mark {
+  border-color: rgba(208, 255, 87, .72) !important;
+  color: #d0ff57 !important;
+  background: radial-gradient(circle, rgba(158, 255, 55, .20), rgba(3, 19, 21, .97) 68%) !important;
+  box-shadow: 0 0 0 4px rgba(158, 255, 55, .055), 0 0 18px rgba(158, 255, 55, .26), inset 0 0 11px rgba(38, 216, 232, .12) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-brand b {
+  color: #9eff37 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-brand small {
+  color: #26d8e8 !important;
+  font-family: "Cascadia Code", Consolas, monospace !important;
+  letter-spacing: .14em !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-status {
+  color: #c8e6d9 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-status i {
+  background: #9eff37 !important;
+  box-shadow: 0 0 11px rgba(158, 255, 55, .78) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-quote {
+  color: rgba(158, 255, 55, .72) !important;
+  font-family: "Segoe Print", "Comic Sans MS", cursive !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-particles {
+  opacity: .46 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-particles i {
+  width: 3px;
+  height: 3px;
+  background: #9eff37 !important;
+  box-shadow: 0 0 10px 3px rgba(158, 255, 55, .40) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-particles i:nth-child(2n) {
+  background: #26d8e8 !important;
+  box-shadow: 0 0 10px 2px rgba(38, 216, 232, .40) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-orbit {
+  right: 32px;
+  bottom: 92px;
+  width: 102px;
+  height: 32px;
+  border-color: rgba(158, 255, 55, .32) !important;
+  background: radial-gradient(ellipse, rgba(158, 255, 55, .14), transparent 68%) !important;
+  box-shadow: 0 0 20px rgba(158, 255, 55, .15), inset 0 0 15px rgba(38, 216, 232, .08) !important;
+  transform: rotate(-9deg) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-orbit::before {
+  content: "";
+  position: absolute;
+  left: 41px;
+  top: -17px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #d0ff57;
+  border-radius: 50%;
+  background: radial-gradient(circle, #efffc5, #9eff37 42%, rgba(158, 255, 55, .12) 72%);
+  box-shadow: 0 0 17px rgba(158, 255, 55, .72);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  div:has(> div > .composer-surface-chrome) > :first-child {
+  border-color: rgba(38, 216, 232, .20) !important;
+  background: linear-gradient(180deg, rgba(7, 30, 32, .98), rgba(3, 19, 24, .96)) !important;
+  color: #9eff37 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  div:has(> div > .composer-surface-chrome) > :first-child * {
+  color: #9eff37 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  div:has(> [data-composer-utility-bar-scroll-area]) {
+  border: 1px solid rgba(38, 216, 232, .20) !important;
+  border-bottom: 0 !important;
+  background: linear-gradient(180deg, rgba(7, 30, 32, .99), rgba(3, 19, 24, .97)) !important;
+  color: #9eff37 !important;
+  box-shadow: inset 0 1px rgba(158, 255, 55, .04) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-home
+  div:has(> [data-composer-utility-bar-scroll-area]) * {
+  color: #dff9e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  [data-app-shell-focus-area="right-panel"] [class~="bg-token-main-surface-primary"] {
+  color: #dff9e8 !important;
+  background: rgba(3, 19, 21, .94) !important;
+  border-color: rgba(38, 216, 232, .16) !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  [data-app-shell-focus-area="right-panel"] [class*="text-token"] {
+  color: #dff9e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  :is(h1, h2, h3, h4) {
+  color: #edfff0 !important;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, .32);
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  :is([class~="text-token-foreground"], [class~="text-token-text-secondary"]) {
+  color: #dff9e8 !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  :is([class~="text-token-description-foreground"], [class~="text-token-text-tertiary"], [class~="text-token-muted-foreground"]) {
+  color: #8fb8ad !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  .line-clamp-1 {
+  color: #8fb8ad !important;
+}
+
+html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] main.main-surface:not(.nn-theme-home-shell)
+  button[class~="bg-token-bg-fog"] {
+  color: #031315 !important;
+}
+
+@media (max-height: 760px) {
+  html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-portal-universes span {
+    min-height: 25px;
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  html.codex-nn-theme[data-nn-theme-layout="portal-dimension"] .nn-theme-portal-universes span:nth-child(n + 3) {
+    display: none;
+  }
 }
 
 /* 自适应任务页：宽屏图只在窗口底层绘制一次，其他表面作为可读性遮罩。 */
