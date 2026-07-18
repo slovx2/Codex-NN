@@ -7,6 +7,7 @@ import { confirmDialog } from "./app-dialog";
 import { setupMarketplace } from "./marketplace";
 import type {
   AppSnapshot,
+  ClaudeThemeDesignerPluginStatus,
   DiagnosticReport,
   SessionState,
   ThemeDesignerPluginStatus,
@@ -23,6 +24,7 @@ let snapshot: AppSnapshot | null = null;
 let themes: ThemeSummary[] = [];
 let selectedThemeId = "";
 let designerPlugin: ThemeDesignerPluginStatus | null = null;
+let claudeDesignerPlugin: ClaudeThemeDesignerPluginStatus | null = null;
 let busy = false;
 let appliedAccent = "";
 let checkingForUpdates = false;
@@ -114,15 +116,19 @@ root.innerHTML = `
       </section>` : ""}
 
       <section id="page-designer" class="page">
-        <header class="page-heading compact">
-          <div><span class="eyebrow">THEME STUDIO</span><h2>让 Codex 帮你设计主题</h2><p>从概念稿出发，生成可直接安装的 Codex NN schema v1 主题包。</p></div>
+        <header class="page-heading compact designer-heading">
+          <div><span class="eyebrow">THEME STUDIO</span><h2>让 AI 帮你设计 Codex 主题</h2><p>从概念稿出发，生成可直接安装的 Codex NN schema v1 主题包。</p></div>
+          <div class="designer-provider-tabs" role="tablist" aria-label="选择主题设计助手">
+            <button id="designer-provider-codex-tab" class="designer-provider-tab active" type="button" role="tab" aria-selected="true" aria-controls="designer-codex-panel" tabindex="0" data-designer-provider="codex">Codex</button>
+            <button id="designer-provider-claude-tab" class="designer-provider-tab" type="button" role="tab" aria-selected="false" aria-controls="designer-claude-panel" tabindex="-1" data-designer-provider="claude">Claude Code</button>
+          </div>
         </header>
         <div class="designer-layout">
           <article class="designer-hero">
             <span class="designer-spark">✦</span>
-            <div><span>CODEX NN THEME DESIGNER</span><h3>描述一个世界，让 Codex 把它变成主题</h3><p>你可以提供概念稿，也可以只描述风格。Codex 会先展示完整界面概念，等你确认后再生成背景、配色、文案和主题 ZIP。</p></div>
+            <div><span>CODEX NN THEME DESIGNER</span><h3>描述一个世界，让 AI 把它变成主题</h3><p>你可以提供概念稿，也可以只描述风格。设计助手会先展示完整界面概念，等你确认后再生成背景、配色、文案和主题 ZIP。</p></div>
           </article>
-          <article class="plugin-panel">
+          <article id="designer-codex-panel" class="plugin-panel" role="tabpanel" aria-labelledby="designer-provider-codex-tab">
             <div class="plugin-heading">
               <div class="plugin-icon">NN</div>
               <div><span>Codex 插件</span><h3>主题设计插件</h3></div>
@@ -138,6 +144,24 @@ root.innerHTML = `
             <div class="plugin-actions">
               <button id="install-designer-plugin-button" class="button primary" data-operation disabled>安装主题设计插件</button>
               <button id="uninstall-designer-plugin-button" class="button subtle danger" data-operation disabled>卸载插件</button>
+            </div>
+          </article>
+          <article id="designer-claude-panel" class="plugin-panel claude-plugin-panel" role="tabpanel" aria-labelledby="designer-provider-claude-tab" hidden>
+            <div class="plugin-heading">
+              <div class="plugin-icon claude-plugin-icon">CC</div>
+              <div><span>Claude Code 插件</span><h3>主题设计插件</h3></div>
+              <strong id="claude-designer-plugin-state" class="plugin-state neutral">检测中</strong>
+            </div>
+            <p>只安装主题设计插件，并沿用 Claude Code 现有的账号、模型与接口配置；不会读取或修改 Claude Code 配置。</p>
+            <ol class="designer-steps">
+              <li><i>1</i><span><b>安装插件</b><small>仅添加 Codex NN 主题设计能力</small></span></li>
+              <li><i>2</i><span><b>描述主题</b><small>在 Claude Code 中提供想法或概念稿</small></span></li>
+              <li><i>3</i><span><b>预览并热更新</b><small>通过本地 MCP 安装、切换和诊断</small></span></li>
+            </ol>
+            <div id="claude-designer-plugin-message" class="plugin-message">正在检查 Claude Code 插件状态</div>
+            <div class="plugin-actions">
+              <button id="install-claude-designer-plugin-button" class="button primary" data-operation disabled>安装 Claude Code 插件</button>
+              <button id="uninstall-claude-designer-plugin-button" class="button subtle danger" data-operation disabled>卸载插件</button>
             </div>
           </article>
         </div>
@@ -213,11 +237,18 @@ byId("choose-dream-folder-button").addEventListener("click", () => void chooseDr
 byId("choose-dream-zip-button").addEventListener("click", () => void chooseDreamSkinSource(false));
 byId("install-designer-plugin-button").addEventListener("click", () => void installDesignerPlugin());
 byId("uninstall-designer-plugin-button").addEventListener("click", () => void uninstallDesignerPlugin());
+byId("install-claude-designer-plugin-button").addEventListener("click", () => void installClaudeDesignerPlugin());
+byId("uninstall-claude-designer-plugin-button").addEventListener("click", () => void uninstallClaudeDesignerPlugin());
 byId("activate-theme-button").addEventListener("click", () => void activateSelectedTheme());
 byId("diagnose-button").addEventListener("click", () => void runDiagnostics());
 byId("verify-button").addEventListener("click", () => void runVerification(null));
 byId("screenshot-button").addEventListener("click", () => void chooseScreenshot());
 byId("check-update-button").addEventListener("click", () => void checkForUpdates(true));
+
+document.querySelectorAll<HTMLButtonElement>("[data-designer-provider]").forEach((tab) => {
+  tab.addEventListener("click", () => switchDesignerProvider(tab.dataset.designerProvider === "claude" ? "claude" : "codex"));
+  tab.addEventListener("keydown", handleDesignerProviderKeydown);
+});
 
 if (MARKETPLACE_ENABLED) {
   setupMarketplace({
@@ -238,10 +269,20 @@ async function refresh(preserveSelection = true): Promise<void> {
       version: "未知",
       message: `无法读取 Codex 插件状态：${errorMessage(error)}`
     }));
-  [snapshot, themes, designerPlugin] = await Promise.all([
+  const claudePluginStatus = invoke<ClaudeThemeDesignerPluginStatus>("get_claude_theme_designer_plugin_status")
+    .catch((error): ClaudeThemeDesignerPluginStatus => ({
+      installed: false,
+      managed: false,
+      conflict: true,
+      version: "未知",
+      message: `无法读取 Claude Code 插件状态：${errorMessage(error)}`,
+      claudeAvailable: false
+    }));
+  [snapshot, themes, designerPlugin, claudeDesignerPlugin] = await Promise.all([
     invoke<AppSnapshot>("get_app_snapshot"),
     invoke<ThemeSummary[]>("list_themes"),
-    pluginStatus
+    pluginStatus,
+    claudePluginStatus
   ]);
   selectedThemeId = themes.some((theme) => theme.id === previousSelection)
     ? previousSelection
@@ -367,6 +408,32 @@ function renderThemes(): void {
   setButtonsDisabled(busy);
 }
 
+type DesignerProvider = "codex" | "claude";
+
+function switchDesignerProvider(provider: DesignerProvider, focus = false): void {
+  document.querySelectorAll<HTMLButtonElement>("[data-designer-provider]").forEach((tab) => {
+    const selected = tab.dataset.designerProvider === provider;
+    tab.classList.toggle("active", selected);
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    if (selected && focus) tab.focus();
+  });
+  byId("designer-codex-panel").hidden = provider !== "codex";
+  byId("designer-claude-panel").hidden = provider !== "claude";
+}
+
+function handleDesignerProviderKeydown(event: KeyboardEvent): void {
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-designer-provider]"));
+  const currentIndex = tabs.indexOf(event.currentTarget as HTMLButtonElement);
+  if (currentIndex < 0) return;
+  event.preventDefault();
+  let nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : currentIndex;
+  if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+  if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+  switchDesignerProvider(tabs[nextIndex]?.dataset.designerProvider === "claude" ? "claude" : "codex", true);
+}
+
 function renderDesignerPlugin(): void {
   const state = byId("designer-plugin-state");
   const message = byId("designer-plugin-message");
@@ -378,6 +445,7 @@ function renderDesignerPlugin(): void {
     message.textContent = "正在检查 Codex 插件状态";
     installButton.disabled = true;
     uninstallButton.disabled = true;
+    renderClaudeDesignerPlugin();
     return;
   }
   if (designerPlugin.conflict) {
@@ -399,6 +467,51 @@ function renderDesignerPlugin(): void {
     : "安装主题设计插件";
   installButton.disabled = busy || !snapshot?.codex.installed || designerPlugin.conflict;
   uninstallButton.disabled = busy || !designerPlugin.managed || designerPlugin.conflict;
+  renderClaudeDesignerPlugin();
+}
+
+function renderClaudeDesignerPlugin(): void {
+  const state = byId("claude-designer-plugin-state");
+  const message = byId("claude-designer-plugin-message");
+  const installButton = byId<HTMLButtonElement>("install-claude-designer-plugin-button");
+  const uninstallButton = byId<HTMLButtonElement>("uninstall-claude-designer-plugin-button");
+
+  if (!claudeDesignerPlugin) {
+    state.textContent = "检测中";
+    state.className = "plugin-state neutral";
+    message.textContent = "正在检查 Claude Code 插件状态";
+    installButton.disabled = true;
+    uninstallButton.disabled = true;
+    return;
+  }
+
+  if (!claudeDesignerPlugin.claudeAvailable) {
+    state.textContent = "不可用";
+    state.className = "plugin-state danger";
+  } else if (claudeDesignerPlugin.conflict) {
+    state.textContent = "需要处理";
+    state.className = "plugin-state danger";
+  } else if (claudeDesignerPlugin.installed) {
+    state.textContent = "已安装";
+    state.className = "plugin-state success";
+  } else {
+    state.textContent = "未安装";
+    state.className = "plugin-state neutral";
+  }
+
+  message.textContent = claudeDesignerPlugin.message
+    ?? (!claudeDesignerPlugin.claudeAvailable
+      ? "未找到 Claude Code，请先完成安装后再返回此处。"
+      : claudeDesignerPlugin.installed
+        ? `插件 v${claudeDesignerPlugin.version} 已就绪，将沿用 Claude Code 现有配置。`
+        : "插件只增加主题设计能力，不会修改 Claude Code 的账号、模型或接口配置。");
+
+  const unavailable = busy || !claudeDesignerPlugin.claudeAvailable || claudeDesignerPlugin.conflict;
+  installButton.textContent = claudeDesignerPlugin.installed || claudeDesignerPlugin.managed
+    ? "重新安装 Claude Code 插件"
+    : "安装 Claude Code 插件";
+  installButton.disabled = unavailable;
+  uninstallButton.disabled = unavailable || !claudeDesignerPlugin.managed;
 }
 
 async function launchCodex(): Promise<void> {
@@ -551,6 +664,34 @@ async function uninstallDesignerPlugin(): Promise<void> {
       throw new Error(designerPlugin.message ?? "主题设计插件未能完成卸载");
     }
     showToast("主题设计插件已卸载");
+  });
+}
+
+async function installClaudeDesignerPlugin(): Promise<void> {
+  await runOperation("正在安装 Claude Code 主题设计插件", async () => {
+    claudeDesignerPlugin = await invoke<ClaudeThemeDesignerPluginStatus>("install_claude_theme_designer_plugin");
+    renderClaudeDesignerPlugin();
+    if (!claudeDesignerPlugin.installed) {
+      throw new Error(claudeDesignerPlugin.message ?? "Claude Code 主题设计插件未能完成安装");
+    }
+    showToast("Claude Code 主题设计插件已安装");
+  });
+}
+
+async function uninstallClaudeDesignerPlugin(): Promise<void> {
+  const confirmed = await confirmDialog("卸载后，Claude Code 将不再加载主题设计插件；现有账号、模型和接口配置不会改变。继续吗？", {
+    title: "卸载 Claude Code 主题设计插件",
+    kind: "warning"
+  });
+  if (!confirmed) return;
+
+  await runOperation("正在卸载 Claude Code 主题设计插件", async () => {
+    claudeDesignerPlugin = await invoke<ClaudeThemeDesignerPluginStatus>("uninstall_claude_theme_designer_plugin");
+    renderClaudeDesignerPlugin();
+    if (claudeDesignerPlugin.managed || claudeDesignerPlugin.conflict) {
+      throw new Error(claudeDesignerPlugin.message ?? "Claude Code 主题设计插件未能完成卸载");
+    }
+    showToast("Claude Code 主题设计插件已卸载");
   });
 }
 

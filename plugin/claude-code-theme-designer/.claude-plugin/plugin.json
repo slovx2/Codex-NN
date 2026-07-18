@@ -1,0 +1,14 @@
+{
+  "name": "codex-nn-theme-designer",
+  "version": "0.1.0",
+  "description": "Design validated Codex NN schema v1 theme packages from concepts or text descriptions.",
+  "author": {
+    "name": "slovx2",
+    "url": "https://github.com/slovx2"
+  },
+  "homepage": "https://github.com/slovx2/Codex-NN",
+  "repository": "https://github.com/slovx2/Codex-NN",
+  "license": "MIT",
+  "keywords": ["codex", "theme", "design"],
+  "skills": "./skills/"
+}

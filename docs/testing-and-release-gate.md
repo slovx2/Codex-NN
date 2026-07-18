@@ -10,7 +10,7 @@
 | Rust | `rustfmt`、Clippy 零警告、单元测试、临时目录中的主题全流程集成测试 |
 | Agent | 随机回环端口、Bearer 鉴权、Agent API 主题全流程、MCP 状态文件转发与错误恢复 |
 | Skill | Rust 主题打包器及 Agent API/MCP 真实链路测试 |
-| 发布资产 | Node 标准库校验精确依赖版本、应用版本一致性、插件结构、Skill 元数据、参考图、内置主题目录与 ZIP 一致性 |
+| 发布资产 | Node 标准库校验精确依赖版本、应用版本一致性、Codex 与 Claude Code 插件结构、Skill 元数据、参考图、内置主题目录与 ZIP 一致性 |
 | 平台 | macOS 执行完整 Rust 测试；Windows 执行前端测试、Clippy 并编译全部 Rust 测试目标 |
 
 前端最低覆盖率为：语句 90%、分支 80%、函数 90%、行 90%。
@@ -26,16 +26,16 @@
 | 内置主题保护和自定义主题回退 | Rust 单元与流程集成测试覆盖 |
 | Dream Skin 目录、根 ZIP、包装 ZIP、默认字段、非法 ID | Rust 单元测试与运行时导入集成测试覆盖 |
 | ZIP 路径穿越、符号链接、加密、额外文件、格式伪装、大小限制 | Rust 安全测试覆盖 |
-| 主题设计插件安装、重装、卸载、版本刷新、配置冲突 | Rust 配置事务测试和前端状态测试覆盖 |
+| Codex 与 Claude Code 主题设计插件安装、重装、卸载、版本刷新、配置冲突 | Rust 文件事务测试和前端状态测试覆盖；Claude Code 测试确认只管理主题设计 Skill 与 MCP 文件，不读取或修改 `~/.claude/settings.json` |
 | Agent API 端口、状态文件和 Bearer 鉴权 | Rust 启动真实随机回环端口，覆盖无令牌 401、Token 请求、文件权限和停止清理 |
 | Agent API 主题操作与诊断 | 真实 HTTP 覆盖打包、列表、安装、更新、切换、删除、诊断、日志和 CDP 异常恢复提示 |
 | 插件 MCP | JSON-RPC 初始化及 9 个工具声明测试；通过真实状态文件和 Agent API 覆盖打包与主题工具转发、响应脱敏及 App 停止错误 |
-| 动态 `.mcp.json` | Rust 覆盖绝对可执行路径、App 数据目录和同版本损坏刷新；发布校验器覆盖静态清单与模板 |
+| 动态 `.mcp.json` | Rust 覆盖两种插件的绝对可执行路径、App 数据目录和同版本损坏刷新；发布校验器覆盖静态清单与模板 |
 | 静态诊断、实时验证、截图选择 | 前端结果渲染和错误分支覆盖；Rust 覆盖无活动端口与诊断报告生成 |
 | 自动更新 | 前端覆盖无更新、拒绝更新、下载安装、重启和检查失败 |
 | 后台进度、状态变化、恢复请求、操作错误 | 前端事件总线集成测试覆盖 |
 | Skill 主题打包 | Rust 单元测试覆盖有效包、安全覆盖、错误 schema、图片伪装、额外文件和输出路径；MCP 集成测试覆盖交付链路 |
-| 插件与内置主题发布内容 | 发布资产校验器覆盖结构、元数据和 ZIP 字节一致性 |
+| 插件与内置主题发布内容 | 发布资产校验器覆盖结构、元数据和 ZIP 字节一致性；`claude plugin validate plugin/claude-code-theme-designer --strict` 校验 Claude Code 官方插件格式 |
 
 ## 保留人工验收
 
@@ -53,6 +53,7 @@
 | 签名更新、DMG、NSIS 安装和卸载 | 需要发布私钥、真实安装权限和系统重启边界 | 新装、覆盖升级、自动更新、卸载残留 |
 | GitHub Windows runner 直接启动 Rust 测试二进制 | Tauri/WebView2 GUI 链接的测试进程在托管 runner 载入阶段返回 `STATUS_ENTRYPOINT_NOT_FOUND`；门禁仍用 `cargo test --no-run` 编译全部测试，逻辑测试在 macOS 执行 | Windows 实机执行主题、插件、Agent API、MCP 和安装包回归 |
 | 新 Codex 任务加载 Skill 及生成式设计质量 | 依赖已登录的 Codex、云配置、模型、生图能力和用户确认流程 | 新任务能触发 Skill，概念稿确认后才打包，最终 ZIP 可安装 |
+| 新 Claude Code 会话加载 Skill | 依赖本机 Claude Code 已有登录态、接口和模型可用性，托管 runner 不保存真实凭据 | 安装和卸载前后 `~/.claude/settings.json` 保持不变；新会话加载 Skill 并沿用用户已有配置；概念确认前不打包，确认后 MCP 可安装、热切换和诊断 |
 
 自动化门禁验证这些人工流程的配置、输入输出协议和失败提示，但不把模拟结果当作真实桌面验收结论。
 

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "codex-nn": {
+      "command": {{CODEX_NN_COMMAND_JSON}},
+      "args": ["mcp"],
+      "env": {
+        "CODEX_NN_APP_DATA_DIR": {{CODEX_NN_APP_DATA_DIR_JSON}}
+      }
+    }
+  }
+}

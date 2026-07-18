@@ -74,8 +74,8 @@
 
 - **可视化操作**：主题预览、安装、切换、恢复都在桌面界面中完成
 - **零门槛主题设计**：只需描述想要的风格或提供概念稿，不懂配色、schema 和打包也能制作主题
-- **内置主题设计 Skill**：一键安装随应用提供的主题设计插件，让 Codex 自动完成概念稿、背景、配色、文案和主题包
-- **边设计边看效果**：Codex 可通过本地 MCP 安装、切换和诊断主题，在真实 Codex 界面中预览后继续对话调整
+- **内置主题设计 Skill**：可为 Codex 或 Claude Code 安装随应用提供的主题设计插件，让 AI 自动完成概念稿、背景、配色、文案和主题包
+- **边设计边看效果**：Codex 或 Claude Code 可通过本地 MCP 安装、切换和诊断主题，在真实 Codex 界面中预览后继续对话调整
 - **开箱即用**：内置「云海远行图鉴」「初音未来 · 未来共创」「星莓绮梦」「苍蓝矩阵」和「瑞克与莫蒂 · 多元宇宙开发站」五个主题，安装后即可开始使用
 - **一键切换**：主题会话运行时支持热切换，不用重复配置
 - **本地主题库**：通过 ZIP 安装、更新和管理自己的主题包
@@ -134,6 +134,16 @@ my-theme.zip
 
 主题设计插件可以随时从「设计主题」页面卸载。
 
+## 使用 Claude Code 设计主题
+
+Claude Code 插件复用同一套 Codex NN schema v1 规范和本地 MCP。Codex 暖暖只负责安装主题设计 Skill 和 MCP 连接，不接管 Claude Code 的账号或模型配置：
+
+1. 按 [Claude Code 官方安装指南](https://code.claude.com/docs/en/setup) 安装 Claude Code，并自行完成登录、模型和接口配置。运行 `claude --version` 确认命令可用。
+2. 在 Codex 暖暖的「设计主题」页面选择 Claude Code，然后点击「安装 Claude Code 插件」。
+3. 保持 Codex 暖暖运行并新建 Claude Code 会话，描述想要的主题或提供概念稿。Claude 会先展示完整界面概念；只有你明确确认后，它才会生成最终背景和 ZIP，并通过 MCP 安装、切换和诊断主题。
+
+Skill 安装在 `~/.claude/skills/codex-nn-theme-designer`。Claude Code 会继续使用你已有的登录态、模型和接口设置；Codex 暖暖不会读取或修改 `~/.claude/settings.json`，也不会读取、保存或传输 Claude Code 的 API Key。
+
 ## 工作方式
 
 Codex NN 通过仅监听 `127.0.0.1` 的 Chrome DevTools Protocol（CDP）连接，为正在运行的 Codex 页面加载主题，并由后台守护进程维持主题状态。
@@ -162,7 +172,7 @@ Codex NN 基于 [MIT License](./LICENSE) 开源。
 
 主题引擎的部分实现参考并修改自 Codex Dream Skin Studio，详情请查看 [第三方声明](./THIRD_PARTY_NOTICES.md) 与 [对应许可文本](./THIRD_PARTY_LICENSE_CODEX_DREAM_SKIN.txt)。
 
-Codex、OpenAI 及相关名称和标识归其各自权利人所有。本项目与 OpenAI 不存在隶属或背书关系。
+Codex、OpenAI、Claude、Anthropic 及相关名称和标识归其各自权利人所有。本项目与 OpenAI 或 Anthropic 不存在隶属或背书关系。
 
 ---
 
