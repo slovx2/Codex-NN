@@ -32,6 +32,30 @@
 
 No manual file editing or repeated scripts are required. Open Codex NN, choose a theme, and launch or switch with one click to give Codex a completely new appearance.
 
+## Built-in Theme Preview
+
+Every screenshot below shows the full Codex new-task page.
+
+### Adventure Atlas
+
+![Adventure Atlas new-task page](./docs/images/themes/adventure-atlas.jpg)
+
+### Miku Future Collab
+
+![Miku Future Collab new-task page](./docs/images/themes/miku-future-collab.jpg)
+
+### Strawberry Starlight
+
+![Strawberry Starlight new-task page](./docs/images/themes/strawberry-starlight.jpg)
+
+### Azure Neon Frontier
+
+![Azure Neon Frontier new-task page](./docs/images/themes/azure-neon-frontier.jpg)
+
+### Rick and Morty Multiverse Lab
+
+![Rick and Morty theme new-task page](./docs/images/themes/portal-dimension-lab.jpg)
+
 ## Interface Preview
 
 ### Home
@@ -45,24 +69,6 @@ No manual file editing or repeated scripts are required. Open Codex NN, choose a
 ### Theme Designer
 
 ![Codex NN theme designer](./docs/images/codex-nn-designer.jpg)
-
-## Built-in Theme Preview
-
-Every screenshot below shows the full Codex new-task page.
-
-<table>
-  <tr>
-    <td align="center"><strong>Adventure Atlas</strong><br><img src="./docs/images/themes/adventure-atlas.jpg" alt="Adventure Atlas new-task page" width="100%"></td>
-    <td align="center"><strong>Miku Future Collab</strong><br><img src="./docs/images/themes/miku-future-collab.jpg" alt="Miku Future Collab new-task page" width="100%"></td>
-  </tr>
-  <tr>
-    <td align="center"><strong>Strawberry Starlight</strong><br><img src="./docs/images/themes/strawberry-starlight.jpg" alt="Strawberry Starlight new-task page" width="100%"></td>
-    <td align="center"><strong>Azure Neon Frontier</strong><br><img src="./docs/images/themes/azure-neon-frontier.jpg" alt="Azure Neon Frontier new-task page" width="100%"></td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><strong>Rick and Morty Multiverse Lab</strong><br><img src="./docs/images/themes/portal-dimension-lab.jpg" alt="Rick and Morty theme new-task page" width="50%"></td>
-  </tr>
-</table>
 
 ## Highlights
 

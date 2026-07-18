@@ -32,6 +32,30 @@
 
 不用手动改文件，也不用反复执行脚本。打开 Codex 暖暖，选择喜欢的主题，然后一键启动或切换，就能为 Codex 换上全新的界面风格。
 
+## 内置主题预览
+
+以下截图均为 Codex 新任务页的整窗效果。
+
+### 云海远行图鉴
+
+![云海远行图鉴新任务页](./docs/images/themes/adventure-atlas.jpg)
+
+### 初音未来 · 未来共创
+
+![初音未来主题新任务页](./docs/images/themes/miku-future-collab.jpg)
+
+### 星莓绮梦
+
+![星莓绮梦新任务页](./docs/images/themes/strawberry-starlight.jpg)
+
+### 苍蓝矩阵
+
+![苍蓝矩阵新任务页](./docs/images/themes/azure-neon-frontier.jpg)
+
+### 瑞克与莫蒂 · 多元宇宙开发站
+
+![瑞克与莫蒂主题新任务页](./docs/images/themes/portal-dimension-lab.jpg)
+
 ## 界面预览
 
 ### 首页
@@ -45,24 +69,6 @@
 ### 设计主题
 
 ![Codex 暖暖主题设计](./docs/images/codex-nn-designer.jpg)
-
-## 内置主题预览
-
-以下截图均为 Codex 新任务页的整窗效果。
-
-<table>
-  <tr>
-    <td align="center"><strong>云海远行图鉴</strong><br><img src="./docs/images/themes/adventure-atlas.jpg" alt="云海远行图鉴新任务页" width="100%"></td>
-    <td align="center"><strong>初音未来 · 未来共创</strong><br><img src="./docs/images/themes/miku-future-collab.jpg" alt="初音未来主题新任务页" width="100%"></td>
-  </tr>
-  <tr>
-    <td align="center"><strong>星莓绮梦</strong><br><img src="./docs/images/themes/strawberry-starlight.jpg" alt="星莓绮梦新任务页" width="100%"></td>
-    <td align="center"><strong>苍蓝矩阵</strong><br><img src="./docs/images/themes/azure-neon-frontier.jpg" alt="苍蓝矩阵新任务页" width="100%"></td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><strong>瑞克与莫蒂 · 多元宇宙开发站</strong><br><img src="./docs/images/themes/portal-dimension-lab.jpg" alt="瑞克与莫蒂主题新任务页" width="50%"></td>
-  </tr>
-</table>
 
 ## 功能亮点
 
