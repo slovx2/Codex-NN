@@ -13,6 +13,7 @@ const SKILL_ROOT = join(PLUGIN_ROOT, "skills", "design-codex-nn-theme");
 const EXPECTED_THEME_IDS = new Set([
   "adventure-atlas",
   "azure-neon-frontier",
+  "caishen-readable",
   "miku-future-collab",
   "portal-dimension-lab",
   "strawberry-starlight"
@@ -20,6 +21,7 @@ const EXPECTED_THEME_IDS = new Set([
 const EXPECTED_THEME_APPEARANCE = {
   "adventure-atlas": "light",
   "azure-neon-frontier": "dark",
+  "caishen-readable": "light",
   "miku-future-collab": "light",
   "portal-dimension-lab": "dark",
   "strawberry-starlight": "light"
@@ -31,6 +33,7 @@ const DREAM_SKIN_ENGINE_ASSETS = {
 const EXPECTED_THEME_LAYOUT = {
   "adventure-atlas": "adventureAtlas",
   "azure-neon-frontier": "azureNeon",
+  "caishen-readable": "dreamSkin",
   "miku-future-collab": "mikuFuture",
   "portal-dimension-lab": "portalDimension",
   "strawberry-starlight": "strawberryStarlight"
