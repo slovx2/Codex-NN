@@ -36,7 +36,7 @@ No manual file editing or repeated scripts are required. Open Codex NN, choose a
 
 ## Built-in Theme Preview
 
-Every screenshot below shows the full Codex new-task page.
+Most previews below show the full Codex new-task page. Caishen Readable uses a public-safe theme background preview because it is contributed as a redistributable skin asset.
 
 ### Adventure Atlas
 
@@ -53,6 +53,10 @@ Every screenshot below shows the full Codex new-task page.
 ### Azure Neon Frontier
 
 ![Azure Neon Frontier new-task page](./docs/images/themes/azure-neon-frontier.jpg)
+
+### Caishen Readable
+
+![Caishen Readable theme background preview](./docs/images/themes/caishen-readable.jpg)
 
 ### Rick and Morty Multiverse Lab
 
@@ -78,7 +82,7 @@ Every screenshot below shows the full Codex new-task page.
 - **No-code theme design**: describe a visual style or provide a concept image; no knowledge of color systems, schemas, or packaging is required
 - **Built-in theme design Skill**: install the bundled designer plugin for Codex or Claude Code and let the AI create the concept, background, palette, copy, and theme package
 - **Design with live feedback**: Codex or Claude Code installs, switches, and diagnoses themes through the local MCP so you can review the real interface and keep refining it in the same conversation
-- **Ready to use**: includes Adventure Atlas, Miku Future Collab, Strawberry Starlight, Azure Neon Frontier, and Rick and Morty Multiverse Lab
+- **Ready to use**: includes Adventure Atlas, Miku Future Collab, Strawberry Starlight, Azure Neon Frontier, Caishen Readable, and Rick and Morty Multiverse Lab
 - **Instant switching**: hot-swap themes while a managed theme session is running
 - **Local theme library**: install, update, and manage your own ZIP theme packages
 - **Full control**: launch or restart Codex, pause theming, or restore the official appearance

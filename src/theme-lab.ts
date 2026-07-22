@@ -85,6 +85,7 @@ app.innerHTML = `
       <select id="theme-select" aria-label="预览主题">
         <option value="dream-skin-gothic">Dream Skin · Gothic Void Crusade</option>
         <option value="adventure-atlas">云海远行图鉴</option>
+        <option value="caishen-readable">财神护航</option>
         <option value="miku-future-collab">初音未来</option>
         <option value="strawberry-starlight">星莓绮梦</option>
         <option value="azure-neon-frontier">苍蓝矩阵</option>

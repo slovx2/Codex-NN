@@ -37,6 +37,11 @@ const AZURE_NEON_FRONTIER_THEME_EN: &str =
     include_str!("../../theme-packs/azure-neon-frontier/theme.en.json");
 const AZURE_NEON_FRONTIER_IMAGE: &[u8] =
     include_bytes!("../../theme-packs/azure-neon-frontier/background.webp");
+const CAISHEN_READABLE_THEME: &str = include_str!("../../theme-packs/caishen-readable/theme.json");
+const CAISHEN_READABLE_THEME_EN: &str =
+    include_str!("../../theme-packs/caishen-readable/theme.en.json");
+const CAISHEN_READABLE_IMAGE: &[u8] =
+    include_bytes!("../../theme-packs/caishen-readable/background.webp");
 const MIKU_FUTURE_COLLAB_THEME: &str =
     include_str!("../../theme-packs/miku-future-collab/theme.json");
 const MIKU_FUTURE_COLLAB_THEME_EN: &str =
@@ -228,6 +233,12 @@ const BUILT_IN_THEMES: &[BuiltInTheme] = &[
         manifest_zh_cn: AZURE_NEON_FRONTIER_THEME,
         manifest_en: AZURE_NEON_FRONTIER_THEME_EN,
         image: AZURE_NEON_FRONTIER_IMAGE,
+    },
+    BuiltInTheme {
+        id: "caishen-readable",
+        manifest_zh_cn: CAISHEN_READABLE_THEME,
+        manifest_en: CAISHEN_READABLE_THEME_EN,
+        image: CAISHEN_READABLE_IMAGE,
     },
     BuiltInTheme {
         id: "miku-future-collab",
@@ -988,7 +999,7 @@ mod tests {
     fn exposes_and_protects_all_built_in_themes() {
         let (root, store) = test_store();
         let themes = store.list(None).unwrap();
-        assert_eq!(themes.len(), 5);
+        assert_eq!(themes.len(), 6);
         assert_eq!(store.default_id(), "strawberry-starlight");
 
         for built_in in BUILT_IN_THEMES {
